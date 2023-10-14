@@ -1,0 +1,21 @@
+# etc/config.mk
+# Local settings for building Romassist v3.
+# This file is not committed to the git repo; it is specific to each build host.
+
+OPT_ENABLE:=abc def
+BUILD_ROMASSIST:=1
+BUILD_MENU:=1
+BUILD_LIB:=1
+BUILD_WEB:=1
+
+GCCPFX:=
+GCCOPTS:=-c -MMD -O3 -Isrc -Werror -Wimplicit
+CC:=$(GCCPFX)gcc $(GCCOPTS)
+CXX:=$(GCCPFX)g++ $(GCCOPTS)
+OBJC:=$(GCCPFX)gcc -xobjective-c $(GCCOPTS)
+AS:=$(GCCPFX)gcc -xassembler-with-cpp $(GCCOPTS)
+LD:=$(GCCPFX)gcc
+LDPOST:=
+AR:=$(GCCPFX)ar rc
+
+EXESFX:=

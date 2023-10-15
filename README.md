@@ -18,7 +18,7 @@ Ditto for all the HTTP interfaces.
 - - [ ] Audio drivers
 - - [ ] Input drivers
 - [ ] Backend
-- - [ ] Database
+- - [x] Database
 - - [ ] Launcher
 - - [ ] HTTP server
 - [ ] Menu

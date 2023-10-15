@@ -48,8 +48,12 @@ ifneq (,$(strip $(BUILD_ROMASSIST)))
   all:$(EXE_ROMASSIST)
   OFILES_ROMASSIST:=$(filter \
     mid/romassist/% \
+    mid/opt/db/% \
+    mid/opt/serial/% \
+    mid/opt/fs/% \
   ,$(OFILES))
   $(EXE_ROMASSIST):$(OFILES_ROMASSIST);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
+  run:$(EXE_ROMASSIST);$(EXE_ROMASSIST)
 endif
 
 ifneq (,$(strip $(BUILD_MENU)))
@@ -60,6 +64,7 @@ ifneq (,$(strip $(BUILD_MENU)))
     mid/lib/% \
   ,$(OFILES))
   $(EXE_MENU):$(OFILES_MENU);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
+  run:$(EXE_MENU)
 endif
 
 endif

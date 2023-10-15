@@ -21,6 +21,7 @@ Ditto for all the HTTP interfaces.
 - - [x] Database
 - - [ ] Launcher
 - - [ ] HTTP server
+- [ ] db: Must cache blob list, at least for large game queries. (otherwise each file will re-read the blob directories from scratch).
 - [ ] Menu
 - [ ] Web
 - [ ] Integrate emulators

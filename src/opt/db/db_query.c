@@ -162,6 +162,59 @@ struct db_list *db_query_header(
   return dst;
 }
 
+struct db_list *db_query_header_prelookupped(
+  struct db *db,
+  struct db_list *src,
+  uint32_t platform,
+  uint32_t author,
+  uint32_t genre,
+  uint32_t flags_require,
+  uint32_t flags_forbid,
+  uint32_t rating_lo,
+  uint32_t rating_hi,
+  uint32_t pubtime_lo,
+  uint32_t pubtime_hi
+) {
+  struct db_list *dst=db_list_copy_nonresident(0);
+  if (!dst) return 0;
+  const struct db_game *game;
+  int i;
+  if (src) {
+    dst->sorted=src->sorted;
+    if (src->gameidc!=src->gamec) db_list_gamev_populate(db,src);
+    game=src->gamev;
+    i=src->gamec;
+  } else {
+    dst->sorted=1;
+    game=db->games.v;
+    i=db->games.c;
+  }
+  
+  // Check for invalid combinations of integer criteria, to short circuit.
+  if (flags_require&flags_forbid) return dst;
+  if (rating_lo>rating_hi) return dst;
+  if (pubtime_lo>pubtime_hi) return dst;
+  
+  for (;i-->0;game++) {
+  
+    if (platform&&(game->platform!=platform)) continue;
+    if (author&&(game->author!=author)) continue;
+    if (genre&&(game->genre!=genre)) continue;
+    if (game->flags&flags_forbid) continue;
+    if ((game->flags&flags_require)!=flags_require) continue;
+    if (game->rating<rating_lo) continue;
+    if (game->rating>rating_hi) continue;
+    if (game->pubtime<pubtime_lo) continue;
+    if (game->pubtime>pubtime_hi) continue;
+    
+    if (db_list_append(db,dst,game->gameid)<0) {
+      db_list_del(dst);
+      return 0;
+    }
+  }
+  return dst;
+}
+
 /* Generic query.
  */
 

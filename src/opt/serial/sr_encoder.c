@@ -180,6 +180,20 @@ int sr_encode_json_array_start(struct sr_encoder *encoder,const char *k,int kc) 
   return jsonctx;
 }
 
+int sr_encode_json_object_start_no_setup(struct sr_encoder *encoder) {
+  int jsonctx=encoder->jsonctx;
+  if (sr_encode_u8(encoder,'{')<0) return -1;
+  encoder->jsonctx='{';
+  return jsonctx;
+}
+
+int sr_encode_json_array_start_no_setup(struct sr_encoder *encoder) {
+  int jsonctx=encoder->jsonctx;
+  if (sr_encode_u8(encoder,'[')<0) return -1;
+  encoder->jsonctx='[';
+  return jsonctx;
+}
+
 int sr_encode_json_object_end(struct sr_encoder *encoder,int jsonctx) {
   if (encoder->jsonctx!='{') return encoder->jsonctx=-1;
   if (sr_encode_u8(encoder,'}')<0) return -1;

@@ -244,6 +244,8 @@ int sr_encode_fmt(struct sr_encoder *encoder,const char *fmt,...);
  */
 int sr_encode_json_object_start(struct sr_encoder *encoder,const char *k,int kc); // => jsonctx
 int sr_encode_json_array_start(struct sr_encoder *encoder,const char *k,int kc); // => jsonctx
+int sr_encode_json_object_start_no_setup(struct sr_encoder *encoder); // => jsonctx
+int sr_encode_json_array_start_no_setup(struct sr_encoder *encoder); // => jsonctx
 int sr_encode_json_object_end(struct sr_encoder *encoder,int jsonctx);
 int sr_encode_json_array_end(struct sr_encoder *encoder,int jsonctx);
 

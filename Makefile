@@ -49,11 +49,12 @@ ifneq (,$(strip $(BUILD_ROMASSIST)))
   OFILES_ROMASSIST:=$(filter \
     mid/romassist/% \
     mid/opt/db/% \
+    mid/opt/http/% \
     mid/opt/serial/% \
     mid/opt/fs/% \
   ,$(OFILES))
   $(EXE_ROMASSIST):$(OFILES_ROMASSIST);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
-  run:$(EXE_ROMASSIST);$(EXE_ROMASSIST)
+  run:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --menu=$(PWD)/out/romassist-menu$(EXESFX)
 endif
 
 ifneq (,$(strip $(BUILD_MENU)))

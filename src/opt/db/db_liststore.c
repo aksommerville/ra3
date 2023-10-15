@@ -1,6 +1,7 @@
 #include "db_internal.h"
 #include "opt/serial/serial.h"
 #include "opt/fs/fs.h"
+#include <errno.h>
 
 /* Cleanup.
  */
@@ -116,7 +117,15 @@ int db_liststore_load(struct db_liststore *store,const char *root,int rootc) {
   if ((pathc<1)||(pathc>=sizeof(path))) return -1;
   void *serial=0;
   int serialc=file_read(&serial,path);
-  if (serialc<0) return -1;
+  if (serialc<0) {
+    if (errno==ENOENT) {
+      store->c=0;
+      store->contigc=0;
+      store->dirty=0;
+      return 0;
+    }
+    return -1;
+  }
   store->c=0;
   store->contigc=0;
   int err=db_liststore_decode(store,serial,serialc);

@@ -182,6 +182,29 @@ char *db_blob_compose_path(
   return encoder.v;
 }
 
+/* Validate path.
+ */
+ 
+int db_blob_validate_path(
+  const struct db *db,
+  const char *path,int pathc
+) {
+  if (!path) return -1;
+  if (pathc<0) { pathc=0; while (path[pathc]) pathc++; }
+  if (pathc<db->rootc+6) return -1;
+  if (memcmp(path,db->root,db->rootc)) return -1;
+  if (memcmp(path+db->rootc,"/blob/",6)) return -1;
+  // Not getting super aggressive with this, but do check that there's no adjacent dots, and exactly one slash after "/blob/".
+  int p=db->rootc+6;
+  int slashc=0;
+  for (;p<pathc;p++) {
+    if ((path[p]=='.')&&(path[p-1]=='.')) return -1;
+    if (path[p]=='/') slashc++;
+  }
+  if (slashc!=1) return -1;
+  return 0;
+}
+
 /* Delete all blobs for one game.
  */
  

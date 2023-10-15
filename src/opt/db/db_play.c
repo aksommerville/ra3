@@ -78,23 +78,23 @@ struct db_play *db_play_insert(struct db *db,uint32_t gameid) {
 /* Finish play record if one exists.
  */
  
-int db_play_finish(struct db *db,uint32_t gameid) {
+struct db_play *db_play_finish(struct db *db,uint32_t gameid) {
   int p=db_flatstore_search2(&db->plays,gameid+1,0);
   if (p<0) p=-p-1;
   p--;
   struct db_play *play=db_flatstore_get(&db->plays,p);
-  if (!play) return -1;
+  if (!play) return 0;
   while ((p>=0)&&(play->gameid==gameid)) {
     if (!play->dur_m) {
       play->dur_m=db_time_diff_m(play->time,db_time_now());
       if (!play->dur_m) play->dur_m=1;
       db->dirty=db->plays.dirty=1;
-      return 0;
+      return play;
     }
     p--;
     play--;
   }
-  return -1;
+  return 0;
 }
 
 /* Manual edit.

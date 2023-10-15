@@ -149,17 +149,17 @@ static int db_game_decode_json(struct db_game *dst,struct db_game *mask,struct d
 /* Patch from JSON.
  */
 
-int db_game_patch_json(struct db *db,struct db_game *game,const char *src,int srcc) {
+struct db_game *db_game_patch_json(struct db *db,struct db_game *game,const char *src,int srcc) {
 
   struct db_game incoming={0},mask={0};
-  if (db_game_decode_json(&incoming,&mask,db,src,srcc)<0) return -1;
+  if (db_game_decode_json(&incoming,&mask,db,src,srcc)<0) return 0;
   
   if (mask.gameid) {
-    if (game&&(game->gameid!=incoming.gameid)) return -1;
+    if (game&&(game->gameid!=incoming.gameid)) return 0;
   }
   
   if (!game) {
-    if (!(game=db_game_insert(db,incoming.gameid))) return -1;
+    if (!(game=db_game_insert(db,incoming.gameid))) return 0;
   }
   
   if (mask.platform) game->platform=incoming.platform;
@@ -174,7 +174,7 @@ int db_game_patch_json(struct db *db,struct db_game *game,const char *src,int sr
   if (mask.base[0]) memcpy(game->base,incoming.base,sizeof(incoming.base));
   
   db->dirty=1;
-  return 0;
+  return game;
 }
 
 /* Simple convenience setters.

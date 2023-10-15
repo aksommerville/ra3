@@ -104,9 +104,12 @@ int db_decode_json_string(uint32_t *stringid,struct db *db,struct sr_decoder *sr
  *   0x0000f800 Day of month 1..31. (0=unspec)
  *   0x000007c0 Hour 0..23.
  *   0x0000003f Minute 0..59.
+ * When the more precise fields are omitted, regular eval returns the lowest described timestamp (eg "2023" => "2023-00-00T00:00").
+ * Use db_time_eval_upper() to get the highest (eg "2023" => "2023-15-31T31:63").
  */
 uint32_t db_time_now();
 uint32_t db_time_eval(const char *src,int srcc);
+uint32_t db_time_eval_upper(const char *src,int srcc);
 int db_time_repr(char *dst,int dsta,uint32_t dbtime);
 uint32_t db_time_pack(int year,int month,int day,int hour,int minute);
 int db_time_unpack(int *year,int *month,int *day,int *hour,int *minute,uint32_t dbtime);
@@ -194,7 +197,7 @@ struct db_game *db_game_insert(struct db *db,uint32_t gameid);
  * Dirty flags are updated as needed.
  * *** comments, plays, and blobs are ignored if present ***
  */
-int db_game_patch_json(struct db *db,struct db_game *game,const char *src,int srcc);
+struct db_game *db_game_patch_json(struct db *db,struct db_game *game,const char *src,int srcc);
 
 /* Conveniences to modify content in the record.
  * Strongly recommend using these instead of writing directly.
@@ -295,7 +298,7 @@ struct db_play *db_play_insert(struct db *db,uint32_t gameid);
 /* If a play exists for this (gameid) with zero (dur_m), update it according to current time.
  * If that works out to less than a minute, clamp to 1.
  */
-int db_play_finish(struct db *db,uint32_t gameid);
+struct db_play *db_play_finish(struct db *db,uint32_t gameid);
 
 int db_play_set_dur_m(struct db *db,struct db_play *play,uint32_t dur_m);
 
@@ -383,6 +386,10 @@ int db_list_count(const struct db *db);
 struct db_list *db_list_get_by_index(const struct db *db,int p);
 struct db_list *db_list_get_by_id(const struct db *db,uint32_t listid);
 
+/* ID or Name.
+ */
+struct db_list *db_list_get_by_string(const struct db *db,const char *src,int srcc);
+
 int db_list_delete(struct db *db,uint32_t listid);
 
 /* Copy a list, either resident or non-resident.
@@ -443,8 +450,16 @@ int db_list_gamev_populate(const struct db *db,struct db_list *list);
 
 /* Be mindful of (detail), you can cause an enormous amount of compute and serialize here.
  * For JSON format, produces {id,name,desc,sorted,games:[...]}.
+ * If you only want the games, as an array, use db_list_encode_array() instead.
  */
 int db_list_encode(
+  struct sr_encoder *dst,
+  const struct db *db,
+  const struct db_list *list,
+  int format,
+  int detail
+);
+int db_list_encode_array(
   struct sr_encoder *dst,
   const struct db *db,
   const struct db_list *list,
@@ -502,6 +517,15 @@ char *db_blob_compose_path(
   const char *sfx,int sfxc
 );
 
+/* >=0 if this looks like a blob path.
+ * The HTTP server should call this before serving blob content, to ensure it's not serving blobs like "/etc/shadow".
+ * We don't check whether the file actually exists, you'll find out soon enough.
+ */
+int db_blob_validate_path(
+  const struct db *db,
+  const char *path,int pathc
+);
+
 int db_blob_delete_for_gameid(struct db *db,uint32_t gameid);
 
 /* High-level queries.
@@ -523,6 +547,7 @@ struct db_list *db_query_text(
 /* Simple case, query against the game record only.
  * Empty strings match all, otherwise exact matches only.
  * Numeric fields have (lo,hi), but (0,0) matches all.
+ * "prelookupped" if you already have stringids for the string fields.
  */
 struct db_list *db_query_header(
   struct db *db,
@@ -530,6 +555,19 @@ struct db_list *db_query_header(
   const char *platform,int platformc,
   const char *author,int authorc,
   const char *genre,int genrec,
+  uint32_t flags_require,
+  uint32_t flags_forbid,
+  uint32_t rating_lo,
+  uint32_t rating_hi,
+  uint32_t pubtime_lo,
+  uint32_t pubtime_hi
+);
+struct db_list *db_query_header_prelookupped(
+  struct db *db,
+  struct db_list *src,
+  uint32_t platform,
+  uint32_t author,
+  uint32_t genre,
   uint32_t flags_require,
   uint32_t flags_forbid,
   uint32_t rating_lo,
@@ -553,6 +591,10 @@ struct db_list *db_query_generic(
 struct db_list *db_query_list_and(struct db *db,const struct db_list *a,const struct db_list *b);
 struct db_list *db_query_list_or(struct db *db,const struct db_list *a,const struct db_list *b);
 struct db_list *db_query_list_not(struct db *db,const struct db_list *from,const struct db_list *remove);
+
+/* New nonresident list with every game added.
+ */
+struct db_list *db_list_everything(const struct db *db);
 
 /* Convenience, and only valid for non-resident lists.
  * Filters (list) down to no more than (page_size) contiguous records, aligned to a multiple of (page_size).

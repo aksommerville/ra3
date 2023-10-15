@@ -1,6 +1,7 @@
 #include "db_internal.h"
 #include "opt/serial/serial.h"
 #include "opt/fs/fs.h"
+#include <errno.h>
 
 /* Cleanup store.
  */
@@ -187,7 +188,15 @@ int db_stringstore_load(struct db_stringstore *store,const char *root,int rootc)
   if ((pathc<1)||(pathc>=sizeof(path))) return -1;
   void *nv=0;
   int nc=file_read(&nv,path);
-  if (nc<0) return -1;
+  if (nc<0) {
+    if (errno==ENOENT) {
+      store->tocc=0;
+      store->textc=0;
+      store->dirty=0;
+      return 0;
+    }
+    return -1;
+  }
   if (store->toc) free(store->toc);
   store->toc=nv;
   store->tocc=nc/sizeof(struct db_string_toc_entry);
@@ -196,6 +205,11 @@ int db_stringstore_load(struct db_stringstore *store,const char *root,int rootc)
   memcpy(path+pathc-4,"text",4);
   if ((nc=file_read(&nv,path))<0) {
     store->tocc=0;
+    if (errno==ENOENT) {
+      store->textc=0;
+      store->dirty=0;
+      return 0;
+    }
     return -1;
   }
   if (store->text) free(store->text);

@@ -30,6 +30,27 @@ struct db_list *db_list_get_by_id(const struct db *db,uint32_t listid) {
   return db->lists.v[p];
 }
 
+struct db_list *db_list_get_by_string(const struct db *db,const char *src,int srcc) {
+  if (!src) return 0;
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  
+  // If it's an integer, assume it's the ID.
+  // Don't give your lists integers for names, that's asking for trouble anyway.
+  int id;
+  if (sr_int_eval(&id,src,srcc)>=2) return db_list_get_by_id(db,id);
+  
+  // Exact name matches only. So if the string isn't already interned, we know there's no match.
+  uint32_t stringid=db_string_lookup(db,src,srcc);
+  if (!stringid) return 0;
+  struct db_list **list=db->lists.v;
+  int i=db->lists.c;
+  for (;i-->0;list++) {
+    if ((*list)->name!=stringid) continue;
+    return *list;
+  }
+  return 0;
+}
+
 /* Delete from store.
  */
 
@@ -82,6 +103,27 @@ struct db_list *db_list_copy_resident(struct db *db,const struct db_list *src) {
       memcpy(list->gameidv,src->gameidv,sizeof(uint32_t)*src->gameidc);
       list->gameidc=list->gameida=src->gameidc;
     }
+  }
+  return list;
+}
+
+/* New nonresident list with every game.
+ */
+ 
+struct db_list *db_list_everything(const struct db *db) {
+  struct db_list *list=calloc(1,sizeof(struct db_list));
+  if (!list) return 0;
+  list->sorted=1;
+  if (db->games.c>0) {
+    if (!(list->gameidv=malloc(sizeof(uint32_t)*db->games.c))) {
+      free(list);
+      return 0;
+    }
+    uint32_t *dst=list->gameidv;
+    const struct db_game *game=db->games.v;
+    int i=db->games.c;
+    for (;i-->0;dst++,game++) *dst=game->gameid;
+    list->gameidc=list->gameida=db->games.c;
   }
   return list;
 }
@@ -481,7 +523,35 @@ int db_list_gamev_populate(const struct db *db,struct db_list *list) {
   return 0;
 }
 
-/* Encode to JSON.
+/* Encode to JSON, games only.
+ */
+ 
+static int db_list_encode_array_json(
+  struct sr_encoder *dst,
+  const struct db *db,
+  const struct db_list *list,
+  int detail
+) {
+  int listctx=sr_encode_json_array_start_no_setup(dst);
+  if (listctx<0) return -1;
+  const uint32_t *v=list->gameidv;
+  int i=list->gameidc;
+  if (detail==DB_DETAIL_id) {
+    for (;i-->0;v++) {
+      if (sr_encode_json_int(dst,0,0,*v)<0) return -1;
+    }
+  } else {
+    for (;i-->0;v++) {
+      const struct db_game *game=db_game_get_by_id(db,*v);
+      if (!game) return -1;
+      if (db_game_encode(dst,db,game,DB_FORMAT_json,detail)<0) return -1;
+    }
+  }
+  if (sr_encode_json_array_end(dst,listctx)<0) return -1;
+  return 0;
+}
+
+/* Encode to JSON with header.
  */
  
 static int db_list_encode_json(
@@ -498,22 +568,8 @@ static int db_list_encode_json(
   if (db_encode_json_string(dst,db,"desc",4,list->desc)<0) return -1;
   if (sr_encode_json_boolean(dst,"sorted",6,list->sorted)<0) return -1;
   
-  int listctx=sr_encode_json_array_start(dst,"games",5);
-  if (listctx<0) return -1;
-  const uint32_t *v=list->gameidv;
-  int i=list->gameidc;
-  if (detail==DB_DETAIL_id) {
-    for (;i-->0;v++) {
-      if (sr_encode_json_int(dst,0,0,*v)<0) return -1;
-    }
-  } else {
-    for (;i-->0;v++) {
-      const struct db_game *game=db_game_get_by_id(db,*v);
-      if (!game) return -1;
-      if (db_game_encode(dst,db,game,DB_FORMAT_json,detail)<0) return -1;
-    }
-  }
-  if (sr_encode_json_array_end(dst,listctx)<0) return -1;
+  if (sr_encode_json_setup(dst,"games",5)<0) return -1;
+  if (db_list_encode_array_json(dst,db,list,detail)<0) return -1;
   
   return sr_encode_json_object_end(dst,jsonctx);
 }
@@ -531,6 +587,20 @@ int db_list_encode(
   switch (format) {
     case 0:
     case DB_FORMAT_json: return db_list_encode_json(dst,db,list,detail);
+  }
+  return -1;
+}
+ 
+int db_list_encode_array(
+  struct sr_encoder *dst,
+  const struct db *db,
+  const struct db_list *list,
+  int format,
+  int detail
+) {
+  switch (format) {
+    case 0:
+    case DB_FORMAT_json: return db_list_encode_array_json(dst,db,list,detail);
   }
   return -1;
 }

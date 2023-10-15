@@ -33,6 +33,26 @@ uint32_t db_time_eval(const char *src,int srcc) {
   return db_time_pack(vv[0],vv[1],vv[2],vv[3],vv[4]);
 }
 
+uint32_t db_time_eval_upper(const char *src,int srcc) {
+  if (!src) return 0;
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  int vv[5]={0};
+  int vp=0;
+  int srcp=0;
+  for (;srcp<srcc;srcp++) {
+    if ((src[srcp]>='0')&&(src[srcp]<='9')) {
+      vv[vp]*=10;
+      vv[vp]+=src[srcp]-'0';
+    } else {
+      vp++;
+      if (vp>=5) break;
+    }
+  }
+  int defs[5]={4095,15,31,31,63};
+  memcpy(defs,vv,sizeof(int)*vp);
+  return db_time_pack(defs[0],defs[1],defs[2],defs[3],defs[4]);
+}
+
 /* To string.
  */
  

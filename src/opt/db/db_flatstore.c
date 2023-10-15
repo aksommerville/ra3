@@ -1,5 +1,6 @@
 #include "db_internal.h"
 #include "opt/fs/fs.h"
+#include <errno.h>
 
 /* Cleanup.
  */
@@ -148,7 +149,14 @@ int db_flatstore_load(struct db_flatstore *store,const char *root,int rootc) {
   
   void *nv=0;
   int nc=file_read(&nv,path);
-  if (nc<0) return -1;
+  if (nc<0) {
+    if (errno==ENOENT) {
+      store->c=0;
+      store->dirty=0;
+      return 0;
+    }
+    return -1;
+  }
   nc/=store->objlen;
   
   if (store->v) free(store->v);

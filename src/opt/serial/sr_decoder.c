@@ -173,7 +173,7 @@ int sr_decode_json_expression(void *dstpp,struct sr_decoder *decoder) {
   sr_decoder_skip_json_space(decoder);
   if (decoder->p>=decoder->c) return decoder->jsonctx=-1;
   const char *token=(char*)SRC;
-  int tokenc=sr_json_measure(token,tokenc);
+  int tokenc=sr_json_measure(token,decoder->c-decoder->p);
   if (tokenc<1) return decoder->jsonctx=-1;
   decoder->p+=tokenc;
   if (dstpp) *(const void**)dstpp=token;

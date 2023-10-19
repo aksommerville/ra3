@@ -8,6 +8,59 @@ body {
   margin: 0;
 }
 
+h2 {
+  margin: 0;
+}
+
+.hidden {
+  display: none;
+}
+
+.modalBlotter {
+  z-index: 100;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  opacity: 0.5;
+}
+
+.modalContainer {
+  position: absolute;
+  z-index: 101;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.modal {
+  min-width: 100px;
+  min-height: 100px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background-color: #fff;
+  color: #000;
+  border-radius: 0.5em;
+  border: 1px solid #000;
+  box-shadow: #000 0 0 1em;
+  pointer-events: initial;
+  padding: 0.5em;
+}
+
+.errorMessage {
+  background-color: #fff;
+  border: 1px solid #f00;
+  color: #800;
+  padding: 0.5em;
+}
+
 /* RootUi.
  *************************************************************/
  
@@ -21,6 +74,11 @@ body {
 }
 
 .RootUi > .main {
+  width: 100%;
+  height: 100%;
+}
+
+.RootUi > .main > * {
   width: 100%;
   height: 100%;
 }
@@ -57,4 +115,58 @@ body {
 .NavBarUi ul.tabBar > li.selected {
   background-color: #008;
   color: #fff;
+}
+
+/* SearchUi.
+ *****************************************************/
+ 
+.SearchUi {
+}
+
+/* NowPlayingUi.
+ *****************************************************/
+ 
+.NowPlayingUi {
+}
+
+/* DbUi.
+ *****************************************************/
+ 
+.DbUi {
+}
+
+.DbTableUi {
+  padding: 0.5em 1em;
+}
+
+.DbTableUi > .card {
+  border: 1px solid #000;
+}
+
+.DbTableUi > .card > .header {
+  background-color: #006;
+  padding: 0.5em 1em;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.DbTableUi > .card > .header > .spacer {
+  flex: 1;
+}
+
+.DbTableUi input.openToggle {
+  margin-left: 0.5em;
+}
+
+.DbTableUi > .card > .togglePanel {
+  padding: 0.5em 1em;
+  background-color: #ccc;
+  color: #000;
+}
+
+/* AdminUi.
+ *****************************************************/
+ 
+.AdminUi {
 }

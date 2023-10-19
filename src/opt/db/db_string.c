@@ -45,7 +45,7 @@ static int db_stringstore_text_intern(struct db_stringstore *store,const char *s
   memcpy(store->text+p,src,srcc);
   store->textc+=srcc;
   store->dirty=1;
-  return 0;
+  return p;
 }
 
 /* Search TOC for exact text.

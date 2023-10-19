@@ -850,9 +850,7 @@ static int ra_http_api_blob(struct http_xfer *req,struct http_xfer *rsp,void *us
   
   if ((rpathc==13)&&!memcmp(rpath,"/api/blob/all",13)&&(method==HTTP_METHOD_GET)) {
     if (http_xfer_append_body(rsp,"[",1)<0) return -1;
-    if (db_blob_for_each(ra.db,0,ra_http_api_blob_cb_list,rsp)<0) {
-      return http_xfer_set_status(rsp,500,"Error listing blobs");
-    }
+    db_blob_for_each(ra.db,0,ra_http_api_blob_cb_list,rsp);
     if (http_xfer_append_body(rsp,"\"\"]",3)<0) return -1;
     http_xfer_set_header(rsp,"Content-Type",12,"application/json",-1);
     return http_xfer_set_status(rsp,200,"OK");
@@ -880,9 +878,7 @@ static int ra_http_api_blob(struct http_xfer *req,struct http_xfer *rsp,void *us
           if ((typec<0)||(typec>sizeof(type))) typec=0;
           //TODO Currently extracting (type) and then ignoring it. Current design, it's not useful, but either support it or don't pretend to!
           if (http_xfer_append_body(rsp,"[",1)<0) return -1;
-          if (db_blob_for_gameid(ra.db,gameid,0,ra_http_api_blob_cb_list,rsp)<0) {
-            return http_xfer_set_status(rsp,500,"Error listing blobs");
-          }
+          db_blob_for_gameid(ra.db,gameid,0,ra_http_api_blob_cb_list,rsp);
           if (http_xfer_append_body(rsp,"\"\"]",3)<0) return -1;
           http_xfer_set_header(rsp,"Content-Type",12,"application/json",-1);
           return http_xfer_set_status(rsp,200,"OK");

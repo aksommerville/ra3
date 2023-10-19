@@ -40,4 +40,13 @@ export class NavBarUi {
     e.target.classList.add("selected");
     this.onTabChange(tabid);
   }
+  
+  selectTab(name) {
+    if (name === this.tabid) return;
+    this.tabid = name;
+    for (const element of this.element.querySelectorAll("li.selected")) {
+      element.classList.remove("selected");
+    }
+    this.element.querySelector(`li[data-tabid='${name}']`)?.classList.add("selected");
+  }
 }

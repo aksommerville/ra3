@@ -72,7 +72,39 @@ export class Dom {
     return "DIV";
   }
   
-  //TODO modals
+  spawnModal(clazz, overrides) {
+    const container = this.requireModalBlotter();
+    const modal = this.spawn(container, "DIV", ["modal"]);
+    const controller = this.spawnController(modal, clazz, overrides);
+    return controller;
+  }
+  
+  dismissAllModals() {
+    for (const container of this.document.querySelectorAll(".modalContainer")) {
+      container.remove();
+    }
+    this.document.querySelector(".modalBlotter")?.remove();
+  }
+  
+  dismissModalByController(controller) {
+    console.log(`?${JSON.stringify(controller.constructor.name)}`, controller);
+    const modal = this.document.querySelector(`.modalContainer > .modal > .${controller.constructor.name}`);
+    if (!modal) return false;
+    const container = modal.parentNode.parentNode;
+    container.remove();
+    if (!this.document.querySelector(".modalContainer")) {
+      this.document.querySelector(".modalBlotter")?.remove();
+    }
+  }
+  
+  requireModalBlotter() {
+    let blotter = this.document.querySelector(".modalBlotter");
+    if (!blotter) {
+      blotter = this.spawn(this.document.body, "DIV", ["modalBlotter"], { "on-click": () => this.dismissAllModals() });
+    }
+    const container = this.spawn(this.document.body, "DIV", ["modalContainer"]);
+    return container;
+  }
   
   onMutation(e) {
     for (const event of e) {

@@ -11,17 +11,29 @@ import { AdminUi } from "./AdminUi.js";
 
 export class RootUi {
   static getDependencies() {
-    return [HTMLElement, Dom, Comm];
+    return [HTMLElement, Dom, Comm, Window];
   }
-  constructor(element, dom, comm) {
+  constructor(element, dom, comm, window) {
     this.element = element;
     this.dom = dom;
     this.comm = comm;
+    this.window = window;
     
     this.navBar = null;
     this.mainController = null;
     
+    this.hashListener = e => this.onHashChange(e.newURL || "");
+    this.window.addEventListener("hashchange", this.hashListener);
+    
     this.buildUi();
+    this.onHashChange(this.window.location.href || ""); // Capture the initial fragment.
+  }
+  
+  onRemoveFromDom() {
+    if (this.hashListener) {
+      this.window.removeEventListener("hashchange", this.hashListener);
+      this.hashListener = null;
+    }
   }
   
   buildUi() {
@@ -32,12 +44,18 @@ export class RootUi {
   }
   
   onTabChange(tabid) {
-    //TODO We'll probably want to incorporate URL fragments at some point, so the tab selection persists across refreshes.
+    this.window.location = "#" + tabid;
+  }
+  
+  onHashChange(newUrl) {
+    const fragment = newUrl.split("#")[1] || "";
+    const path = fragment.split('/');
+    this.navBar.selectTab(path[0]);
     const main = this.element.querySelector(".main");
     main.innerHTML = "";
     this.mainController = null;
     let ctlcls = null;
-    switch (tabid) {
+    switch (path[0]) {
       case "search": ctlcls = SearchUi; break;
       case "nowPlaying": ctlcls = NowPlayingUi; break;
       case "db": ctlcls = DbUi; break;
@@ -45,5 +63,6 @@ export class RootUi {
     }
     if (!ctlcls) return;
     this.mainController = this.dom.spawnController(main, ctlcls);
+    this.mainController.setup?.(path);
   }
 }

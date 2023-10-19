@@ -83,6 +83,17 @@ Use `detail="id"` or omit for a simple array of strings, or `detail="record"` to
 
 ## /api/launcher
 
+```
+launcher {
+  id: int
+  name: string; specific to this launcher, eg "akfceu"
+  platform: string; for matching games, eg "nes"
+  suffixes: string; comma-delimited list of path suffixes
+  cmd: string; shell command. "$FILE" replaced with game's path.
+  desc: string; commentary from user
+}
+```
+
 ## /api/list
 
 ## /api/blob

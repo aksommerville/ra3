@@ -12,7 +12,7 @@ export class Comm {
   http(method, url, params, headers, body, result) {
     const options = {
       method,
-      mode: "no-cors",
+      mode: "same-origin",
       redirect: "error",
     };
     if (headers) options.headers = headers;
@@ -27,6 +27,11 @@ export class Comm {
       }
       return rsp;
     });
+  }
+  
+  // Because we often give just (method,url) and I forget how many dummy args...
+  httpJson(method, url, params, headers, body) {
+    return this.http(method, url, params, headers, body, "json");
   }
   
   composeUrl(url, params) {

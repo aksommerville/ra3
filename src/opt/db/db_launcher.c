@@ -130,7 +130,10 @@ static int db_launcher_decode_json(
   int kc;
   while ((kc=sr_decode_json_next(&k,&decoder))>0) {
   
-    if ((kc==2)&&!memcmp(k,"id",2)) {
+    if (
+      ((kc==2)&&!memcmp(k,"id",2))||
+      ((kc==10)&&!memcmp(k,"launcherid",10))
+    ) {
       int n;
       if (sr_decode_json_int(&n,&decoder)<0) return -1;
       dst->launcherid=n;

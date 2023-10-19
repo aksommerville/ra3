@@ -89,12 +89,12 @@ int db_save(struct db *db) {
   if (!file_get_type(db->root)) {
     if (dir_mkdir(db->root)<0) return -1;
   }
-  if (db_flatstore_load(&db->games,db->root,db->rootc)<0) return -1;
-  if (db_flatstore_load(&db->launchers,db->root,db->rootc)<0) return -1;
-  if (db_flatstore_load(&db->comments,db->root,db->rootc)<0) return -1;
-  if (db_flatstore_load(&db->plays,db->root,db->rootc)<0) return -1;
-  if (db_stringstore_load(&db->strings,db->root,db->rootc)<0) return -1;
-  if (db_liststore_load(&db->lists,db->root,db->rootc)<0) return -1;
+  if (db_flatstore_save(&db->games,db->root,db->rootc)<0) return -1;
+  if (db_flatstore_save(&db->launchers,db->root,db->rootc)<0) return -1;
+  if (db_flatstore_save(&db->comments,db->root,db->rootc)<0) return -1;
+  if (db_flatstore_save(&db->plays,db->root,db->rootc)<0) return -1;
+  if (db_stringstore_save(&db->strings,db->root,db->rootc)<0) return -1;
+  if (db_liststore_save(&db->lists,db->root,db->rootc)<0) return -1;
   db->dirty=0;
   return 1;
 }

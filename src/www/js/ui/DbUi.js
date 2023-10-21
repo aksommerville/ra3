@@ -3,14 +3,16 @@
  
 import { Dom } from "../Dom.js";
 import { DbTableUi } from "./DbTableUi.js";
+import { DbService } from "../model/DbService.js";
  
 export class DbUi {
   static getDependencies() {
-    return [HTMLElement, Dom];
+    return [HTMLElement, Dom, DbService];
   }
-  constructor(element, dom) {
+  constructor(element, dom, dbService) {
     this.element = element;
     this.dom = dom;
+    this.dbService = dbService;
     
     this.tableControllers = [];
     
@@ -23,7 +25,7 @@ export class DbUi {
   buildUi() {
     this.element.innerHTML = "";
     this.tableControllers = [];
-    for (const table of ["launcher", "list", "game", "comment", "play", "blob"]) {
+    for (const table of this.dbService.getTableNames()) {
       const controller = this.dom.spawnController(this.element, DbTableUi);
       controller.setTable(table);
       this.tableControllers.push(controller);

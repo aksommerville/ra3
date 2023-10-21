@@ -87,7 +87,6 @@ export class Dom {
   }
   
   dismissModalByController(controller) {
-    console.log(`?${JSON.stringify(controller.constructor.name)}`, controller);
     const modal = this.document.querySelector(`.modalContainer > .modal > .${controller.constructor.name}`);
     if (!modal) return false;
     const container = modal.parentNode.parentNode;

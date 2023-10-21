@@ -20,16 +20,26 @@ Ditto for all the HTTP interfaces.
 - [ ] Backend
 - - [x] Database
 - - [ ] Launcher
-- - [ ] HTTP server
+- - [x] HTTP server
+- - [ ] WebSocket server
 - [ ] db: Must cache blob list, at least for large game queries. (otherwise each file will re-read the blob directories from scratch).
+- [ ] db: Add multiple files from fs by providing one path.
+- [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
 - [ ] Web
+- - [ ] Straight DB view
+- - [ ] Search
+- - [ ] Game details
+- - [ ] Lists
+- - [ ] Admin / Now Playing
 - [ ] Integrate emulators
 - - [ ] akfceu
 - - [ ] aksnes9x
 - - [ ] akgambatte
 - - [ ] akprosys
 - - [ ] Stella
+- - [ ] Super Cassette Vision?
+- - [ ] N64?
 - - [ ] Genesis?
 - - [ ] PC Engine?
 - - [ ] Pico-8. No integration, but do get it running on the Pi with DRM.

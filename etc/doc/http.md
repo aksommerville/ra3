@@ -85,6 +85,8 @@ Use `detail="id"` or omit for a simple array of strings, or `detail="record"` to
 
 ## /api/game
 
+When `detail` is `"id"`, a Game is just an integer, the ID.
+
 ```
 game {
 
@@ -130,7 +132,27 @@ game {
 
 ## /api/comment
 
+```
+comment {
+  gameid: int; READONLY
+  time: string; READONLY
+  k: string; READONLY
+  v: string
+}
+```
+
+`k` is expected to be a small C identifier from some well-known set.
+TODO define that set.
+
 ## /api/play
+
+```
+play {
+  gameid: int; READONLY
+  time: string; READONLY
+  dur_m: int
+}
+```
 
 ## /api/launcher
 
@@ -146,6 +168,16 @@ launcher {
 ```
 
 ## /api/list
+
+```
+list {
+  listid: int
+  name: string; Loose and mutable, but can be used for querying so try to keep it simple.
+  desc: string
+  sorted: boolean
+  games: Game[]
+}
+```
 
 ## /api/blob
 

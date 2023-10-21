@@ -165,6 +165,42 @@ h2 {
   color: #000;
 }
 
+.DbTableUi pre.record {
+  cursor: pointer;
+  margin: 0;
+}
+.DbTableUi pre.record:nth-child(even) {
+  background-color: #ddd;
+}
+.DbTableUi pre.record:nth-child(odd) {
+  background-color: #bbb;
+}
+.DbTableUi pre.record:hover {
+  background-color: #ff0;
+}
+
+.DbRecordModal {
+  min-width: 60vw;
+}
+
+.DbRecordModal table {
+  width: 100%;
+}
+
+.DbRecordModal .key {
+  text-align: right;
+}
+
+.DbRecordModal table input {
+  width: 100%;
+}
+
+.DbRecordModal .buttonsRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
 /* AdminUi.
  *****************************************************/
  

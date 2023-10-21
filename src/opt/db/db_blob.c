@@ -75,6 +75,10 @@ int db_blob_for_each(
   char path[1024];
   int pathc=snprintf(path,sizeof(path),"%.*s%cblob",db->rootc,db->root,sep);
   if ((pathc<1)||(pathc>=sizeof(path))) return -1;
+  if (!file_get_type(path)) {
+    // Blob buckets directory is missing or unreadable -- not an error, just means "no blobs".
+    return 0;
+  }
   struct db_blob_ctx ctx={
     .include_invalid=include_invalid,
     .cb=cb,

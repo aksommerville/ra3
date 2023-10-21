@@ -3,24 +3,22 @@
  
 import { Dom } from "../Dom.js";
 import { Comm } from "../Comm.js";
-import { DbLauncherModal } from "./DbLauncherModal.js";
-import { DbListModal } from "./DbListModal.js";
-import { DbGameModal } from "./DbGameModal.js";
-import { DbCommentModal } from "./DbCommentModal.js";
-import { DbPlayModal } from "./DbPlayModal.js";
-import { DbBlobModal } from "./DbBlobModal.js";
+import { DbService } from "../model/DbService.js";
+import { DbRecordModal } from "./DbRecordModal.js";
 
 export class DbTableUi {
   static getDependencies() {
-    return [HTMLElement, Dom, Comm, Window];
+    return [HTMLElement, Dom, Comm, Window, DbService];
   }
-  constructor(element, dom, comm, window) {
+  constructor(element, dom, comm, window, dbService) {
     this.element = element;
     this.dom = dom;
     this.comm = comm;
     this.window = window;
+    this.dbService = dbService;
     
     this.name = "";
+    this.schema = null;
     this.records = [];
     
     this.buildUi();
@@ -28,6 +26,7 @@ export class DbTableUi {
   
   setTable(name) {
     this.name = name;
+    this.schema = this.dbService.getTableSchema(this.name);
     this.element.querySelector(".name").innerText = this.name;
     this.refreshCount();
   }
@@ -46,9 +45,8 @@ export class DbTableUi {
   rebuildRecordList() {
     const panel = this.element.querySelector(".togglePanel");
     panel.innerHTML = "";
-    const modalClass = this.getModalClass();
     for (const record of this.records) {
-      const text = modalClass ? modalClass.reprRecordForList(record) : JSON.stringify(record);
+      const text = this.dbService.reprRecordForList(this.name, record);
       this.dom.spawn(panel, "PRE", ["record"], text, { "on-click": () => this.onEdit(record) });
     }
   }
@@ -81,56 +79,32 @@ export class DbTableUi {
   
   onNew() {
     this.forceOpen(true);
-    const modalClass = this.getModalClass();
-    if (!modalClass) return;
-    const modal = this.dom.spawnModal(modalClass);
-    modal.setupNew();
+    const modal = this.dom.spawnModal(DbRecordModal);
+    modal.setupNew(this.name, this.schema);
     modal.onSave = record => this.insertRecord(record);
+    modal.onDelete = record => this.deleteRecord(record);
   }
   
   onEdit(record) {
-    const modalClass = this.getModalClass();
-    if (!modalClass) return;
-    const modal = this.dom.spawnModal(modalClass);
-    modal.setupEdit(record);
+    const modal = this.dom.spawnModal(DbRecordModal);
+    modal.setupEdit(this.name, this.schema, record);
     modal.onSave = record => this.updateRecord(record);
-  }
-  
-  getModalClass() {
-    switch (this.name) {
-      case "launcher": return DbLauncherModal;
-      case "list": return DbListModal;
-      case "game": return DbGameModal;
-      case "comment": return DbCommentModal;
-      case "play": return DbPlayModal;
-      case "blob": return DbBlobModal;
-    }
-    return null;
+    modal.onDelete = record => this.deleteRecord(record);
   }
   
   refreshCount() {
-    // Blobs don't and shouldn't have a "count" endpoint; the backend scans for them every time, so one might as well just get all.
-    if (this.name === "blob") return Promise.resolve(null);
-    return this.comm.httpJson("GET", `/api/${this.name}/count`).then(count => {
-      this.element.querySelector(".name").innerText = `${this.name} (${count})`;
+    return this.dbService.fetchTableLength(this.name).then(c => {
+      if (typeof(c) === "number") {
+        this.element.querySelector(".name").innerText = `${this.name} (${c})`;
+      }
     }).catch(e => {
       this.window.console.error(`Error fetching ${this.name} count.`, e);
     });
   }
   
   refreshRecords() {
-    let httpCall;
-    if (this.name === "blob") {
-      httpCall = this.comm.httpJson("GET", "/api/blob/all");
-    } else {
-      httpCall = this.comm.httpJson("GET", `/api/${this.name}`, { index: 0, count: 999999, detail: "id" });
-    }
-    httpCall.then(rsp => {
-      if (rsp instanceof Array) {
-        this.records = rsp;
-      } else {
-        this.records = [];
-      }
+    return this.dbService.fetchRecords(this.name).then(rv => {
+      this.records = rv;
       this.rebuildRecordList();
     }).catch(e => {
       this.window.console.error(`DbTableUi ${this.name} error`, e);
@@ -138,19 +112,19 @@ export class DbTableUi {
   }
   
   insertRecord(record) {
-    console.log(`TODO DbTableUi ${this.name} insertRecord`, record);
-    //TODO probly wrong for blobs. figure it out when we make the blob modal
-    return this.comm.httpJson("PUT", `/api/${this.name}`, null, null, JSON.stringify(record)).then(rsp => {
-      console.log(`insert ok`, rsp);
-      return rsp;
-    });
+    return this.dbService.insertRecord(this.name, record)
+      .then(() => this.refreshCount())
+      .then(() => this.refreshRecords());
   }
   
   updateRecord(record) {
-    console.log(`TODO DbTableUi ${this.name} updateRecord`, record);
-    return this.comm.httpJson("PUT", `/api/${this.name}`, null, null, JSON.stringify(record)).then(rsp => {
-      console.log(`update ok`, rsp);
-      return rsp;
-    });
+    return this.dbService.updateRecord(this.name, record)
+      .then(() => this.refreshRecords());
+  }
+  
+  deleteRecord(record) {
+    return this.dbService.deleteRecord(this.name, record)
+      .then(() => this.refreshCount())
+      .then(() => this.refreshRecords());
   }
 }

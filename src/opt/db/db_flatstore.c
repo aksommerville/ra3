@@ -105,7 +105,7 @@ void *db_flatstore_insert3(struct db_flatstore *store,int p,uint32_t k0,uint32_t
 void db_flatstore_remove(struct db_flatstore *store,int p,int c) {
   if ((p<0)||(c<0)||(p>store->c-c)) return;
   store->c-=c;
-  char *lo=(char*)store->v+p+store->objlen;
+  char *lo=(char*)store->v+p*store->objlen;
   char *hi=lo+c*store->objlen;
   memmove(lo,hi,store->objlen*(store->c-p));
   store->dirty=1;

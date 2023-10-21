@@ -112,7 +112,10 @@ export class DbService {
       case "launcher": return `${record.launcherid}: ${record.name}`;
       case "list": return `${record.listid}: ${record.name}`;
       case "game": return `${record.gameid}: ${record.name}`;
-      case "comment": return `${record.gameid}@${record.time} ${JSON.stringify(record.k)}`;
+      case "comment": {
+          if (record.v?.length < 100) return `${record.gameid}@${record.time} ${JSON.stringify(record.k)} = ${JSON.stringify(record.v)}`;
+          return `${record.gameid}@${record.time} ${JSON.stringify(record.k)} (long content)`;
+        }
       case "play": return `${record.gameid}@${record.time}: ${record.dur_m} min`;
       case "blob": return record;
     }

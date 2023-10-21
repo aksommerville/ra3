@@ -66,6 +66,7 @@ export class DbRecordModal {
     } else if (this.schema) {
       for (const k of Object.keys(this.schema)) {
         let v = this.record[k];
+        if (!v && (v !== 0)) v = "";
         
         if ((this.tableName === "list") && (k === "games")) {
           v = this.reprListGames(v);

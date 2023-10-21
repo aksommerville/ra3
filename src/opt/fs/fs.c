@@ -83,7 +83,7 @@ int dir_read(const char *path,int (*cb)(const char *path,const char *base,char t
     if ((base[0]=='.')||!base[0]) continue;
     int basec=0;
     while (base[basec]) basec++;
-    if (pathc>=sizeof(path)-basec) {
+    if (pathc>=sizeof(subpath)-basec) {
       closedir(dir);
       return -1;
     }
@@ -96,7 +96,7 @@ int dir_read(const char *path,int (*cb)(const char *path,const char *base,char t
       default: type='?';
     }
     
-    int err=cb(path,base,type,userdata);
+    int err=cb(subpath,base,type,userdata);
     if (err) {
       closedir(dir);
       return err;

@@ -18,7 +18,7 @@ h2 {
 
 .modalBlotter {
   z-index: 100;
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
   width: 100vw;
@@ -28,7 +28,7 @@ h2 {
 }
 
 .modalContainer {
-  position: absolute;
+  position: fixed;
   z-index: 101;
   left: 0;
   top: 0;
@@ -153,6 +153,16 @@ h2 {
 
 .DbTableUi > .card > .header > .spacer {
   flex: 1;
+}
+
+.DbTableUi > .card > .header > .pager {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.DbTableUi > .card > .header > .pager > .text {
+  margin: 0 1em;
 }
 
 .DbTableUi input.openToggle {

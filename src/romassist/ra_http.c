@@ -509,7 +509,9 @@ static int ra_http_put_launcher(struct http_xfer *req,struct http_xfer *rsp) {
   if (db_launcher_decode(&scratch,ra.db,DB_FORMAT_json,src,srcc)<0) return http_xfer_set_status(rsp,400,"Malformed launcher");
   const struct db_launcher *launcher=db_launcher_insert(ra.db,&scratch);
   if (!launcher) {
-    if (db_launcher_get_by_id(ra.db,scratch.launcherid)) return http_xfer_set_status(rsp,400,"Launcherid %d in use",scratch.launcherid);
+    if (db_launcher_get_by_id(ra.db,scratch.launcherid)) {
+      return http_xfer_set_status(rsp,400,"Launcherid %d in use",scratch.launcherid);
+    }
     return -1;
   }
   return db_launcher_encode(http_xfer_get_body_encoder(rsp),ra.db,launcher,DB_FORMAT_json,DB_DETAIL_record);
@@ -806,6 +808,20 @@ static int ra_http_terminate(struct http_xfer *req,struct http_xfer *rsp) {
   //TODO Terminate running game, and db_play_finish
   return http_xfer_set_status(rsp,500,"TODO %s",__func__);//TODO
 }
+
+/* Log call. We only log after the fact. Could be a problem if you want to trace servlet failures?
+ */
+ 
+static void ra_http_log_response(struct http_xfer *req,struct http_xfer *rsp) {
+  const char *method=http_method_repr(http_xfer_get_method(req));
+  const char *rpath=0;
+  int rpathc=http_xfer_get_path(&rpath,req);
+  int status=http_xfer_get_status(rsp);
+  const void *dummy=0;
+  int reqbodyc=http_xfer_get_body(&dummy,req);
+  int rspbodyc=http_xfer_get_body(&dummy,rsp);
+  fprintf(stderr,"%s %.*s <= %d b => %d, %d b\n",method,rpathc,rpath,reqbodyc,status,rspbodyc);
+}
   
 /* REST calls, wrapper.
  * So I don't have to bugger around with Status and Content-Type in each handler.
@@ -819,8 +835,11 @@ static int ra_http_wrap_call(int (*servlet)(struct http_xfer *req,struct http_xf
     if (http_xfer_get_header(0,rsp,"Content-Type",12)<1) {
       http_xfer_set_header(rsp,"Content-Type",12,"application/json",16);
     }
-    http_xfer_set_status(rsp,200,"OK");
+    if (!http_xfer_get_status(rsp)) {
+      http_xfer_set_status(rsp,200,"OK");
+    }
   }
+  ra_http_log_response(req,rsp);
   return 0;
 }
 

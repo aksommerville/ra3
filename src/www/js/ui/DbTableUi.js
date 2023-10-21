@@ -17,9 +17,14 @@ export class DbTableUi {
     this.window = window;
     this.dbService = dbService;
     
+    this.PAGE_SIZE = 20;
+    
     this.name = "";
     this.schema = null;
     this.records = [];
+    this.recordsPaged = [];
+    this.pagep = 1; // one-based, as we display to user
+    this.pagec = 1;
     
     this.buildUi();
   }
@@ -36,19 +41,42 @@ export class DbTableUi {
     const card = this.dom.spawn(this.element, "DIV", ["card"]);
     const header = this.dom.spawn(card, "DIV", ["header"]);
     this.dom.spawn(header, "H2", ["name"]);
-    this.dom.spawn(header, "DIV", ["spacer"]);
+    this.dom.spawn(header, "DIV", ["spacer", "pager"]);
     this.dom.spawn(header, "INPUT", ["new"], { type: "button", value: "New", "on-click": () => this.onNew() });
     this.dom.spawn(header, "INPUT", ["openToggle"], { type: "button", value: "Open", "on-click": () => this.toggleOpen() });
     this.dom.spawn(card, "DIV", ["togglePanel", "hidden"]);
   }
   
   rebuildRecordList() {
+  
+    this.pagec = Math.ceil(this.records.length / this.PAGE_SIZE);
+    if (this.pagep > this.pagec) this.pagep = this.pagec;
+    const pager = this.element.querySelector(".pager");
+    pager.innerHTML = "";
+    if (this.pagec <= 1) {
+      this.dom.spawn(pager, "DIV", `Showing all ${this.records.length} records.`);
+      this.recordsPaged = this.records;
+    } else {
+      this.dom.spawn(pager, "INPUT", { type: "button", value: "<", "on-click": () => this.changePage(-1) });
+      this.dom.spawn(pager, "DIV", ["text"], `Page ${this.pagep} of ${this.pagec}`);
+      this.dom.spawn(pager, "INPUT", { type: "button", value: ">", "on-click": () => this.changePage(1) });
+      this.recordsPaged = this.records.slice((this.pagep - 1) * this.PAGE_SIZE, this.pagep * this.PAGE_SIZE);
+    }
+  
     const panel = this.element.querySelector(".togglePanel");
     panel.innerHTML = "";
-    for (const record of this.records) {
+    for (const record of this.recordsPaged) {
       const text = this.dbService.reprRecordForList(this.name, record);
       this.dom.spawn(panel, "PRE", ["record"], text, { "on-click": () => this.onEdit(record) });
     }
+  }
+  
+  changePage(d) {
+    const np = this.pagep + d;
+    if (np < 1) this.pagep = 1;
+    else if (np > this.pagec) this.pagep = this.pagec;
+    else this.pagep = np;
+    this.rebuildRecordList();
   }
   
   toggleOpen() {

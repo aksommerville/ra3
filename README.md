@@ -25,17 +25,20 @@ Ditto for all the HTTP interfaces.
 - [ ] db: Must cache blob list, at least for large game queries. (otherwise each file will re-read the blob directories from scratch).
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
+- [ ] db: Pick a random game from within the query.
 - [ ] Menu
 - [ ] Web
-- - [ ] Straight DB view
+- - [x] Straight DB view
 - - [ ] Search
 - - [ ] Game details
 - - [ ] Lists
-- - [ ] Admin / Now Playing
+- - [ ] Admin
+- - [ ] Now Playing
 - [ ] Integrate emulators
 - - [ ] akfceu
 - - [ ] aksnes9x
 - - [ ] akgambatte
+- - - [ ] Ensure ".sav" files go somewhere outside the roms dir.
 - - [ ] akprosys
 - - [ ] Stella
 - - [ ] Super Cassette Vision?
@@ -45,6 +48,7 @@ Ditto for all the HTTP interfaces.
 - - [ ] Pico-8. No integration, but do get it running on the Pi with DRM.
 - - [ ] Solarus, try again.
 - [ ] Prepare collection
-- - [ ] Full set of ROMs. Eliminate duplicates, faulty, and obscene.
+- - [x] Bulk import, include all ROMs, and metadata from ra2 if available.
+- - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".

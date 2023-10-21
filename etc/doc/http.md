@@ -15,24 +15,24 @@ GET /api/meta/author?detail => [name...] (detail="id", default) or [{v,c}...] (d
 GET /api/meta/genre?detail => [name...] (detail="id", default) or [{v,c}...] (detail="record")
 
 GET /api/game/count => integer
-GET /api/game?index&count => Game[]
-GET /api/game?id&detail => Game
-PUT /api/game?id&detail <= Game => Game
-PATCH /api/game?id&detail <= Game => Game (must exist)
-DELETE /api/game?id => nothing
+GET /api/game?index&count&detail => Game[]
+GET /api/game?gameid&detail => Game
+PUT /api/game?detail <= Game => Game
+PATCH /api/game?detail <= Game => Game (must exist)
+DELETE /api/game?gameid => nothing
 
 GET /api/comment/count => integer
 GET /api/comment?index&count => Comment[]
-GET /api/comment?gameid&time&k => Comment[] (normal to omit time and k)
-PUT /api/comment?gameid&k&v => Comment
-PATCH /api/comment?gameid&time&k&v  => Comment (must exist)
+GET /api/comment?gameid&time&k => Comment[] (time is minimum, k is exact; normal to omit time and k)
+PUT /api/comment <= Comment => Comment
+PATCH /api/comment <= Comment  => Comment (must exist)
 DELETE /api/comment?gameid&time&k => nothing
 
 GET /api/play/count => integer
 GET /api/play?index&count => Play[]
 GET /api/play?gameid&since => Play[]
-PUT /api/play?gameid&dur => Play (always new)
-PATCH /api/play?gameid&time&dur => Play (must exist. unusual. prefer POST /api/play/terminate)
+PUT /api/play <= Play => Play (always new)
+PATCH /api/play <= Play => Play (must exist. unusual. prefer POST /api/play/terminate)
 POST /api/play/terminate?gameid => Play (must exist)
 DELETE /api/play?gameid&time => nothing
 
@@ -48,8 +48,8 @@ GET /api/list/count => integer
 GET /api/list?index&count&detail => List[]
 GET /api/list?listid&detail => List
 GET /api/list?gameid&detail => List[] (those including gameid)
-PUT /api/list?listid&detail <= List => List (always new)
-PATCH /api/list?listid&detail <= List => List (must exist. if "games" present, they replace the whole array)
+PUT /api/list?detail <= List => List (always new)
+PATCH /api/list?detail <= List => List (must exist. if "games" present, they replace the whole array)
 DELETE /api/list?listid => nothing
 POST /api/list/add?listid&gameid&detail => List
 POST /api/list/remove?listid&gameid&detail => List
@@ -62,9 +62,17 @@ DELETE /api/blob?path => nothing
 
 POST /api/query?text&list&platform&author&genre&flags&notflags&rating&pubtime&detail&limit&page&sort => Game[]
 
-POST /api/launch?gameid => nothing
+POST /api/launch?gameid => Play
 POST /api/terminate => nothing
 ```
+
+Some general rules:
+
+- Request and response bodies are JSON, with a few obvious exceptions like blob content.
+- Missing fields are equivalent to zero, empty string, empty array, etc.
+- Integers are unsigned unless noted. (i think they're all unsigned...)
+- Timestamps are ISO 8601. The database internally only records down to the minute.
+- We automatically convert between strings, numbers, and booleans. Stated types are what we return.
 
 ## /api/meta
 
@@ -77,6 +85,49 @@ Use `detail="id"` or omit for a simple array of strings, or `detail="record"` to
 
 ## /api/game
 
+```
+game {
+
+// detail>=name:
+  gameid: int
+  name: string
+  
+// detail>=record:
+  platform: string
+  author: string
+  genre: string
+  flags: string; space-delimited list of flag names
+  rating: int; conventionally 0..99, with 0 meaning unset
+  pubtime: string
+  path: string
+  
+// Everything below this point is ignored as input.
+  
+// detail>=comments:
+  comments: [{
+    time: string
+    k: string
+    v: string
+  }...]
+  
+// detail>=plays:
+  plays: [{
+    time: string
+    dur_m: string
+  }...]
+  
+// detail>=lists:
+  lists: [{
+    listid: int
+    name: string
+  }...]
+  
+// detail>=blobs:
+  blobs: string[]; paths
+  
+}
+```
+
 ## /api/comment
 
 ## /api/play
@@ -85,7 +136,7 @@ Use `detail="id"` or omit for a simple array of strings, or `detail="record"` to
 
 ```
 launcher {
-  id: int
+  launcherid: int
   name: string; specific to this launcher, eg "akfceu"
   platform: string; for matching games, eg "nes"
   suffixes: string; comma-delimited list of path suffixes
@@ -120,6 +171,7 @@ There are three different ways to search, which can be combined in one request:
 We don't provide a general query language, that would be overkill.
 So some things like union-of-lists, we can't do.
 Either make a broader query than needed and filter on your end, or add an HTTP endpoint and call `db_query_generic()`.
+If you provide no criteria, every game matches.
 
 After filtering, we can sort, paginate, and format to taste:
 
@@ -134,7 +186,7 @@ The HTTP response will include a header `X-Page-Count` when paginated.
 
 Launches a game.
 Any game in progress will be terminated first.
-A new `play` record will be added.
+A new `play` record will be added and returned.
 
 Or `/api/terminate` to stop whatever game is in progress and return to the menu.
 The menu itself does not terminate on this, though it technically could.

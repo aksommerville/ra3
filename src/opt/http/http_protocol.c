@@ -19,11 +19,11 @@ int http_socket_encode_xfer(struct http_socket *socket,struct http_xfer *xfer) {
   for (;i-->0;entry++) {
     if (http_socket_wbuf_appendf(socket,"%.*s: %.*s\r\n",entry->kc,entry->k,entry->vc,entry->v)<0) return -1;
   }
-  if (xfer->bodyc||(xfer==socket->rsp)) {
-    if (http_socket_wbuf_appendf(socket,"Content-Length: %d\r\n",xfer->bodyc)<0) return -1;
+  if (xfer->body.c||(xfer==socket->rsp)) {
+    if (http_socket_wbuf_appendf(socket,"Content-Length: %d\r\n",xfer->body.c)<0) return -1;
   }
   if (http_socket_wbuf_append(socket,"\r\n",2)<0) return -1;
-  if (http_socket_wbuf_append(socket,xfer->body,xfer->bodyc)<0) return -1;
+  if (http_socket_wbuf_append(socket,xfer->body.v,xfer->body.c)<0) return -1;
   xfer->state=HTTP_XFER_STATE_SEND;
   return 0;
 }
@@ -90,7 +90,7 @@ static int http_xfer_received(struct http_socket *socket,struct http_xfer *xfer)
     if (!(socket->rsp=http_xfer_new(socket->context))) return -1;
     if (listener->cb_serve(xfer,socket->rsp,listener->userdata)<0) {
       http_dict_clear(&socket->rsp->headers);
-      socket->rsp->bodyc=0;
+      socket->rsp->body.c=0;
       if (http_xfer_set_line(socket->rsp,"HTTP/1.1 500 Internal error",-1)<0) return -1;
       return http_socket_encode_xfer(socket,socket->rsp);
     }

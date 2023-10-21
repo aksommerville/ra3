@@ -10,7 +10,7 @@ void http_xfer_del(struct http_xfer *xfer) {
   
   if (xfer->line) free(xfer->line);
   http_dict_cleanup(&xfer->headers);
-  if (xfer->body) free(xfer->body);
+  sr_encoder_cleanup(&xfer->body);
   
   free(xfer);
 }
@@ -166,7 +166,7 @@ int http_xfer_for_query(const struct http_xfer *xfer,int (*cb)(const char *k,int
   const char *ct=0;
   int ctc=http_xfer_get_header(&ct,xfer,"Content-Type",12);
   if ((ctc==33)&&!memcmp(ct,"application/x-www-form-urlencoded",33)) {
-    if (err=http_for_query_text(xfer->body,xfer->bodyc,cb,userdata)) return err;
+    if (err=http_for_query_text(xfer->body.v,xfer->body.c,cb,userdata)) return err;
   }
   return 0;
 }
@@ -232,40 +232,19 @@ int http_xfer_set_header(struct http_xfer *xfer,const char *k,int kc,const char 
  */
  
 int http_xfer_get_body(void *dstpp,const struct http_xfer *xfer) {
-  if (dstpp) *(void**)dstpp=xfer->body;
-  return xfer->bodyc;
+  if (dstpp) *(void**)dstpp=xfer->body.v;
+  return xfer->body.c;
 }
  
 int http_xfer_set_body(struct http_xfer *xfer,const void *src,int srcc) {
   if ((srcc<0)||(srcc&&!src)) return -1;
-  void *nv=0;
-  if (srcc) {
-    if (!(nv=malloc(srcc))) return -1;
-    memcpy(nv,src,srcc);
-  }
-  if (xfer->body) free(xfer->body);
-  xfer->body=nv;
-  xfer->bodyc=srcc;
-  xfer->bodya=srcc;
-  return 0;
+  xfer->body.c=0;
+  return sr_encode_raw(&xfer->body,src,srcc);
 }
 
  
 int http_xfer_append_body(struct http_xfer *xfer,const void *src,int srcc) {
-  if ((srcc<0)||(srcc&&!src)) return -1;
-  if (xfer->bodyc>INT_MAX-srcc) return -1;
-  int na=xfer->bodyc+srcc;
-  if (na>xfer->bodya) {
-    if (na>INT_MAX-1024) return -1;
-    na=(na+1024)&~1023;
-    void *nv=realloc(xfer->body,na);
-    if (!nv) return -1;
-    xfer->body=nv;
-    xfer->bodya=na;
-  }
-  memcpy(xfer->body+xfer->bodyc,src,srcc);
-  xfer->bodyc+=srcc;
-  return 0;
+  return sr_encode_raw(&xfer->body,src,srcc);
 }
 
 int http_xfer_append_bodyf(struct http_xfer *xfer,const char *fmt,...) {
@@ -274,17 +253,16 @@ int http_xfer_append_bodyf(struct http_xfer *xfer,const char *fmt,...) {
   while (1) {
     va_list vargs;
     va_start(vargs,fmt);
-    int err=vsnprintf(xfer->body+xfer->bodyc,xfer->bodya-xfer->bodyc,fmt,vargs);
+    int err=vsnprintf(xfer->body.v+xfer->body.c,xfer->body.a-xfer->body.c,fmt,vargs);
     if ((err<0)||(err>=INT_MAX)) return -1;
-    if (xfer->bodyc<xfer->bodya-err) {
-      xfer->bodyc+=err;
+    if (xfer->body.c<xfer->body.a-err) {
+      xfer->body.c+=err;
       return 0;
     }
-    int na=xfer->bodyc+err+1;
-    if (na<INT_MAX-1024) na=(na+1024)&~1023;
-    void *nv=realloc(xfer->body,na);
-    if (!nv) return -1;
-    xfer->body=nv;
-    xfer->bodya=na;
+    if (sr_encoder_require(&xfer->body,err+1)<0) return -1;
   }
+}
+
+struct sr_encoder *http_xfer_get_body_encoder(struct http_xfer *xfer) {
+  return &xfer->body;
 }

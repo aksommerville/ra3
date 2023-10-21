@@ -128,162 +128,53 @@ struct db_list *db_list_everything(const struct db *db) {
   return list;
 }
 
-/* Insert new list.
+/* Insert.
  */
  
-struct db_list *db_list_insert(struct db *db,uint32_t listid) {
+struct db_list *db_list_insert(struct db *db,const struct db_list *list) {
+  uint32_t listid=list->listid;
   if (!listid) listid=db_liststore_next_id(&db->lists);
   int p=db_liststore_search(&db->lists,listid);
   if (p>=0) return 0;
   p=-p-1;
-  struct db_list *list=db_liststore_insert(&db->lists,p,listid);
-  if (!list) return 0;
-  db->lists.dirty=1;
+  struct db_list *real=db_liststore_insert(&db->lists,p,listid);
+  if (!real) return 0;
+  real->name=list->name;
+  real->desc=list->desc;
+  real->sorted=list->sorted;
+  if (list->gameidc>0) {
+    if (!(real->gameidv=malloc(sizeof(uint32_t)*list->gameidc))) {
+      db_liststore_remove(&db->lists,p);
+      return 0;
+    }
+    memcpy(real->gameidv,list->gameidv,sizeof(uint32_t)*list->gameidc);
+    real->gameidc=real->gameida=list->gameidc;
+  }
   db->dirty=1;
-  return list;
+  return real;
 }
 
-/* Decode gameid from a JSON array.
- * It's either a straight integer, or an object containing "id".
+/* Update.
  */
  
-static int db_decode_gameid_from_json(uint32_t *dst,struct sr_decoder *decoder) {
-  if (sr_decode_json_peek(decoder)=='#') {
-    int n=0;
-    if (sr_decode_json_int(&n,decoder)<0) return -1;
-    *dst=n;
-    return 0;
+struct db_list *db_list_update(struct db *db,const struct db_list *list) {
+  int p=db_liststore_search(&db->lists,list->listid);
+  if (p<0) return 0;
+  struct db_list *real=db->lists.v[p];
+  if (list->gameidc>real->gameida) {
+    void *nv=realloc(real->gameidv,sizeof(uint32_t)*list->gameidc);
+    if (!nv) return 0;
+    real->gameidv=nv;
+    real->gameida=list->gameidc;
   }
-  int jsonctx=sr_decode_json_object_start(decoder);
-  if (jsonctx<0) return -1;
-  const char *k;
-  int kc,id=0;
-  while ((kc=sr_decode_json_next(&k,decoder))>0) {
-    if (id||(kc!=2)||memcmp(k,"id",2)) {
-      if (sr_decode_json_skip(decoder)<0) return -1;
-    } else {
-      if (sr_decode_json_int(&id,decoder)<0) return -1;
-      if (!id) return -1;
-    }
-  }
-  if (sr_decode_json_end(decoder,jsonctx)<0) return -1;
-  if (!id) return -1;
-  *dst=id;
-  return 0;
-}
-
-/* Patch from JSON.
- */
- 
-int db_list_patch_json(struct db *db,struct db_list *list,const char *src,int srcc) {
-  struct sr_decoder decoder={.v=src,.c=srcc};
-  int jsonctx=sr_decode_json_object_start(&decoder);
-  if (jsonctx<0) return -1;
-  struct db_list incoming={0},mask={0};
-  struct sr_decoder dgames={0};
-  const char *k=0;
-  int kc;
-  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
-  
-    if ((kc==2)&&!memcmp(k,"id",2)) {
-      int id;
-      if (sr_decode_json_int(&id,&decoder)<0) return -1;
-      if (list&&list->listid&&(list->listid!=id)) return -1;
-      incoming.listid=id;
-      mask.listid=1;
-      continue;
-    }
-    
-    if ((kc==4)&&!memcmp(k,"name",4)) {
-      if (db_decode_json_string(&incoming.name,db,&decoder)<0) return -1;
-      mask.name=1;
-      continue;
-    }
-    
-    if ((kc==4)&&!memcmp(k,"desc",4)) {
-      if (db_decode_json_string(&incoming.desc,db,&decoder)<0) return -1;
-      mask.desc=1;
-      continue;
-    }
-    
-    if ((kc==6)&&!memcmp(k,"sorted",6)) {
-      int v=sr_decode_json_boolean(&decoder);
-      if (v<0) return -1;
-      incoming.sorted=v;
-      mask.sorted=1;
-      continue;
-    }
-    
-    if ((kc==5)&&!memcmp(k,"games",5)) {
-      dgames=decoder;
-      if (sr_decode_json_skip(&decoder)<0) return -1;
-      mask.gameidc=1;
-      continue;
-    }
-  
-    // Ignore unknown field.
-    if (sr_decode_json_skip(&decoder)<0) return -1;
-  }
-  if (sr_decode_json_end(&decoder,jsonctx)<0) return -1;
-  
-  /* If games present, process them now, into (incoming).
-   */
-  if (mask.gameidc) {
-    if ((jsonctx=sr_decode_json_array_start(&dgames))<0) return -1;
-    while (sr_decode_json_next(0,&dgames)>0) {
-      uint32_t gameid=0;
-      if (
-        (db_decode_gameid_from_json(&gameid,&dgames)<0)||
-        (db_list_append(db,&incoming,gameid)<0)
-      ) {
-        if (incoming.gameidv) free(incoming.gameidv);
-        return -1;
-      }
-    }
-    if (sr_decode_json_end(&dgames,jsonctx)<0) {
-      if (incoming.gameidv) free(incoming.gameidv);
-      return -1;
-    }
-  }
-  
-  /* List not provided, they are asking to create one.
-   */
-  if (!list) {
-    if (!(list=db_list_insert(db,incoming.listid))) {
-      if (incoming.gameidv) free(incoming.gameidv);
-      return -1;
-    }
-  }
-  
-  /* Transfer content.
-   */
-  if (mask.name) list->name=incoming.name;
-  if (mask.desc) list->desc=incoming.desc;
-  if (mask.sorted) list->sorted=incoming.sorted;
-  
-  if (mask.gameidc) {
-    if (incoming.gameidc>list->gameida) {
-      void *nv=malloc(sizeof(uint32_t)*incoming.gameidc);
-      if (!nv) {
-        if (incoming.gameidv) free(incoming.gameidv);
-        return -1;
-      }
-      if (list->gameidv) free(list->gameidv);
-      list->gameidv=nv;
-      list->gameida=incoming.gameida;
-    }
-    memcpy(list->gameidv,incoming.gameidv,sizeof(uint32_t)*incoming.gameidc);
-    list->gameidc=incoming.gameidc;
-    list->gamec=0;
-  }
-  
-  if (incoming.gameidv) free(incoming.gameidv);
-  
-  if (db&&list->listid) {
-    db->dirty=1;
-    db->lists.dirty=1;
-  }
-  return 0;
+  memcpy(real->gameidv,list->gameidv,sizeof(uint32_t)*list->gameidc);
+  real->gameidc=list->gameidc;
+  real->gamec=0;
+  real->name=list->name;
+  real->desc=list->desc;
+  real->sorted=list->sorted;
+  db->dirty=db->lists.dirty=1;
+  return real;
 }
 
 /* Set fields.
@@ -521,86 +412,4 @@ int db_list_gamev_populate(const struct db *db,struct db_list *list) {
   }
   list->gamec=list->gameidc;
   return 0;
-}
-
-/* Encode to JSON, games only.
- */
- 
-static int db_list_encode_array_json(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_list *list,
-  int detail
-) {
-  int listctx=sr_encode_json_array_start_no_setup(dst);
-  if (listctx<0) return -1;
-  const uint32_t *v=list->gameidv;
-  int i=list->gameidc;
-  if (detail==DB_DETAIL_id) {
-    for (;i-->0;v++) {
-      if (sr_encode_json_int(dst,0,0,*v)<0) return -1;
-    }
-  } else {
-    for (;i-->0;v++) {
-      const struct db_game *game=db_game_get_by_id(db,*v);
-      if (!game) return -1;
-      if (db_game_encode(dst,db,game,DB_FORMAT_json,detail)<0) return -1;
-    }
-  }
-  if (sr_encode_json_array_end(dst,listctx)<0) return -1;
-  return 0;
-}
-
-/* Encode to JSON with header.
- */
- 
-static int db_list_encode_json(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_list *list,
-  int detail
-) {
-  int jsonctx=sr_encode_json_object_start(dst,0,0);
-  if (jsonctx<0) return -1;
-  
-  if (sr_encode_json_int(dst,"id",2,list->listid)<0) return -1;
-  if (db_encode_json_string(dst,db,"name",4,list->name)<0) return -1;
-  if (db_encode_json_string(dst,db,"desc",4,list->desc)<0) return -1;
-  if (sr_encode_json_boolean(dst,"sorted",6,list->sorted)<0) return -1;
-  
-  if (sr_encode_json_setup(dst,"games",5)<0) return -1;
-  if (db_list_encode_array_json(dst,db,list,detail)<0) return -1;
-  
-  return sr_encode_json_object_end(dst,jsonctx);
-}
-
-/* Encode, dispatch on format.
- */
- 
-int db_list_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_list *list,
-  int format,
-  int detail
-) {
-  switch (format) {
-    case 0:
-    case DB_FORMAT_json: return db_list_encode_json(dst,db,list,detail);
-  }
-  return -1;
-}
- 
-int db_list_encode_array(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_list *list,
-  int format,
-  int detail
-) {
-  switch (format) {
-    case 0:
-    case DB_FORMAT_json: return db_list_encode_array_json(dst,db,list,detail);
-  }
-  return -1;
 }

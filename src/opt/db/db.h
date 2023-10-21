@@ -20,7 +20,7 @@ struct sr_decoder;
  * We'll surely support JSON. Other formats... maybe?
  */
 #define DB_FORMAT_json 1
-#define DB_FORMAT_ingame 2 /* JSON for substructures of game, a slightly reduced format. */
+#define DB_FORMAT_ingame 2 /* JSON for comment and play within a game, a slightly reduced format. Internal use, generally. */
 #define DB_FORMAT_FOR_EACH \
   _(json) \
   _(ingame)
@@ -32,8 +32,8 @@ struct sr_decoder;
 #define DB_DETAIL_name     2 /* {id,name} */
 #define DB_DETAIL_record   3 /* {id,name,platform,author,genre,flags,rating,pubtime,path}, everything in the main record. */
 #define DB_DETAIL_comments 4 /* record + {comments:[{time,k,v},...]} */
-#define DB_DETAIL_plays    5 /* comments + {plays:[{time,dur},...]} */
-#define DB_DETAIL_lists    6 /* plays + {lists:[{id,name},...]} */
+#define DB_DETAIL_plays    5 /* comments + {plays:[{time,dur_m},...]} */
+#define DB_DETAIL_lists    6 /* plays + {lists:[{listid,name},...]} */
 #define DB_DETAIL_blobs    6 /* lists + {blobs:[path...]} */
 #define DB_DETAIL_EVERYTHING DB_DETAIL_blobs
 #define DB_DETAIL_FOR_EACH \
@@ -113,7 +113,7 @@ uint32_t db_time_eval_upper(const char *src,int srcc);
 int db_time_repr(char *dst,int dsta,uint32_t dbtime);
 uint32_t db_time_pack(int year,int month,int day,int hour,int minute);
 int db_time_unpack(int *year,int *month,int *day,int *hour,int *minute,uint32_t dbtime);
-uint32_t db_time_advance(uint32_t from); // => lowest valid time > from
+uint32_t db_time_advance(uint32_t from); // => lowest valid time > from, 0 if overflowed
 uint32_t db_time_diff_m(uint32_t older,uint32_t newer); // => difference in minutes (result is not a time)
 
 /* Flags are 32 bits with hard-coded meanings, for each game.
@@ -185,19 +185,12 @@ struct db_game *db_game_get_by_id(const struct db *db,uint32_t gameid);
  */
 int db_game_delete(struct db *db,uint32_t gameid);
 
-/* (gameid) zero to choose any available one, that's recommended.
+/* Input is optional for insert. If you supply (gameid) it must not exist yet.
+ * Input is required for update, and (gameid) must exist.
+ * In both cases, you get the resident record back on success.
  */
-struct db_game *db_game_insert(struct db *db,uint32_t gameid);
-
-/* Update any fields in (game) from the encoded JSON object in (src).
- * Fields not named in (src) are left as is.
- * If (id) is present in both, it must match.
- * (game) may be null to insert.
- * We take pains to operate transactionally; on a failure (db) should remain untouched.
- * Dirty flags are updated as needed.
- * *** comments, plays, and blobs are ignored if present ***
- */
-struct db_game *db_game_patch_json(struct db *db,struct db_game *game,const char *src,int srcc);
+struct db_game *db_game_insert(struct db *db,const struct db_game *game);
+struct db_game *db_game_update(struct db *db,const struct db_game *game);
 
 /* Conveniences to modify content in the record.
  * Strongly recommend using these instead of writing directly.
@@ -216,16 +209,6 @@ int db_game_set_name(struct db *db,struct db_game *game,const char *src,int srcc
 void db_game_dirty(struct db *db,struct db_game *game);
 
 int db_game_get_path(char *dst,int dsta,const struct db *db,const struct db_game *game);
-
-/* Serialize this game, and depending on (detail), its comments, plays, and blob list too.
- */
-int db_game_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_game *game,
-  int format,
-  int detail
-);
 
 /* Comment table.
  * A comment is loose key=value data associated with one game.
@@ -249,28 +232,12 @@ int db_comments_get_by_gameid(struct db_comment **dst,const struct db *db,uint32
 int db_comment_delete(struct db *db,const struct db_comment *comment);
 int db_comment_delete_for_gameid(struct db *db,uint32_t gameid);
 
-/* Zero (time) to use current time.
- * (v) initially zero.
- */
-struct db_comment *db_comment_insert(struct db *db,uint32_t gameid,uint32_t time,uint32_t k);
-
-/* Add a comment from JSON-encoded content.
- * (src) must contain "gameid" and that game must exist.
- * This doesn't support updating existing records, since I expect that to be rare.
- * (Use db_comment_set_v if you need to).
- */
-int db_comment_insert_json(struct db *db,const char *src,int srcc);
+struct db_comment *db_comment_insert(struct db *db,const struct db_comment *comment);
+struct db_comment *db_comment_update(struct db *db,const struct db_comment *comment);
 
 int db_comment_set_v(struct db *db,struct db_comment *comment,const char *src,int srcc);
 
 void db_comment_dirty(struct db *db,struct db_comment *comment);
-
-int db_comment_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_comment *comment,
-  int format
-);
 
 /* Play table.
  * Each play record is one launch of the game.
@@ -291,9 +258,8 @@ int db_plays_get_by_gameid(struct db_play **dst,const struct db *db,uint32_t gam
 int db_play_delete(struct db *db,uint32_t gameid,uint32_t time);
 int db_play_delete_for_gameid(struct db *db,uint32_t gameid);
 
-/* Generate a new record at current time, with zero duration.
- */
-struct db_play *db_play_insert(struct db *db,uint32_t gameid);
+struct db_play *db_play_insert(struct db *db,const struct db_play *play);
+struct db_play *db_play_update(struct db *db,const struct db_play *play);
 
 /* If a play exists for this (gameid) with zero (dur_m), update it according to current time.
  * If that works out to less than a minute, clamp to 1.
@@ -303,13 +269,6 @@ struct db_play *db_play_finish(struct db *db,uint32_t gameid);
 int db_play_set_dur_m(struct db *db,struct db_play *play,uint32_t dur_m);
 
 void db_play_dirty(struct db *db,struct db_play *play);
-
-int db_play_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_play *play,
-  int format
-);
 
 /* Launcher table.
  * Record of one means of launching games.
@@ -335,16 +294,10 @@ struct db_launcher *db_launcher_get_by_id(const struct db *db,uint32_t launcheri
  */
 struct db_launcher *db_launcher_for_gameid(const struct db *db,uint32_t gameid);
 
-/* Normally (launcherid==0) for insert, we make one up.
- */
-struct db_launcher *db_launcher_insert(struct db *db,uint32_t launcherid);
 int db_launcher_delete(struct db *db,uint32_t launcherid);
 
-/* (launcher) may be null to create a new one.
- * If ID present in both, they must match.
- * Fields absent in the JSON are left as is.
- */
-int db_launcher_patch_json(struct db *db,struct db_launcher *launcher,const char *src,int srcc);
+struct db_launcher *db_launcher_insert(struct db *db,const struct db_launcher *launcher);
+struct db_launcher *db_launcher_update(struct db *db,const struct db_launcher *launcher);
 
 int db_launcher_set_name(struct db *db,struct db_launcher *launcher,const char *src,int srcc);
 int db_launcher_set_platform(struct db *db,struct db_launcher *launcher,const char *src,int srcc);
@@ -353,13 +306,6 @@ int db_launcher_set_cmd(struct db *db,struct db_launcher *launcher,const char *s
 int db_launcher_set_desc(struct db *db,struct db_launcher *launcher,const char *src,int srcc);
 
 void db_launcher_dirty(struct db *db,struct db_launcher *launcher);
-
-int db_launcher_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_launcher *launcher,
-  int format
-);
 
 /* List.
  * Lists are db records, and also serve as a utility type.
@@ -382,6 +328,9 @@ struct db_list {
  */
 void db_list_del(struct db_list *list);
 
+/* WARNING: Unlike all other records, you can't increment a list returned by index.
+ * If you want a range of lists by index, you must call individually for each.
+ */
 int db_list_count(const struct db *db);
 struct db_list *db_list_get_by_index(const struct db *db,int p);
 struct db_list *db_list_get_by_id(const struct db *db,uint32_t listid);
@@ -399,14 +348,10 @@ int db_list_delete(struct db *db,uint32_t listid);
 struct db_list *db_list_copy_nonresident(const struct db_list *src);
 struct db_list *db_list_copy_resident(struct db *db,const struct db_list *src);
 
-/* Normally (listid==0), we make one up.
+/* Updating replaces the entire gameid array.
  */
-struct db_list *db_list_insert(struct db *db,uint32_t listid);
-
-/* If input contains "games", this replaces the entire games list.
- * (meaning, it doesn't "patch" the array).
- */
-int db_list_patch_json(struct db *db,struct db_list *list,const char *src,int srcc);
+struct db_list *db_list_insert(struct db *db,const struct db_list *list);
+struct db_list *db_list_update(struct db *db,const struct db_list *list);
 
 int db_list_set_name(struct db *db,struct db_list *list,const char *src,int srcc);
 int db_list_set_desc(struct db *db,struct db_list *list,const char *src,int srcc);
@@ -447,25 +392,6 @@ int db_list_filter(
  */
 void db_list_gamev_drop(struct db_list *list);
 int db_list_gamev_populate(const struct db *db,struct db_list *list);
-
-/* Be mindful of (detail), you can cause an enormous amount of compute and serialize here.
- * For JSON format, produces {id,name,desc,sorted,games:[...]}.
- * If you only want the games, as an array, use db_list_encode_array() instead.
- */
-int db_list_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_list *list,
-  int format,
-  int detail
-);
-int db_list_encode_array(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_list *list,
-  int format,
-  int detail
-);
 
 /* Blobs.
  * Blobs are unlike other stores in that each record is a discrete file on disk.
@@ -528,11 +454,64 @@ int db_blob_validate_path(
 
 int db_blob_delete_for_gameid(struct db *db,uint32_t gameid);
 
+/* Encoding and decoding records.
+ **************************************************************************/
+
+/* Encode one record to a given format and detail level.
+ * db_list_encode_array() only encodes its game records; plain db_list_encode() includes the list's own header.
+ * The only format currently allowed is DB_FORMAT_json.
+ * Games are special, they may include content from other tables depending on (detail).
+ * All encode functions begin with a "no_setup" encoder call. If you're inside some other JSON structure, use sr_encode_json_setup() first.
+ */
+int db_game_encode(struct sr_encoder *dst,const struct db *db,const struct db_game *game,int format,int detail);
+int db_comment_encode(struct sr_encoder *dst,const struct db *db,const struct db_comment *comment,int format,int detail);
+int db_play_encode(struct sr_encoder *dst,const struct db *db,const struct db_play *play,int format,int detail);
+int db_launcher_encode(struct sr_encoder *dst,const struct db *db,const struct db_launcher *launcher,int format,int detail);
+int db_list_encode(struct sr_encoder *dst,const struct db *db,const struct db_list *list,int format,int detail);
+int db_list_encode_array(struct sr_encoder *dst,const struct db *db,const struct db_list *list,int format,int detail);
+
+/* Normally you decode to a nonresident scratch record.
+ * Beware that strings are interned against (db) as needed, at this time.
+ * But the record itself doesn't enter the database until you insert or update, presumably right after decode.
+ * When decoding JSON, we guarantee not to touch fields that aren't named in the input.
+ * Beware that we *will* decode primary keys just like any data field. If you're expecting a specific id, you must check after decoding.
+ * The external data in an encoded game (comments, plays, lists, blobs) is ignored on decode.
+ */
+int db_game_decode(struct db_game *game,struct db *db,int format,const void *src,int srcc);
+int db_comment_decode(struct db_comment *comment,struct db *db,int format,const void *src,int srcc);
+int db_play_decode(struct db_play *play,struct db *db,int format,const void *src,int srcc);
+int db_launcher_decode(struct db_launcher *launcher,struct db *db,int format,const void *src,int srcc);
+int db_list_decode(struct db_list *list,struct db *db,int format,const void *src,int srcc);
+int db_list_decode_array(struct db_list *list,struct db *db,int format,const void *src,int srcc);
+
 /* High-level queries.
  * Results come back in a new sorted non-resident list which you must delete.
  * Queries take an optional (src) list. If null, they operate against the entire DB.
  * We won't modify (src) lists, but will force (gamev) in them.
  ***************************************************************************/
+ 
+/* Extra high-level support for our HTTP service.
+ * Coordinates multiple query methods, pagination, encoding, the works.
+ * db_query_add_parameter() is carefully crafted to fit http_xfer_for_query() exactly.
+ * Search parameters:
+ *   text: Loose text search.
+ *   list: Restrict to this list ID or exact name. May provide more than once.
+ *   platform,author,genre: Exact string match against header. Empty is not valid, it will match all, as if unspecified.
+ *   flags,notflags: Comma-delimited list of flag names.
+ *   rating: "N" "..N" "N.." "N..N". It's weird to search for exactly one value.
+ *   pubtime: "T" "..T" "T.." "T..T"
+ * Formatting etc:
+ *   detail: eg "name", "record"
+ *   sort: TODO
+ *   limit: Maximum result count to return.
+ *   page: 1-based page number, if (limit) in play.
+ */
+struct db_query;
+void db_query_del(struct db_query *query);
+struct db_query *db_query_new(struct db *db);
+int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *query);
+int db_query_finish(struct sr_encoder *dst,struct db_query *query);
+int db_query_get_page_count(const struct db_query *query); // => 0 if pagination not requested
 
 /* Loose text.
  * Return anything that matches case-insensitively in name, basename, or comments.

@@ -152,6 +152,7 @@ uint32_t db_time_advance(uint32_t from) {
         if (++month>12) {
           month=1;
           year++;
+          if (year>=0x1000) return 0;
         }
       }
     }

@@ -89,20 +89,6 @@ struct db_launcher *db_launcher_get_by_id(const struct db *db,uint32_t launcheri
   return db_flatstore_get(&db->launchers,db_flatstore_search1(&db->launchers,launcherid));
 }
 
-/* New launcher.
- */
- 
-struct db_launcher *db_launcher_insert(struct db *db,uint32_t launcherid) {
-  if (!launcherid) launcherid=db_flatstore_next_id(&db->launchers);
-  int p=db_flatstore_search1(&db->launchers,launcherid);
-  if (p>=0) return 0;
-  p=-p-1;
-  struct db_launcher *launcher=db_flatstore_insert1(&db->launchers,p,launcherid);
-  if (!launcher) return 0;
-  db->dirty=1;
-  return launcher;
-}
-
 /* Delete launcher.
  */
  
@@ -114,72 +100,33 @@ int db_launcher_delete(struct db *db,uint32_t launcherid) {
   return 0;
 }
 
-/* Decode JSON into temporary record and visit list.
+/* Insert.
  */
- 
-static int db_launcher_decode_json(
-  struct db_launcher *dst,
-  struct db_launcher *mask,
-  struct db *db,
-  const char *src,int srcc
-) {
-  if (!src) srcc=0; else if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
-  struct sr_decoder decoder={.v=src,.c=srcc};
-  if (sr_decode_json_object_start(&decoder)<0) return -1;
-  const char *k;
-  int kc;
-  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
-  
-    if (
-      ((kc==2)&&!memcmp(k,"id",2))||
-      ((kc==10)&&!memcmp(k,"launcherid",10))
-    ) {
-      int n;
-      if (sr_decode_json_int(&n,&decoder)<0) return -1;
-      dst->launcherid=n;
-      mask->launcherid=1;
-      continue;
-    }
-    
-    #define STRFLD(tag) { \
-      if ((kc==sizeof(#tag)-1)&&!memcmp(k,#tag,kc)) { \
-        if (db_decode_json_string(&dst->tag,db,&decoder)<0) return -1; \
-        mask->tag=1; \
-        continue; \
-      } \
-    }
-    STRFLD(name)
-    STRFLD(platform)
-    STRFLD(suffixes)
-    STRFLD(cmd)
-    STRFLD(desc)
-    #undef STRFLD
-  
-    if (sr_decode_json_skip(&decoder)<0) return -1;
-  }
-  if (sr_decode_json_end(&decoder,0)<0) return -1;
-  return 0;
+
+struct db_launcher *db_launcher_insert(struct db *db,const struct db_launcher *launcher) {
+  uint32_t launcherid=launcher->launcherid;
+  if (!launcherid) launcherid=db_flatstore_next_id(&db->launchers);
+  int p=db_flatstore_search1(&db->launchers,launcherid);
+  if (p>=0) return 0;
+  p=-p-1;
+  struct db_launcher *real=db_flatstore_insert1(&db->launchers,p,launcherid);
+  if (!real) return 0;
+  memcpy(real,launcher,sizeof(struct db_launcher));
+  real->launcherid=launcherid;
+  db->dirty=1;
+  return real;
 }
 
-/* Patch from JSON.
+/* Update.
  */
- 
-int db_launcher_patch_json(struct db *db,struct db_launcher *launcher,const char *src,int srcc) {
-  struct db_launcher scratch={0},mask={0};
-  if (db_launcher_decode_json(&scratch,&mask,db,src,srcc)<0) return -1;
-  
-  if (!launcher) {
-    if (!(launcher=db_launcher_insert(db,scratch.launcherid))) return -1;
-  }
-  
-  if (mask.name) launcher->name=scratch.name;
-  if (mask.platform) launcher->platform=scratch.platform;
-  if (mask.suffixes) launcher->suffixes=scratch.suffixes;
-  if (mask.cmd) launcher->cmd=scratch.cmd;
-  if (mask.desc) launcher->desc=scratch.desc;
-  
-  db->launchers.dirty=db->dirty=1;
-  return 0;
+
+struct db_launcher *db_launcher_update(struct db *db,const struct db_launcher *launcher) {
+  int p=db_flatstore_search1(&db->launchers,launcher->launcherid);
+  if (p<0) return 0;
+  struct db_launcher *real=db_flatstore_get(&db->launchers,p);
+  memcpy(real,launcher,sizeof(struct db_launcher));
+  db->dirty=db->launchers.dirty=1;
+  return real;
 }
 
 /* Manual edit.
@@ -217,42 +164,4 @@ int db_launcher_set_desc(struct db *db,struct db_launcher *launcher,const char *
 
 void db_launcher_dirty(struct db *db,struct db_launcher *launcher) {
   db->launchers.dirty=db->dirty=1;
-}
-
-/* Encode JSON.
- */
- 
-static int db_launcher_encode_json(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_launcher *launcher
-) {
-  int jsonctx=sr_encode_json_object_start(dst,0,0);
-  if (jsonctx<0) return -1;
-  
-  if (sr_encode_json_int(dst,"id",2,launcher->launcherid)<0) return -1;
-  if (launcher->name&&(db_encode_json_string(dst,db,"name",4,launcher->name)<0)) return -1;
-  if (launcher->platform&&(db_encode_json_string(dst,db,"platform",8,launcher->platform)<0)) return -1;
-  if (launcher->suffixes&&(db_encode_json_string(dst,db,"suffixes",8,launcher->suffixes)<0)) return -1;
-  if (launcher->cmd&&(db_encode_json_string(dst,db,"cmd",3,launcher->cmd)<0)) return -1;
-  if (launcher->desc&&(db_encode_json_string(dst,db,"desc",4,launcher->desc)<0)) return -1;
-  
-  if (sr_encode_json_object_end(dst,jsonctx)<0) return -1;
-  return 0;
-}
-
-/* Encode, dispatch on format.
- */
- 
-int db_launcher_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_launcher *launcher,
-  int format
-) {
-  switch (format) {
-    case 0:
-    case DB_FORMAT_json: return db_launcher_encode_json(dst,db,launcher);
-  }
-  return -1;
 }

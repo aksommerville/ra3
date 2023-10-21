@@ -14,6 +14,7 @@ struct http_socket;
 struct http_listener;
 struct http_xfer; // request or response
 struct http_dict; // headers
+struct sr_encoder;
 
 #define HTTP_METHOD_GET       1
 #define HTTP_METHOD_POST      2
@@ -129,6 +130,7 @@ int http_xfer_set_status(struct http_xfer *xfer,int code,const char *fmt,...);
 int http_xfer_set_header(struct http_xfer *xfer,const char *k,int kc,const char *v,int vc);
 int http_xfer_append_body(struct http_xfer *xfer,const void *src,int srcc);
 int http_xfer_append_bodyf(struct http_xfer *xfer,const char *fmt,...);
+struct sr_encoder *http_xfer_get_body_encoder(struct http_xfer *xfer);
 
 /* Normally, a listener fills its response synchronously.
  * If you need to delay, eg to make a callout of your own, call "hold" before returning from the listener callback,

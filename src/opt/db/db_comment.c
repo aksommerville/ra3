@@ -48,71 +48,49 @@ int db_comment_delete_for_gameid(struct db *db,uint32_t gameid) {
   return 0;
 }
 
-/* Insert new comment.
+/* Insert.
  */
-
-struct db_comment *db_comment_insert(struct db *db,uint32_t gameid,uint32_t time,uint32_t k) {
-  if (!time) time=db_time_now();
-  int p=db_flatstore_search3(&db->comments,gameid,time,k);
-  int panic=100;
-  while (p>=0) {
-    if (panic--<0) return 0;
-    time=db_time_advance(time);
-    p=db_flatstore_search3(&db->comments,gameid,time,k);
+ 
+struct db_comment *db_comment_insert(struct db *db,const struct db_comment *comment) {
+  if (!comment||!db_game_get_by_id(db,comment->gameid)) return 0;
+  
+  // (gameid,time,k) must be unique, so bump the timestamp until there's no collision.
+  // Also, if timestamp is initially unset, set it to now.
+  // It is theoretically possible to exhaust the key space; we check.
+  struct db_comment scratch=*comment;
+  if (!scratch.time) scratch.time=db_time_now();
+  int p=db_flatstore_search3(&db->comments,scratch.gameid,scratch.time,scratch.k);
+  if (p<0) p=-p-1;
+  const struct db_comment *q=((struct db_comment*)db->comments.v)+p;
+  while ((p<db->comments.c)&&(q->gameid==scratch.gameid)) {
+    if (q->time<scratch.time) { p++; q++; continue; }
+    if (q->time>scratch.time) break;
+    if (q->k<scratch.k) { p++; q++; continue; }
+    if (q->k>scratch.k) break;
+    if (!(scratch.time=db_time_advance(scratch.time))) return 0;
+    p++;
+    q++;
   }
-  p=-p-1;
-  struct db_comment *comment=db_flatstore_insert3(&db->comments,p,gameid,time,k);
-  if (!comment) return 0;
+  
+  struct db_comment *real=db_flatstore_insert3(&db->comments,p,scratch.gameid,scratch.time,scratch.k);
+  if (!real) return 0;
+  real->v=scratch.v;
   db->dirty=1;
-  return comment;
+  return real;
 }
 
-/* Insert new comment from JSON.
+/* Update.
  */
-
-int db_comment_insert_json(struct db *db,const char *src,int srcc) {
-  if (!src) return -1;
-  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
-  struct db_comment scratch={0};
-  struct sr_decoder decoder={.v=src,.c=srcc};
-  if (sr_decode_json_object_start(&decoder)<0) return -1;
-  const char *k;
-  int kc;
-  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
-    
-    if ((kc==6)&&!memcmp(k,"gameid",6)) {
-      int n;
-      if (sr_decode_json_int(&n,&decoder)<0) return -1;
-      scratch.gameid=n;
-      continue;
-    }
-    
-    if ((kc==4)&&!memcmp(k,"time",4)) {
-      char tmp[32];
-      int tmpc=sr_decode_json_string(tmp,sizeof(tmp),&decoder);
-      if ((tmpc<0)||(tmpc>sizeof(tmp))) return -1;
-      scratch.time=db_time_eval(tmp,tmpc);
-      continue;
-    }
-    
-    if ((kc==1)&&(k[0]=='k')) {
-      if (db_decode_json_string(&scratch.k,db,&decoder)<0) return -1;
-      continue;
-    }
-    
-    if ((kc==1)&&(k[0]=='v')) {
-      if (db_decode_json_string(&scratch.v,db,&decoder)<0) return -1;
-      continue;
-    }
-    
-    if (sr_decode_json_skip(&decoder)<0) return -1;
+ 
+struct db_comment *db_comment_update(struct db *db,const struct db_comment *comment) {
+  int p=db_flatstore_search3(&db->comments,comment->gameid,comment->time,comment->k);
+  if (p<0) return 0;
+  struct db_comment *real=db_flatstore_get(&db->comments,p);
+  if (real->v!=comment->v) {
+    real->v=comment->v;
+    db->dirty=db->comments.dirty=1;
   }
-  if (sr_decode_json_end(&decoder,0)<0) return -1;
-  
-  struct db_comment *comment=db_comment_insert(db,scratch.gameid,scratch.time,scratch.k);
-  if (!comment) return -1;
-  comment->v=scratch.v;
-  return 0;
+  return real;
 }
 
 /* Manual edit.
@@ -126,49 +104,4 @@ int db_comment_set_v(struct db *db,struct db_comment *comment,const char *src,in
 
 void db_comment_dirty(struct db *db,struct db_comment *comment) {
   db->comments.dirty=db->dirty=1;
-}
-
-/* Encode to JSON.
- */
- 
-static int db_comment_encode_json(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_comment *comment,
-  int include_gameid
-) {
-  int jsonctx=sr_encode_json_object_start(dst,0,0);
-  if (jsonctx<0) return -1;
-  
-  if (include_gameid) {
-    if (sr_encode_json_int(dst,"gameid",6,comment->gameid)<0) return -1;
-  }
-  if (comment->time) {
-    char tmp[32];
-    int tmpc=db_time_repr(tmp,sizeof(tmp),comment->time);
-    if ((tmpc<0)||(tmpc>sizeof(tmp))) return -1;
-    if (sr_encode_json_string(dst,"time",4,tmp,tmpc)<0) return -1;
-  }
-  if (db_encode_json_string(dst,db,"k",1,comment->k)<0) return -1;
-  if (db_encode_json_string(dst,db,"v",1,comment->v)<0) return -1;
-  
-  if (sr_encode_json_object_end(dst,jsonctx)<0) return -1;
-  return 0;
-}
-
-/* Encode, dispatch on format.
- */
-
-int db_comment_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_comment *comment,
-  int format
-) {
-  switch (format) {
-    case 0:
-    case DB_FORMAT_json: return db_comment_encode_json(dst,db,comment,1);
-    case DB_FORMAT_ingame: return db_comment_encode_json(dst,db,comment,0);
-  }
-  return -1;
 }

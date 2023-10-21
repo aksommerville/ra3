@@ -57,22 +57,46 @@ int db_play_delete_for_gameid(struct db *db,uint32_t gameid) {
   return 0;
 }
 
-/* New record.
+/* Insert.
  */
- 
-struct db_play *db_play_insert(struct db *db,uint32_t gameid) {
-  uint32_t time=db_time_now();
-  int p=db_flatstore_search2(&db->plays,gameid,time);
-  int panic=100;
-  while (p>=0) {
-    if (panic--<0) return 0;
-    time=db_time_advance(time);
-    p=db_flatstore_search2(&db->plays,gameid,time);
+
+struct db_play *db_play_insert(struct db *db,const struct db_play *play) {
+  if (!play||!play->gameid) return 0;
+  
+  // Fill in now if time unset, then advance time until it's unique.
+  struct db_play scratch=*play;
+  if (!scratch.time) scratch.time=db_time_now();
+  int p=db_flatstore_search2(&db->plays,play->gameid,scratch.time);
+  if (p<0) {
+    p=-p-1;
+  } else {
+    const struct db_play *q=db_flatstore_get(&db->plays,p);
+    while ((p<db->plays.c)&&(q->gameid==scratch.gameid)&&(q->time==scratch.time)) {
+      if (!(scratch.time=db_time_advance(scratch.time))) return 0;
+      p++;
+      q++;
+    }
   }
-  p=-p-1;
-  struct db_play *play=db_flatstore_insert2(&db->plays,p,gameid,time);
-  if (!play) return 0;
-  return play;
+  
+  struct db_play *real=db_flatstore_insert2(&db->plays,p,scratch.gameid,scratch.time);
+  if (!real) return 0;
+  real->dur_m=scratch.dur_m;
+  db->dirty=1;
+  return real;
+}
+
+/* Update.
+ */
+
+struct db_play *db_play_update(struct db *db,const struct db_play *play) {
+  int p=db_flatstore_search2(&db->plays,play->gameid,play->time);
+  if (p<0) return 0;
+  struct db_play *real=db_flatstore_get(&db->plays,p);
+  if (real->dur_m!=play->dur_m) {
+    real->dur_m=play->dur_m;
+    db->dirty=db->plays.dirty=1;
+  }
+  return real;
 }
 
 /* Finish play record if one exists.
@@ -108,41 +132,4 @@ int db_play_set_dur_m(struct db *db,struct db_play *play,uint32_t dur_m) {
 
 void db_play_dirty(struct db *db,struct db_play *play) {
   db->plays.dirty=db->dirty=1;
-}
-
-/* Encode JSON.
- */
- 
-static int db_play_encode_json(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_play *play,
-  int include_gameid
-) {
-  int jsonctx=sr_encode_json_object_start(dst,0,0);
-  if (jsonctx<0) return -1;
-  if (include_gameid) {
-    if (sr_encode_json_int(dst,"gameid",6,play->gameid)<0) return -1;
-  }
-  char tmp[32];
-  int tmpc=db_time_repr(tmp,sizeof(tmp),play->time);
-  if ((tmpc<0)||(tmpc>sizeof(tmp))) return -1;
-  if (sr_encode_json_string(dst,"time",4,tmp,tmpc)<0) return -1;
-  if (sr_encode_json_int(dst,"dur",3,play->dur_m)<0) return -1;
-  if (sr_encode_json_object_end(dst,jsonctx)<0) return -1;
-  return 0;
-}
-
-int db_play_encode(
-  struct sr_encoder *dst,
-  const struct db *db,
-  const struct db_play *play,
-  int format
-) {
-  switch (format) {
-    case 0:
-    case DB_FORMAT_json: return db_play_encode_json(dst,db,play,1);
-    case DB_FORMAT_ingame: return db_play_encode_json(dst,db,play,0);
-  }
-  return -1;
 }

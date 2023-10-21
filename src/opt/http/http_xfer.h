@@ -5,6 +5,8 @@
 #ifndef HTTP_XFER_H
 #define HTTP_XFER_H
 
+#include "opt/serial/serial.h"
+
 #define HTTP_XFER_STATE_UNSET 0
 #define HTTP_XFER_STATE_RCV_LINE 1 /* Awaiting Request-Line or Status-Line */
 #define HTTP_XFER_STATE_RCV_HEADER 2
@@ -22,8 +24,9 @@ struct http_xfer {
   char *line; // Request-Line or Status-Line
   int linec;
   struct http_dict headers;
-  char *body;
-  int bodyc,bodya;
+  //XXX char *body;
+  //int bodyc,bodya;
+  struct sr_encoder body;
   
   int body_pendingc; // remaining body length
   int chunked;

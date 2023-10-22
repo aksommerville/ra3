@@ -6,6 +6,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdio.h>
+#include "db_blobcache.h"
 
 struct db_flatstore;
 struct db_stringstore;
@@ -116,6 +117,7 @@ struct db {
   struct db_flatstore plays;
   struct db_stringstore strings;
   struct db_liststore lists;
+  struct db_blobcache blobcache;
   int dirty;
   char *root;
   int rootc;

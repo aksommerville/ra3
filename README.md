@@ -22,7 +22,10 @@ Ditto for all the HTTP interfaces.
 - - [ ] Launcher
 - - [x] HTTP server
 - - [ ] WebSocket server
-- [ ] db: Must cache blob list, at least for large game queries. (otherwise each file will re-read the blob directories from scratch).
+- [x] db: Must cache blob list, at least for large game queries. (otherwise each file will re-read the blob directories from scratch).
+- - time curl -sX POST 'http://localhost:6502/api/query?rating=0..100&limit=999999&detail=blobs' >/dev/null
+- - 13 ms at detail=record, 49 ms at detail=blobs (which is actually not bad at all!)
+- - After blobcache: 13 => 18, much better.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] db: Pick a random game from within the query.
@@ -50,7 +53,7 @@ Ditto for all the HTTP interfaces.
 - - [ ] Solarus, try again.
 - [ ] Prepare collection
 - - [x] Bulk import, include all ROMs, and metadata from ra2 if available.
-- - [ ] Eliminate "-01-01" from pubtimes, there's a ton of them.
+- - [x] Eliminate "-01-01" from pubtimes, there's a ton of them.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".

@@ -106,7 +106,7 @@ static int db_game_encode_json_blobs_cb(uint32_t gameid,const char *type,int typ
 static int db_game_encode_json_blobs(struct sr_encoder *dst,const struct db *db,const struct db_game *game) {
   int jsonctx=sr_encode_json_array_start(dst,"blobs",5);
   if (jsonctx<0) return -1;
-  if (db_blob_for_gameid(db,game->gameid,1,db_game_encode_json_blobs_cb,dst)<0) return -1;
+  if (db_blob_for_gameid((struct db*)db,game->gameid,1,db_game_encode_json_blobs_cb,dst)<0) return -1;
   return sr_encode_json_array_end(dst,jsonctx);
 }
  

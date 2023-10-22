@@ -815,7 +815,7 @@ static int ra_http_terminate(struct http_xfer *req,struct http_xfer *rsp) {
 /* Log call. We only log after the fact. Could be a problem if you want to trace servlet failures?
  */
  
-static void ra_http_log_response(struct http_xfer *req,struct http_xfer *rsp) {
+static void ra_http_log_response(struct http_xfer *req,struct http_xfer *rsp,int elapsedms) {
   const char *method=http_method_repr(http_xfer_get_method(req));
   const char *rpath=0;
   int rpathc=http_xfer_get_path(&rpath,req);
@@ -823,14 +823,24 @@ static void ra_http_log_response(struct http_xfer *req,struct http_xfer *rsp) {
   const void *dummy=0;
   int reqbodyc=http_xfer_get_body(&dummy,req);
   int rspbodyc=http_xfer_get_body(&dummy,rsp);
-  fprintf(stderr,"%s %.*s <= %d b => %d, %d b\n",method,rpathc,rpath,reqbodyc,status,rspbodyc);
+  fprintf(stderr,"%6s %.*s <= %d b => %d, %d b ; %d ms\n",method,rpathc,rpath,reqbodyc,status,rspbodyc,elapsedms);
 }
   
 /* REST calls, wrapper.
  * So I don't have to bugger around with Status and Content-Type in each handler.
  */
  
+#include <sys/time.h>
+ 
+static int64_t ra_http_now() {
+  //return 0; // It's fine to not do this, or just enable when you're interested in metrics.
+  struct timeval tv={0};
+  gettimeofday(&tv,0);
+  return (int64_t)tv.tv_sec*1000000ll+tv.tv_usec;
+}
+ 
 static int ra_http_wrap_call(int (*servlet)(struct http_xfer *req,struct http_xfer *rsp),struct http_xfer *req,struct http_xfer *rsp) {
+  int64_t starttime=ra_http_now();
   if (servlet(req,rsp)<0) {
     if (!http_xfer_get_status(rsp)) http_xfer_set_status(rsp,500,"Unspecified error");
     http_xfer_set_body(rsp,0,0);
@@ -842,7 +852,8 @@ static int ra_http_wrap_call(int (*servlet)(struct http_xfer *req,struct http_xf
       http_xfer_set_status(rsp,200,"OK");
     }
   }
-  ra_http_log_response(req,rsp);
+  int64_t endtime=ra_http_now();
+  ra_http_log_response(req,rsp,(int)((endtime-starttime)/1000));
   return 0;
 }
 

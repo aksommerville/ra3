@@ -7,7 +7,7 @@ struct db_blob_ctx {
   int include_invalid;
   int (*cb)(uint32_t gameid,const char *type,int typec,const char *time,int timec,const char *path,void *userdata);
   void *userdata;
-  const struct db *db;
+  struct db *db;
   uint32_t gameid;
 };
 
@@ -51,6 +51,7 @@ static int db_blob_for_each_cb(const char *path,const char *base,char type,void 
   if (db_blob_base_split(&split,base,-1)<0) {
     if (!ctx->include_invalid) return 0;
   }
+  db_blobcache_add(&ctx->db->blobcache,split.gameid,base);
   return ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
 }
 
@@ -64,13 +65,37 @@ static int db_blob_for_each_bucket_cb(const char *path,const char *base,char typ
   if (n%100) return 0;
   return dir_read(path,db_blob_for_each_cb,userdata);
 }
+
+static int db_blob_cache_cb(uint32_t gameid,const char *base,void *userdata) {
+  struct db_blob_ctx *ctx=userdata;
+  struct db_blob_base split={0};
+  if (db_blob_base_split(&split,base,-1)<0) {
+    if (!ctx->include_invalid) return 0;
+  }
+  char sep=path_separator();
+  char path[1024];
+  int pathc=snprintf(path,sizeof(path),"%.*s%cblob%c%d%c%s",ctx->db->rootc,ctx->db->root,sep,sep,gameid-gameid%100,sep,base);
+  if ((pathc<1)||(pathc>=sizeof(path))) return -1;
+  return ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
+}
  
 int db_blob_for_each(
-  const struct db *db,
+  struct db *db,
   int include_invalid,
   int (*cb)(uint32_t gameid,const char *type,int typec,const char *time,int timec,const char *path,void *userdata),
   void *userdata
 ) {
+  struct db_blob_ctx ctx={
+    .include_invalid=include_invalid,
+    .cb=cb,
+    .userdata=userdata,
+    .db=db,
+  };
+
+  int err,empty=0;
+  if (err=db_blobcache_for_all(&empty,&db->blobcache,db_blob_cache_cb,&ctx)) return err;
+  if (!empty) return 0;
+
   char sep=path_separator();
   char path[1024];
   int pathc=snprintf(path,sizeof(path),"%.*s%cblob",db->rootc,db->root,sep);
@@ -79,12 +104,6 @@ int db_blob_for_each(
     // Blob buckets directory is missing or unreadable -- not an error, just means "no blobs".
     return 0;
   }
-  struct db_blob_ctx ctx={
-    .include_invalid=include_invalid,
-    .cb=cb,
-    .userdata=userdata,
-    .db=db,
-  };
   return dir_read(path,db_blob_for_each_bucket_cb,&ctx);
 }
 
@@ -97,17 +116,44 @@ static int db_blob_for_gameid_cb(const char *path,const char *base,char type,voi
   if (db_blob_base_split(&split,base,-1)<0) {
     if (!ctx->include_invalid) return 0;
   }
+  db_blobcache_add(&ctx->db->blobcache,split.gameid,base);
   if (split.gameid!=ctx->gameid) return 0;
   return ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
 }
 
+static int db_blob_cache_gameid_cb(uint32_t gameid,const char *base,void *userdata) {
+  struct db_blob_ctx *ctx=userdata;
+  struct db_blob_base split={0};
+  if (db_blob_base_split(&split,base,-1)<0) {
+    if (!ctx->include_invalid) return 0;
+  }
+  if (split.gameid!=ctx->gameid) return 0;
+  char sep=path_separator();
+  char path[1024];
+  int pathc=snprintf(path,sizeof(path),"%.*s%cblob%c%d%c%s",ctx->db->rootc,ctx->db->root,sep,sep,gameid-gameid%100,sep,base);
+  if ((pathc<1)||(pathc>=sizeof(path))) return -1;
+  return ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
+}
+
 int db_blob_for_gameid(
-  const struct db *db,
+  struct db *db,
   uint32_t gameid,
   int include_invalid,
   int (*cb)(uint32_t gameid,const char *type,int typec,const char *time,int timec,const char *path,void *userdata),
   void *userdata
 ) {
+  struct db_blob_ctx ctx={
+    .include_invalid=include_invalid,
+    .cb=cb,
+    .userdata=userdata,
+    .db=db,
+    .gameid=gameid,
+  };
+
+  int err,empty=0;
+  if (err=db_blobcache_for_gameid(&empty,&db->blobcache,gameid,db_blob_cache_gameid_cb,&ctx)) return err;
+  if (!empty) return 0;
+  
   char sep=path_separator();
   char path[1024];
   int pathc=snprintf(path,sizeof(path),
@@ -119,13 +165,6 @@ int db_blob_for_gameid(
     // No problem if the directory doesn't exist; there just aren't any blobs.
     return 0;
   }
-  struct db_blob_ctx ctx={
-    .include_invalid=include_invalid,
-    .cb=cb,
-    .userdata=userdata,
-    .db=db,
-    .gameid=gameid,
-  };
   return dir_read(path,db_blob_for_gameid_cb,&ctx);
 }
 

@@ -82,6 +82,13 @@ void db_clear(struct db *db);
  */
 int db_gc(struct db *db);
 
+/* Call if you happen to know that blobs have been added or removed.
+ * Invalidating one gameid also invalidates the hundred surrounding it.
+ * Left on its own, the db generally does not invalidate its blob cache.
+ */
+void db_invalidate_blobs(struct db *db);
+void db_invalidate_blobs_for_gameid(struct db *db,uint32_t gameid);
+
 /* Primitives.
  *********************************************************************/
 
@@ -414,7 +421,7 @@ int db_list_gamev_populate(const struct db *db,struct db_list *list);
  * We do not read the individual blob files during iteration.
  */
 int db_blob_for_each(
-  const struct db *db,
+  struct db *db,
   int include_invalid,
   int (*cb)(uint32_t gameid,const char *type,int typec,const char *time,int timec,const char *path,void *userdata),
   void *userdata
@@ -424,7 +431,7 @@ int db_blob_for_each(
  * Beyond that, all the same rules as full iteration.
  */
 int db_blob_for_gameid(
-  const struct db *db,
+  struct db *db,
   uint32_t gameid,
   int include_invalid,
   int (*cb)(uint32_t gameid,const char *type,int typec,const char *time,int timec,const char *path,void *userdata),

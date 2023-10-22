@@ -12,6 +12,7 @@ void db_del(struct db *db) {
   db_flatstore_cleanup(&db->plays);
   db_liststore_cleanup(&db->lists);
   db_stringstore_cleanup(&db->strings);
+  db_blobcache_cleanup(&db->blobcache);
   if (db->root) free(db->root);
   free(db);
 }
@@ -61,6 +62,7 @@ int db_set_root(struct db *db,const char *root,int rootc) {
   if (db->root) free(db->root);
   db->root=nv;
   db->rootc=rootc;
+  db_blobcache_invalidate_all(&db->blobcache);
   return 0;
 }
 
@@ -78,6 +80,14 @@ void db_dirty(struct db *db) {
   db->plays.dirty=1;
   db->lists.dirty=1;
   db->strings.dirty=1;
+}
+
+void db_invalidate_blobs(struct db *db) {
+  db_blobcache_invalidate_all(&db->blobcache);
+}
+
+void db_invalidate_blobs_for_gameid(struct db *db,uint32_t gameid) {
+  db_blobcache_invalidate_gameid(&db->blobcache,gameid);
 }
 
 /* Save.

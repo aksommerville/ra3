@@ -235,7 +235,7 @@ export class DbService {
   }
   
   query(params) {
-    if (!this.sanityCheckQuery(params)) return { results: [], pageCount: 1 };
+    if (!this.sanityCheckQuery(params)) return Promise.resolve({ results: [], pageCount: 1 });
     return this.comm.http("POST", "/api/query", params, null, null, "response").then(rsp => {
       return rsp.json().then(results => ({ results, pageCount: +rsp.headers.get("X-Page-Count") || 1 }));
     });

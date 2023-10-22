@@ -9,6 +9,7 @@ struct db_blob_ctx {
   void *userdata;
   struct db *db;
   uint32_t gameid;
+  int cbdefunct; // due to filling the cache, we must proceed even after the user says stop
 };
 
 /* Split blob basename.
@@ -52,7 +53,9 @@ static int db_blob_for_each_cb(const char *path,const char *base,char type,void 
     if (!ctx->include_invalid) return 0;
   }
   db_blobcache_add(&ctx->db->blobcache,split.gameid,base);
-  return ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
+  if (ctx->cbdefunct) return 0;
+  ctx->cbdefunct=ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
+  return 0;
 }
 
 static int db_blob_for_each_bucket_cb(const char *path,const char *base,char type,void *userdata) {
@@ -63,7 +66,9 @@ static int db_blob_for_each_bucket_cb(const char *path,const char *base,char typ
     n+=base[i]-'0';
   }
   if (n%100) return 0;
-  return dir_read(path,db_blob_for_each_cb,userdata);
+  int err=dir_read(path,db_blob_for_each_cb,userdata);
+  if (err) return err;
+  return ((struct db_blob_ctx*)userdata)->cbdefunct;
 }
 
 static int db_blob_cache_cb(uint32_t gameid,const char *base,void *userdata) {
@@ -118,7 +123,9 @@ static int db_blob_for_gameid_cb(const char *path,const char *base,char type,voi
   }
   db_blobcache_add(&ctx->db->blobcache,split.gameid,base);
   if (split.gameid!=ctx->gameid) return 0;
-  return ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
+  if (ctx->cbdefunct) return 0;
+  ctx->cbdefunct=ctx->cb(split.gameid,split.type,split.typec,split.time,split.timec,path,ctx->userdata);
+  return 0;
 }
 
 static int db_blob_cache_gameid_cb(uint32_t gameid,const char *base,void *userdata) {
@@ -165,7 +172,8 @@ int db_blob_for_gameid(
     // No problem if the directory doesn't exist; there just aren't any blobs.
     return 0;
   }
-  return dir_read(path,db_blob_for_gameid_cb,&ctx);
+  if (err=dir_read(path,db_blob_for_gameid_cb,&ctx)) return err;
+  return ctx.cbdefunct;
 }
 
 /* Generate blob path.

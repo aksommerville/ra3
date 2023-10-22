@@ -49,6 +49,7 @@ export class SearchFormUi {
     this.spawnField(form, "flags");
     this.spawnField(form, "rating");
     this.spawnField(form, "pubtime");
+    this.spawnField(form, "sort");
     this.element.querySelector("input[name='text']").focus();
   }
   
@@ -70,6 +71,14 @@ export class SearchFormUi {
       this.pubtimeController = this.dom.spawnController(container, LoHiUi);
       this.pubtimeController.setRange(1970, 2050, "Published:"); // remember to update me in twenty years or so -ak, 2023
       this.pubtimeController.onChange = () => this.dirty();
+      return;
+    }
+    if (k === "sort") {
+      const select = this.dom.spawn(container, "SELECT", { name: "sort", "on-input": () => this.dirty() });
+      for (const mode of ["none", "id", "name", "pubtime", "rating", "playtime", "playcount", "fullness"]) {
+        this.dom.spawn(select, "OPTION", { value: mode }, "+" + mode);
+        this.dom.spawn(select, "OPTION", { value: "-" + mode }, "-" + mode);
+      }
       return;
     }
     
@@ -106,7 +115,8 @@ export class SearchFormUi {
       flags: this.flagsController.encodeFlags(),
       notflags: this.flagsController.encodeNotFlags(),
       rating: this.ratingController.getRangeAsString(),
-      pubtimelo: this.pubtimeController.getRangeAsString(),
+      pubtime: this.pubtimeController.getRangeAsString(),
+      sort: this.element.querySelector("select[name='sort']").value,
     };
     for (const input of this.element.querySelectorAll(".field > input")) {
       query[input.name] = input.value;

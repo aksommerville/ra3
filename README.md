@@ -29,7 +29,7 @@ Ditto for all the HTTP interfaces.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] db: Pick a random game from within the query.
-- [ ] db: Sort query results
+- [x] db: Sort query results
 - [ ] Menu
 - [ ] Web
 - - [x] Straight DB view

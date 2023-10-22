@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -150,7 +151,6 @@ int db_blobcache_for_gameid(int *empty,struct db_blobcache *blobcache,uint32_t g
   int entryi=bucket->entryc-entryp;
   for (;entryi-->0;entry++) {
     if (entry->gameid!=gameid) break;
-    if (empty) *empty=0;
     int err=cb(gameid,entry->base,userdata);
     if (err) return err;
   }
@@ -191,6 +191,7 @@ int db_blobcache_add(struct db_blobcache *blobcache,uint32_t gameid,const char *
     entry=bucket->entryv+p;
     int i=bucket->entryc-p;
     for (;i-->0;entry++) {
+      if (entry->gameid!=gameid) break;
       if (!strcmp(entry->base,base)) return 0;
     }
   }

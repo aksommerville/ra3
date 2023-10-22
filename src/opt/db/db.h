@@ -509,7 +509,7 @@ int db_list_decode_array(struct db_list *list,struct db *db,int format,const voi
  *   pubtime: "T" "..T" "T.." "T..T"
  * Formatting etc:
  *   detail: eg "name", "record"
- *   sort: TODO
+ *   sort: DB_SORT_*
  *   limit: Maximum result count to return.
  *   page: 1-based page number, if (limit) in play.
  */
@@ -581,6 +581,30 @@ struct db_list *db_query_list_not(struct db *db,const struct db_list *from,const
 /* New nonresident list with every game added.
  */
 struct db_list *db_list_everything(const struct db *db);
+
+#define DB_SORT_none      0
+#define DB_SORT_id        1
+#define DB_SORT_name      2
+#define DB_SORT_pubtime   3
+#define DB_SORT_rating    4 /* ...to this point tend to be cheap. */
+#define DB_SORT_playtime  5 /* The rest are increasingly expensive, requiring calls out to other tables... */
+#define DB_SORT_playcount 6
+#define DB_SORT_fullness  7 /* Subjective judgment, does this record look like something's missing? */
+#define DB_SORT_FOR_EACH \
+  _(none) \
+  _(id) \
+  _(name) \
+  _(pubtime) \
+  _(rating) \
+  _(playtime) \
+  _(playcount) \
+  _(fullness)
+
+/* Identifiers as above, plus an optional leading "+" or "-". ("+" is noop)
+ */
+int db_sort_eval(int *descend,const char *src,int srcc);
+  
+int db_list_sort_auto(struct db *db,struct db_list *list,int sort,int descend);
 
 /* Convenience, and only valid for non-resident lists.
  * Filters (list) down to no more than (page_size) contiguous records, aligned to a multiple of (page_size).

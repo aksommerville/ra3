@@ -210,7 +210,18 @@ After filtering, we can sort, paginate, and format to taste:
 - `detail=record`: Same as Game calls.
 - `limit=100`: Maximum results to return.
 - `page=1`: One-based page index, if `limit` in play.
-- `sort`: Order of results. TODO haven't decided what we're doing here.
+- `sort`: Order of results.
+
+Sort is one of:
+- none
+- id
+- name
+- pubtime
+- rating
+- playtime
+- playcount
+- fullness
+And may be prefixed with "-" to reverse.
 
 The HTTP response will include a header `X-Page-Count` when paginated.
 

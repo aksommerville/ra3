@@ -17,6 +17,7 @@ struct db_query {
   struct db_list *input; // Search space or null for everything. Non-resident or resident! Check own_input.
   struct db_list *results; // Output. Non-resident.
 
+  int sort,descend;
   int detail; // DB_DETAIL_*
   int limit;
   int pagep; // 1-based
@@ -43,6 +44,7 @@ struct db_query *db_query_new(struct db *db) {
   query->db=db;
   query->ratinghi=UINT32_MAX;
   query->pubtimehi=UINT32_MAX;
+  query->sort=DB_SORT_none;
   query->detail=DB_DETAIL_record;
   query->limit=100;
   query->pagep=1;
@@ -181,6 +183,11 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *_quer
     return 0;
   }
   
+  if ((kc==4)&&!memcmp(k,"sort",4)) {
+    if ((query->sort=db_sort_eval(&query->descend,v,vc))<0) return -1;
+    return 0;
+  }
+  
   if ((kc==6)&&!memcmp(k,"detail",6)) {
     if (!vc) return 0;
     #define _(tag) if ((vc==sizeof(#tag)-1)&&!memcmp(v,#tag,vc)) { query->detail=DB_DETAIL_##tag; return 0; }
@@ -259,7 +266,7 @@ int db_query_finish(struct sr_encoder *dst,struct db_query *query) {
     }
     
     // Sort.
-    //TODO
+    if (db_list_sort_auto(query->db,query->results,query->sort,query->descend)<0) return -1;
     
     // Paginate.
     query->pagec=db_list_paginate(query->results,query->limit,query->pagep-1);

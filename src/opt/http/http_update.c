@@ -55,7 +55,9 @@ static int http_update_fd_read(struct http_context *context,int fd) {
   }
   
   struct http_extfd *extfd=http_context_get_extfd_by_fd(context,fd);
-  if (extfd) return extfd->cb(fd,extfd->userdata);
+  if (extfd) {
+    return extfd->cb(fd,extfd->userdata);
+  }
   
   return 0;
 }

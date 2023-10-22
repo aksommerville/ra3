@@ -34,7 +34,7 @@ struct sr_decoder;
 #define DB_DETAIL_comments 4 /* record + {comments:[{time,k,v},...]} */
 #define DB_DETAIL_plays    5 /* comments + {plays:[{time,dur_m},...]} */
 #define DB_DETAIL_lists    6 /* plays + {lists:[{listid,name},...]} */
-#define DB_DETAIL_blobs    6 /* lists + {blobs:[path...]} */
+#define DB_DETAIL_blobs    7 /* lists + {blobs:[path...]} */
 #define DB_DETAIL_EVERYTHING DB_DETAIL_blobs
 #define DB_DETAIL_FOR_EACH \
   _(id) \

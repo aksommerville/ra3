@@ -80,9 +80,20 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *_quer
   if (!k) kc=0; else if (kc<0) { kc=0; while (k[kc]) kc++; }
   if (!v) vc=0; else if (vc<0) { vc=0; while (v[vc]) vc++; }
   
+  /* Values could be URL-encoded. These are expected to come straight off http_xfer_for_query, which doesn't decode.
+   * We'll enforce a length limit too. "text" and "list" aren't intrisically limited, but say 256? That's plenty long.
+   * Doesn't matter for keys: The keys we accept are all letters only.
+   */
+  char vv[256];
+  int vvc=sr_url_decode(vv,sizeof(vv),v,vc);
+  if ((vvc>=0)&&(vvc<=sizeof(vv))) {
+    v=vv;
+    vc=vvc;
+  } // If it fails, meh, try it encoded. (maybe it's only a length thing, or maybe it's already decoded and contains '%')
+  
   if ((kc==4)&&!memcmp(k,"text",4)) {
     if (query->text) return -1;
-    if (!vc) return -1;
+    if (!vc) return 0;
     if (!(query->text=malloc(vc+1))) return -1;
     memcpy(query->text,v,vc);
     query->text[vc]=0;
@@ -91,6 +102,7 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *_quer
   }
   
   if ((kc==4)&&!memcmp(k,"list",4)) {
+    if (!vc) return 0; // Empty arguments are fine, pretend we didn't see them.
     struct db_list *list=db_list_get_by_string(query->db,v,vc);
     if (!list) { query->empty=1; return 1; }
     if (query->input) {
@@ -107,18 +119,21 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *_quer
   }
   
   if ((kc==8)&&!memcmp(k,"platform",8)) {
+    if (!vc) return 0;
     if (query->platform) return -1;
     if (!(query->platform=db_string_lookup(query->db,v,vc))) { query->empty=1; return 1; }
     return 0;
   }
   
   if ((kc==6)&&!memcmp(k,"author",6)) {
+    if (!vc) return 0;
     if (query->author) return -1;
     if (!(query->author=db_string_lookup(query->db,v,vc))) { query->empty=1; return 1; }
     return 0;
   }
   
   if ((kc==5)&&!memcmp(k,"genre",5)) {
+    if (!vc) return 0;
     if (query->genre) return -1;
     if (!(query->genre=db_string_lookup(query->db,v,vc))) { query->empty=1; return 1; }
     return 0;
@@ -167,6 +182,7 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *_quer
   }
   
   if ((kc==6)&&!memcmp(k,"detail",6)) {
+    if (!vc) return 0;
     #define _(tag) if ((vc==sizeof(#tag)-1)&&!memcmp(v,#tag,vc)) { query->detail=DB_DETAIL_##tag; return 0; }
     DB_DETAIL_FOR_EACH
     #undef _

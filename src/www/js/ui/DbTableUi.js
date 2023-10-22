@@ -17,7 +17,7 @@ export class DbTableUi {
     this.window = window;
     this.dbService = dbService;
     
-    this.PAGE_SIZE = 20;
+    this.PAGE_SIZE = 100;
     
     this.name = "";
     this.schema = null;

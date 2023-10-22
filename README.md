@@ -26,11 +26,12 @@ Ditto for all the HTTP interfaces.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] db: Pick a random game from within the query.
+- [ ] db: Sort query results
 - [ ] Menu
 - [ ] Web
 - - [x] Straight DB view
-- - [ ] Search
-- - [ ] Game details
+- - [x] Search
+- - [x] Game details
 - - [ ] Lists
 - - [ ] Admin
 - - [ ] Now Playing
@@ -49,6 +50,7 @@ Ditto for all the HTTP interfaces.
 - - [ ] Solarus, try again.
 - [ ] Prepare collection
 - - [x] Bulk import, include all ROMs, and metadata from ra2 if available.
+- - [ ] Eliminate "-01-01" from pubtimes, there's a ton of them.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".

@@ -51,8 +51,8 @@ GET /api/list?gameid&detail => List[] (those including gameid)
 PUT /api/list?detail <= List => List (always new)
 PATCH /api/list?detail <= List => List (must exist. if "games" present, they replace the whole array)
 DELETE /api/list?listid => nothing
-POST /api/list/add?listid&gameid&detail => List
-POST /api/list/remove?listid&gameid&detail => List
+POST /api/list/add?listid&gameid&detail => List ; name also accepted as listid
+POST /api/list/remove?listid&gameid&detail => List ; name also accepted as listid
 
 GET /api/blob/all => [path...]
 GET /api/blob?gameid&type => [path...]

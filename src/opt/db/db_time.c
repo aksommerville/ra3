@@ -60,7 +60,7 @@ int db_time_repr(char *dst,int dsta,uint32_t dbtime) {
   int vv[5]={0};
   db_time_unpack(vv+0,vv+1,vv+2,vv+3,vv+4,dbtime);
   int vc=5;
-  if (vv[3]&&!vv[4]) { // "00:00" is a perfectly valid time, but it's also a perfectly common default.
+  if (!vv[3]&&!vv[4]) { // "00:00" is a perfectly valid time, but it's also a perfectly common default.
     vc=3;
     if (!vv[2]) { // day of month shouldn't be zero
       vc=2;

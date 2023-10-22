@@ -379,7 +379,7 @@ int db_list_paginate(struct db_list *list,int page_size,int page_index) {
   int pagec=(list->gameidc+page_size-1)/page_size;
   if ((page_index<0)||(page_index>=pagec)) {
     db_list_clear(0,list);
-    return 0;
+    return pagec;
   }
   int fromp=page_index*page_size;
   int nc=list->gameidc-fromp;
@@ -392,7 +392,7 @@ int db_list_paginate(struct db_list *list,int page_size,int page_index) {
     list->gamec=0;
   }
   list->gameidc=nc;
-  return 0;
+  return pagec;
 }
 
 /* Cleanup histogram.

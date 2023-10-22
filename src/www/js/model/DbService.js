@@ -9,6 +9,57 @@ export class DbService {
   }
   constructor(comm) {
     this.comm = comm;
+    
+    // null, Promise, or Array, for suggestions.
+    // We cache these and don't worry much about keeping fresh.
+    this.authors = null;
+    this.platforms = null;
+    this.genres = null;
+    this.lists = null;
+  }
+  
+  suggestAuthors() {
+    if (!this.authors) {
+      this.authors = this.comm.httpJson("GET", "/api/meta/author", { detail: "id" })
+        .then(rsp => this.authors = rsp)
+        .catch(() => { this.authors = null; return []; });
+    } else if (this.authors instanceof Array) {
+      return Promise.resolve(this.authors);
+    }
+    return this.authors;
+  }
+  
+  suggestPlatforms() {
+    if (!this.platforms) {
+      this.platforms = this.comm.httpJson("GET", "/api/meta/platform", { detail: "id" })
+        .then(rsp => this.platforms = rsp)
+        .catch(() => { this.authors = null; return []; });
+    } else if (this.platforms instanceof Array) {
+      return Promise.resolve(this.platforms);
+    }
+    return this.platforms;
+  }
+  
+  suggestGenres() {
+    if (!this.genres) {
+      this.genres = this.comm.httpJson("GET", "/api/meta/genre", { detail: "id" })
+        .then(rsp => this.genres = rsp)
+        .catch(() => { this.genres = null; return []; });
+    } else if (this.genres instanceof Array) {
+      return Promise.resolve(this.genres);
+    }
+    return this.genres;
+  }
+  
+  suggestLists() {
+    if (!this.lists) {
+      this.lists = this.comm.httpJson("GET", "/api/list", { index: 0, count: 999999, detail: "id" })
+        .then(rsp => this.lists = rsp.map(list => list.name || list.id))
+        .catch(() => { this.lists = null; return []; });
+    } else if (this.lists instanceof Array) {
+      return Promise.resolve(this.lists);
+    }
+    return this.lists;
   }
   
   getTableNames() {
@@ -181,6 +232,72 @@ export class DbService {
     const query = this.extractRecordIdAsHttpQuery(tableName, record);
     if (!query) return Promise.reject("Unable to determine record ID.");
     return this.comm.http("DELETE", `/api/${tableName}`, query);
+  }
+  
+  query(params) {
+    if (!this.sanityCheckQuery(params)) return { results: [], pageCount: 1 };
+    return this.comm.http("POST", "/api/query", params, null, null, "response").then(rsp => {
+      return rsp.json().then(results => ({ results, pageCount: +rsp.headers.get("X-Page-Count") || 1 }));
+    });
+  }
+  
+  /* An empty query matches the whole database.
+   * Likewise, a text query for eg "A" will match pretty much everything, after conducting an expensive text search.
+   * Require at least 3 characters of text, or at least one other criterion.
+   * (If full-db-matching queries slip thru now and then, it's really not a big deal. Just don't want it happening a lot.)
+   */
+  sanityCheckQuery(params) {
+    if (params.list) return true;
+    if (params.platform) return true;
+    if (params.author) return true;
+    if (params.genre) return true;
+    if (params.flags) return true;
+    if (params.notflags) return true;
+    if (params.rating) return true;
+    if (params.pubtime) return true;
+    if (params.text && (params.text.length >= 3)) return true;
+    return false;
+  }
+  
+  fetchGame(gameid, detail) {
+    if (!detail) detail = "record";
+    return this.comm.httpJson("GET", "/api/game", { gameid, detail });
+  }
+  
+  patchGame(game, detail) {
+    if (!detail) detail = "record";
+    const { comments, plays, lists, blobs, ...header } = game; // strip some things we know the backend doesn't want.
+    return this.comm.httpJson("PATCH", "/api/game", { detail }, null, JSON.stringify(header));
+  }
+  
+  putComment(comment) {
+    return this.comm.httpJson("PUT", "/api/comment", null, null, JSON.stringify(comment));
+  }
+  
+  patchComment(comment) {
+    return this.comm.httpJson("PATCH", "/api/comment", null, null, JSON.stringify(comment));
+  }
+  
+  deleteComment(comment) {
+    const query = { gameid: comment.gameid, time: comment.time, k: comment.k };
+    return this.comm.http("DELETE", "/api/comment", query);
+  }
+  
+  patchPlay(play) {
+    return this.comm.httpJson("PATCH", "/api/play", null, null, JSON.stringify(play));
+  }
+  
+  deletePlay(play) {
+    const query = { gameid: play.gameid, time: play.time };
+    return this.comm.http("DELETE", "/api/play", query);
+  }
+  
+  addToList(gameid, listidOrName) {
+    return this.comm.httpJson("POST", "/api/list/add", { gameid, listid: listidOrName, detail: "id" });
+  }
+  
+  removeFromList(gameid, listid) {
+    return this.comm.httpJson("POST", "/api/list/remove", { gameid, listid, detail: "id" });
   }
 }
 

@@ -197,7 +197,7 @@ static int db_game_decode_json(struct db_game *game,struct db *db,const void *sr
     if ((kc==4)&&!memcmp(k,"path",4)) {
       char text[1024];
       int textc=sr_decode_json_string(text,sizeof(text),&decoder);
-      if ((textc<1)||(textc>=sizeof(text))) return -1;
+      if ((textc<0)||(textc>=sizeof(text))) return -1;
       if (db_game_set_path(db,game,text,textc)<0) return -1;
       continue;
     }
@@ -410,6 +410,7 @@ static int db_list_encode_json_array(struct sr_encoder *dst,const struct db *db,
     const struct db_game *game=list->gamev;
     int i=list->gamec;
     for (;i-->0;game++) {
+      if (sr_encode_json_setup(dst,0,0)<0) return -1;
       if (db_game_encode(dst,db,game,DB_FORMAT_json,detail)<0) return -1;
     }
     
@@ -426,6 +427,7 @@ static int db_list_encode_json_array(struct sr_encoder *dst,const struct db *db,
     for (;i-->0;gameid++) {
       const struct db_game *game=db_game_get_by_id(db,*gameid);
       if (!game) return -1;
+      if (sr_encode_json_setup(dst,0,0)<0) return -1;
       if (db_game_encode(dst,db,game,DB_FORMAT_json,detail)<0) return -1;
     }
   }

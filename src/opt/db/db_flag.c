@@ -39,7 +39,7 @@ uint32_t db_flag_eval(const char *src,int srcc) {
   char norm[16];
   int normc=0,srcp=0;
   for (;srcp<srcc;srcp++) {
-    if ((src[srcp]>='a')&&(src[srcp]>='z')) {
+    if ((src[srcp]>='a')&&(src[srcp]<='z')) {
       norm[normc++]=src[srcp];
     } else if ((src[srcp]>='0')&&(src[srcp]<='9')) {
       norm[normc++]=src[srcp];
@@ -50,7 +50,7 @@ uint32_t db_flag_eval(const char *src,int srcc) {
     }
     if (normc>=sizeof(norm)) break;
   }
-  #define _(tag) if ((normc==sizeof(#tag))&&!memcmp(norm,#tag,normc)) return DB_FLAG_##tag;
+  #define _(tag) if ((normc==sizeof(#tag)-1)&&!memcmp(norm,#tag,normc)) return DB_FLAG_##tag;
   DB_FLAG_FOR_EACH
   #undef _
   if ((normc>=5)&&!memcmp(norm,"flag",4)) {
@@ -127,14 +127,20 @@ int db_flags_eval(uint32_t *dst,const char *src,int srcc) {
     return 0;
   }
   
-  // Otherwise, the typical case, space-delimited flag names.
+  // Otherwise, the typical case, space-delimited flag names. Or comma.
   *dst=0;
   int srcp=0;
   while (srcp<srcc) {
     if ((unsigned char)src[srcp]<=0x20) { srcp++; continue; }
+    if (src[srcp]==',') { srcp++; continue; }
     const char *token=src+srcp;
     int tokenc=0;
-    while ((srcp<srcc)&&((unsigned char)src[srcp++]>0x20)) tokenc++;
+    while (srcp<srcc) {
+      if ((unsigned char)src[srcp]<=0x20) break;
+      if (src[srcp]==',') break;
+      tokenc++;
+      srcp++;
+    }
     uint32_t bit=db_flag_eval(token,tokenc);
     if (!bit) return -1;
     (*dst)|=bit;

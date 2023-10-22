@@ -29,7 +29,7 @@ h2 {
 
 .modalContainer {
   position: fixed;
-  z-index: 101;
+  z-index: 100;
   left: 0;
   top: 0;
   width: 100vw;
@@ -121,6 +121,146 @@ h2 {
  *****************************************************/
  
 .SearchUi {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.SearchUi > .SearchFormUi {
+  background-color: #222;
+  min-height: 100px;
+  margin: 0.5em;
+  padding: 0.5em;
+  border-radius: 0.5em;
+  border: 1px solid #000;
+}
+
+.SearchFormUi.dirty {
+  background-color: #542;
+}
+
+.SearchFormUi > form {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.SearchFormUi input {
+  width: 95%;
+}
+
+.SearchFlagsUi .toggle {
+  background-color: #bbb;
+  width: 2em;
+}
+.SearchFlagsUi .toggle.on {
+  background-color: #0f0;
+}
+.SearchFlagsUi .toggle.off {
+  background-color: #f00;
+}
+
+.LoHiUi {
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  align-items: center;
+}
+
+.LoHiUi > .caption {
+  flex: 1;
+  text-align: right;
+}
+
+.LoHiUi > input {
+  width: 5em;
+  margin: 0 0.5em;
+}
+
+.SearchUi > .SearchResultsUi {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.SearchUi > .SearchResultsUi > .ribbon {
+  background-color: #111;
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  align-items: center;
+}
+
+.SearchUi > .SearchResultsUi > .ribbon > input {
+  margin: 0.5em 1em;
+}
+
+.SearchUi > .SearchResultsUi > .ribbon > .message {
+  margin: 0.5em 1em;
+  flex: 1;
+  text-align: center;
+}
+
+.SearchUi > .SearchResultsUi > .field {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+.SearchResultCard {
+  min-width: 200px;
+  min-height: 100px;
+  max-height: 250px;
+  display: flex;
+}
+
+.SearchResultCard > .cardBody {
+  flex: 1;
+  background-color: #ccc;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 0.5em;
+  margin: 0.25em;
+  cursor: pointer;
+  padding: 0.5em;
+  font-size: 10pt;
+}
+
+.SearchResultCard .name {
+  margin: 0;
+}
+
+.SearchResultCard .imageRow {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.SearchResultCard .imageRow > div {
+  flex: 1;
+}
+
+.SearchResultCard .ratingRow {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.SearchResultCard .ratingRow .banner {
+  background-color: #888;
+  flex: 1;
+  margin-left: 0.25em;
+}
+
+.SearchResultCard .thumbnail {
+  max-width: 40%;
+  min-height: 2em;
+  max-height: 50%;
+  margin-right: 0.25em;
 }
 
 /* NowPlayingUi.
@@ -215,4 +355,121 @@ h2 {
  *****************************************************/
  
 .AdminUi {
+}
+
+/* GameDetailsModal.
+ ******************************************************/
+ 
+.GameDetailsModal {
+}
+
+.GameDetailsModal .columner {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+.GameDetailsModal .columner > * {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.GameHeaderForm {
+  min-width: 400px; /* Just wide enough to put flags all in one row (not that that really matters) */
+}
+
+.GameHeaderForm td.value > input {
+  width: calc(100% - 8px);
+}
+
+.GameCommentsForm {
+}
+
+.GameCommentsForm .commentList {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.GameCommentsForm .commentList > li {
+  border-bottom: 1px solid #888;
+  margin-bottom: 0.5em;
+  padding-bottom: 0.5em;
+}
+
+.GameCommentsForm .commentList .top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10pt;
+}
+
+.GameCommentsForm table {
+  width: 100%;
+}
+
+.GameCommentsForm textarea {
+  width: 100%;
+}
+
+.GamePlaysForm {
+}
+
+.GamePlaysForm ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.GamePlaysForm li {
+  cursor: pointer;
+}
+
+.GameListsForm {
+}
+
+.GameListsForm .mainRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  align-items: stretch;
+}
+
+.GameListsForm .well {
+  flex: 1;
+  min-height: 200px;
+}
+
+.GameListsForm .well h3 {
+  margin: 0;
+  text-align: center;
+}
+
+.GameListsForm .well select {
+  width: 100%;
+  height: 90%;
+}
+
+.GameListsForm .separator {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  margin: 0 0.5em;
+}
+
+.GameBlobsForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.GameBlobsForm img {
+  cursor: pointer;
 }

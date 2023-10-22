@@ -275,7 +275,7 @@ static int ra_http_patch_game(struct http_xfer *req,struct http_xfer *rsp) {
   struct db_game scratch;
   memcpy(&scratch,pre,sizeof(struct db_game));
   if (db_game_decode(&scratch,ra.db,DB_FORMAT_json,src,srcc)<0) return http_xfer_set_status(rsp,400,"Malformed game");
-  const struct db_game *game=db_game_update(ra.db,game);
+  const struct db_game *game=db_game_update(ra.db,&scratch);
   if (!game) return -1;
   return db_game_encode(http_xfer_get_body_encoder(rsp),ra.db,game,DB_FORMAT_json,ra_http_get_detail(req,DB_DETAIL_record));
 }
@@ -360,7 +360,8 @@ static int ra_http_patch_comment(struct http_xfer *req,struct http_xfer *rsp) {
   if (db_comment_decode(&scratch,ra.db,DB_FORMAT_json,src,srcc)<0) return http_xfer_set_status(rsp,400,"Malformed comment");
   // There's only one field (v) that could change in a comment, the other 3 are the primary key.
   // So we're violating PATCH semantics if (v) wasn't provided in the input, but whatever.
-  if (db_comment_insert(ra.db,&scratch)<0) return -1;
+  const struct db_comment *comment=db_comment_update(ra.db,&scratch);
+  if (!comment) return -1;
   return db_comment_encode(http_xfer_get_body_encoder(rsp),ra.db,&scratch,DB_FORMAT_json,DB_DETAIL_record);
 }
 
@@ -632,6 +633,7 @@ static int ra_http_patch_list(struct http_xfer *req,struct http_xfer *rsp) {
   struct db_list *list=db_list_get_by_id(ra.db,listid);
   if (!list) return http_xfer_set_status(rsp,404,"List %d not found",listid);
   if (db_list_decode(list,ra.db,DB_FORMAT_json,src,srcc)<0) return -1;
+  db_list_dirty(ra.db,list);
   return db_list_encode(http_xfer_get_body_encoder(rsp),ra.db,list,DB_FORMAT_json,ra_http_get_detail(req,DB_DETAIL_id));
 }
 
@@ -645,30 +647,31 @@ static int ra_http_delete_list(struct http_xfer *req,struct http_xfer *rsp) {
 }
 
 /* POST /api/list/add
+ * POST /api/list/remove
+ * Unlike most list calls, these accept ID or Name as "listid".
+ * (that happens to be convenient for the web app).
+ * "gameid" must be a numeric ID.
  */
-
-static int ra_http_list_add(struct http_xfer *req,struct http_xfer *rsp) {
-  int listid,gameid;
-  if (http_xfer_get_query_int(&listid,req,"listid",6)<0) return http_xfer_set_status(rsp,400,"listid required");
+ 
+static int ra_http_list_add_remove(struct http_xfer *req,struct http_xfer *rsp,int (*fn)(struct db *db,struct db_list *list,uint32_t gameid)) {
+  int gameid;
   if (http_xfer_get_query_int(&gameid,req,"gameid",6)<0) return http_xfer_set_status(rsp,400,"gameid required");
+  char listid[64];
+  int listidc=http_xfer_get_query_string(listid,sizeof(listid),req,"listid",6);
+  if ((listidc<1)||(listidc>sizeof(listid))) return http_xfer_set_status(rsp,400,"listid required");
   if (!db_game_get_by_id(ra.db,gameid)) return http_xfer_set_status(rsp,404,"Game %d not found",gameid);
-  struct db_list *list=db_list_get_by_id(ra.db,listid);
+  struct db_list *list=db_list_get_by_string(ra.db,listid,listidc);
   if (!list) return http_xfer_set_status(rsp,404,"List %d not found",listid);
-  if (db_list_append(ra.db,list,gameid)<0) return http_xfer_set_status(rsp,500,"Failed to add game to list");
+  fn(ra.db,list,gameid);
   return db_list_encode(http_xfer_get_body_encoder(rsp),ra.db,list,DB_FORMAT_json,ra_http_get_detail(req,DB_DETAIL_id));
 }
 
-/* POST /api/list/remove
- */
+static int ra_http_list_add(struct http_xfer *req,struct http_xfer *rsp) {
+  return ra_http_list_add_remove(req,rsp,db_list_append);
+}
  
 static int ra_http_list_remove(struct http_xfer *req,struct http_xfer *rsp) {
-  int listid,gameid;
-  if (http_xfer_get_query_int(&listid,req,"listid",6)<0) return http_xfer_set_status(rsp,400,"listid required");
-  if (http_xfer_get_query_int(&gameid,req,"gameid",6)<0) return http_xfer_set_status(rsp,400,"gameid required");
-  struct db_list *list=db_list_get_by_id(ra.db,listid);
-  if (!list) return http_xfer_set_status(rsp,404,"List %d not found",listid);
-  db_list_remove(ra.db,list,gameid);
-  return db_list_encode(http_xfer_get_body_encoder(rsp),ra.db,list,DB_FORMAT_json,ra_http_get_detail(req,DB_DETAIL_id));
+  return ra_http_list_add_remove(req,rsp,db_list_remove);
 }
 
 /* GET /api/blob/all

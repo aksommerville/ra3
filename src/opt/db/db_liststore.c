@@ -59,7 +59,9 @@ int db_liststore_decode(struct db_liststore *store,const void *src,int srcc) {
     if (!list) return -1;
     store->v[store->c++]=list;
     
-    if (sr_decode_raw(&list->listid,&decoder,4)<0) return -1;
+    uint32_t *idloc=0;
+    if (sr_decode_raw(&idloc,&decoder,4)<0) return -1;
+    list->listid=*idloc;
     if (list->listid<=pvid) {
       store->c--;
       free(list);
@@ -194,6 +196,7 @@ struct db_list *db_liststore_insert(struct db_liststore *store,int p,uint32_t li
   store->c++;
   store->v[p]=list;
   while ((store->contigc<store->c)&&(store->v[store->contigc]->listid==store->contigc+1)) store->contigc++;
+  store->dirty=1;
   return list;
 }
 

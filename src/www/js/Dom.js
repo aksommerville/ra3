@@ -12,6 +12,10 @@ export class Dom {
     this.window = window;
     this.document = document;
     
+    // We listen for the Escape key, to dismiss modals.
+    this.keyDownListener = event => this.onKeyDown(event);
+    this.window.addEventListener("keydown", this.keyDownListener);
+    
     this.mutationObserver = new this.window.MutationObserver(e => this.onMutation(e));
     this.mutationObserver.observe(document.body, {
       subtree: true,
@@ -91,18 +95,46 @@ export class Dom {
     if (!modal) return false;
     const container = modal.parentNode.parentNode;
     container.remove();
-    if (!this.document.querySelector(".modalContainer")) {
-      this.document.querySelector(".modalBlotter")?.remove();
-    }
+    this.adjustModalBlotterPosition();
+  }
+  
+  dismissTopModal() {
+    const containers = Array.from(this.document.querySelectorAll(".modalContainer"));
+    if (!containers.length) return false;
+    containers[containers.length - 1].remove();
+    this.adjustModalBlotterPosition();
+    return true;
   }
   
   requireModalBlotter() {
     let blotter = this.document.querySelector(".modalBlotter");
-    if (!blotter) {
-      blotter = this.spawn(this.document.body, "DIV", ["modalBlotter"], { "on-click": () => this.dismissAllModals() });
+    if (blotter) {
+      this.document.body.insertBefore(blotter, null); // move to top
+    } else {
+      blotter = this.spawn(this.document.body, "DIV", ["modalBlotter"], { "on-click": () => this.dismissTopModal() });
     }
     const container = this.spawn(this.document.body, "DIV", ["modalContainer"]);
     return container;
+  }
+  
+  adjustModalBlotterPosition() {
+    const blotter = this.document.querySelector(".modalBlotter");
+    if (!blotter) return;
+    const containers = Array.from(this.document.querySelectorAll(".modalContainer"));
+    if (containers.length > 0) {
+      this.document.body.insertBefore(blotter, containers[containers.length - 1]);
+    } else {
+      blotter.remove();
+    }
+  }
+  
+  onKeyDown(e) {
+    if (e.code !== "Escape") return;
+    if (this.dismissTopModal()) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
   }
   
   onMutation(e) {

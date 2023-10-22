@@ -31,7 +31,7 @@ int http_dict_get(void *dstpp,const struct http_dict *dict,const char *k,int kc)
   for (;i-->0;entry++) {
     if (entry->kc!=kc) continue;
     if (http_memcasecmp(k,entry->k,kc)) continue;
-    *(void**)dstpp=entry->v;
+    if (dstpp) *(void**)dstpp=entry->v;
     return entry->vc;
   }
   return -1;

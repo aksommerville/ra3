@@ -115,6 +115,10 @@ int db_blob_for_gameid(
     db->rootc,db->root,sep,sep,gameid-gameid%100
   );
   if ((pathc<1)||(pathc>=sizeof(path))) return -1;
+  if (!file_get_type(path)) {
+    // No problem if the directory doesn't exist; there just aren't any blobs.
+    return 0;
+  }
   struct db_blob_ctx ctx={
     .include_invalid=include_invalid,
     .cb=cb,

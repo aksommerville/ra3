@@ -35,7 +35,7 @@ Ditto for all the HTTP interfaces.
 - - [x] Straight DB view
 - - [x] Search
 - - [x] Game details
-- - [ ] Lists
+- - [x] Lists
 - - [ ] Admin
 - - [ ] Now Playing
 - [ ] Integrate emulators

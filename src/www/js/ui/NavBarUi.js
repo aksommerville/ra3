@@ -23,6 +23,7 @@ export class NavBarUi {
     this.element.innerHTML = "";
     const tabBar = this.dom.spawn(this.element, "UL", ["tabBar"], { "on-click": e => this.onTabBarClick(e) });
     this.dom.spawn(tabBar, "LI", "Search", { "data-tabid": "search" });
+    this.dom.spawn(tabBar, "LI", "Lists", { "data-tabid": "lists" });
     this.dom.spawn(tabBar, "LI", "Now Playing", { "data-tabid": "nowPlaying" });
     this.dom.spawn(tabBar, "LI", "DB", { "data-tabid": "db" });
     this.dom.spawn(tabBar, "LI", "Admin", { "data-tabid": "admin" });

@@ -8,6 +8,7 @@ import { SearchUi } from "./SearchUi.js";
 import { NowPlayingUi } from "./NowPlayingUi.js";
 import { DbUi } from "./DbUi.js";
 import { AdminUi } from "./AdminUi.js";
+import { ListsUi } from "./ListsUi.js";
 
 export class RootUi {
   static getDependencies() {
@@ -60,6 +61,7 @@ export class RootUi {
       case "nowPlaying": ctlcls = NowPlayingUi; break;
       case "db": ctlcls = DbUi; break;
       case "admin": ctlcls = AdminUi; break;
+      case "lists": ctlcls = ListsUi; break;
     }
     if (!ctlcls) return;
     this.mainController = this.dom.spawnController(main, ctlcls);

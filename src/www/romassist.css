@@ -473,3 +473,126 @@ h2 {
 .GameBlobsForm img {
   cursor: pointer;
 }
+
+/* ListsUi.
+ ******************************************************************/
+ 
+.ListsUi {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.ListsUi > .listsList {
+  min-width: 200px;
+  border-right: 1px solid #000;
+  overflow-y: auto;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ListsUi > .listsList > li {
+  color: #000;
+  cursor: pointer;
+}
+.ListsUi > .listsList > li:nth-child(even) {
+  background-color: #bbb;
+}
+.ListsUi > .listsList > li:nth-child(odd) {
+  background-color: #aac;
+}
+.ListsUi > .listsList > li.selected {
+  background-color: #ff0;
+}
+
+.ListsUi > .vertPacker {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.ListsUi .header {
+  border-bottom: 1px solid #000;
+}
+
+.ListsUi .header table {
+  width: 100%;
+}
+
+.ListsUi td.key {
+  text-align: right;
+  padding-right: 1em;
+}
+
+.ListsUi .header input[type="text"] {
+  width: 500px;
+}
+
+.ListsUi .payload {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.ListsUi .payload > * {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ListsUi h3 {
+  text-align: center;
+}
+
+.ListsUi .gamesPresent {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ListsUi .gamesPresent li {
+  cursor: pointer;
+  color: #000;
+  display: flex;
+  flex-direction: row;
+}
+.ListsUi .gamesPresent li:nth-child(even) {
+  background-color: #aac;
+}
+.ListsUi .gamesPresent li:nth-child(odd) {
+  background-color: #bbb;
+}
+
+.QuickieSearchUi {
+  flex: 1;
+}
+
+.QuickieSearchUi > form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  height: 100%;
+}
+
+.QuickieSearchUi .results {
+  flex: 1;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  background-color: #aaa;
+  color: #000;
+  max-height: 700px; /* TODO There must be some better way to keep this from growing beyond the bottom of the window */
+  overflow-y: auto;
+}
+
+.QuickieSearchUi .results li {
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+}

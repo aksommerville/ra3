@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "opt/db/db.h"
 #include "opt/http/http.h"
+#include "ra_process.h"
 
 extern struct ra {
 
@@ -21,6 +22,7 @@ extern struct ra {
   volatile int sigc;
   struct db *db;
   struct http_context *http;
+  struct ra_process process;
   
 } ra;
 

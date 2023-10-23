@@ -793,7 +793,16 @@ static int ra_http_launch(struct http_xfer *req,struct http_xfer *rsp) {
   const struct db_launcher *launcher=db_launcher_for_gameid(ra.db,gameid);
   if (!launcher) return http_xfer_set_status(rsp,500,"No suitable launcher");
   
-  fprintf(stderr,"%s:%d: TODO! Launch game %d with launcher %d.\n",__FILE__,__LINE__,gameid,launcher->launcherid);
+  const char *cmd=0;
+  int cmdc=db_string_get(&cmd,ra.db,launcher->cmd);
+  if (cmdc<1) return http_xfer_set_status(rsp,500,"Launcher %d, no command",launcher->launcherid);
+  char path[1024];
+  int pathc=db_game_get_path(path,sizeof(path),ra.db,game);
+  if ((pathc<1)||(pathc>=sizeof(path))) return http_xfer_set_status(rsp,500,"Game %d, invalid path",game->gameid);
+  
+  if (ra_process_prepare_launch(&ra.process,cmd,cmdc,path,pathc,game->gameid)<0) {
+    return http_xfer_set_status(rsp,500,"Failed to launch");
+  }
   
   struct db_play playref={
     .gameid=gameid,

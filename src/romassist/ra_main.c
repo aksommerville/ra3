@@ -62,13 +62,18 @@ int main(int argc,char **argv) {
   
   while (1) {
     if (ra.sigc) break;
-    if (http_update(ra.http,10000)<0) {
+    if (http_update(ra.http,1000)<0) {
       fprintf(stderr,"%s: Error updating HTTP (could be anything).\n",ra.exename);
       status=1;
       goto _done_;
     }
     if (db_save(ra.db)<0) {
       fprintf(stderr,"%s:!!! Error saving database. Will keep open and try again soon.\n",ra.exename);
+    }
+    if (ra_process_update(&ra.process)<0) {
+      fprintf(stderr,"%s: Error updating child process.\n",ra.exename);
+      status=1;
+      goto _done_;
     }
   }
   
@@ -77,6 +82,7 @@ int main(int argc,char **argv) {
   if (!status) db_save(ra.db);
   db_del(ra.db);
   http_context_del(ra.http);
+  ra_process_cleanup(&ra.process);
 
   if (status) fprintf(stderr,"%s: Abnormal exit.\n",ra.exename);
   else fprintf(stderr,"%s: Normal exit.\n",ra.exename);

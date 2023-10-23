@@ -19,9 +19,11 @@ Ditto for all the HTTP interfaces.
 - - [ ] Input drivers
 - [ ] Backend
 - - [x] Database
-- - [ ] Launcher
+- - [x] Launcher
 - - [x] HTTP server
 - - [ ] WebSocket server
+- - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
+- - [ ] If we're serving on 6502, Emuhost v2 clients will choke. Pick a new port.
 - [x] db: Must cache blob list, at least for large game queries. (otherwise each file will re-read the blob directories from scratch).
 - - time curl -sX POST 'http://localhost:6502/api/query?rating=0..100&limit=999999&detail=blobs' >/dev/null
 - - 13 ms at detail=record, 49 ms at detail=blobs (which is actually not bad at all!)

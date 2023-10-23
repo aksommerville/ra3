@@ -4,22 +4,25 @@
  */
  
 import { Dom } from "../Dom.js";
+import { Comm } from "../Comm.js";
 import { DbService } from "../model/DbService.js";
 import { GameHeaderForm } from "./GameHeaderForm.js";
 import { GameCommentsForm } from "./GameCommentsForm.js";
 import { GamePlaysForm } from "./GamePlaysForm.js";
 import { GameListsForm } from "./GameListsForm.js";
 import { GameBlobsForm } from "./GameBlobsForm.js";
+import { ChoiceModal } from "./ChoiceModal.js";
 
 export class GameDetailsModal {
   static getDependencies() {
-    return [HTMLElement, Dom, DbService, Window];
+    return [HTMLElement, Dom, DbService, Window, Comm];
   }
-  constructor(element, dom, dbService, window) {
+  constructor(element, dom, dbService, window, comm) {
     this.element = element;
     this.dom = dom;
     this.dbService = dbService;
     this.window = window;
+    this.comm = comm;
     
     // We call this after a change has been saved.
     this.onChanged = (game) => {};
@@ -80,8 +83,16 @@ export class GameDetailsModal {
       "on-click": () => this.onSave(),
       disabled: "disabled",
     });
-    //TODO Delete
-    //TODO Launch
+    this.dom.spawn(buttonsRow, "INPUT", {
+      type: "button",
+      value: "Delete",
+      "on-click": () => this.onDelete(),
+    });
+    this.dom.spawn(buttonsRow, "INPUT", {
+      type: "button",
+      value: "Launch",
+      "on-click": () => this.onLaunch(),
+    });
   }
   
   populate() {
@@ -167,6 +178,25 @@ export class GameDetailsModal {
     return Promise.reject({
       message: "Unexpected change at GameDetailsModal.commitOneChange",
       change,
+    });
+  }
+  
+  onDelete() {
+    if (!this.game) return;
+    const modal = this.dom.spawnModal(ChoiceModal);
+    modal.setup("Really delete this game record and all associated records? The ROM file will not be deleted.", ["Delete"]).then(() => {
+      this.dbService.deleteRecord(game, this.game).then(() => {
+        this.dom.dismissModalByController(this);
+      });
+    });
+  }
+  
+  onLaunch() {
+    if (!this.game) return;
+    this.comm.http("POST", `/api/launch?gameid=${this.game.gameid}`).then(() => {
+      console.log("launch ok");
+    }).catch(error => {
+      console.log("launch failed", error);
     });
   }
 }

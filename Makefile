@@ -55,6 +55,7 @@ ifneq (,$(strip $(BUILD_ROMASSIST)))
   ,$(OFILES))
   $(EXE_ROMASSIST):$(OFILES_ROMASSIST);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
   run:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --menu=$(PWD)/out/romassist-menu$(EXESFX)
+  run-bg:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --port=6503
 endif
 
 ifneq (,$(strip $(BUILD_MENU)))

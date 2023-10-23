@@ -30,6 +30,7 @@ struct db_launcher *db_launcher_for_gameid(const struct db *db,uint32_t gameid) 
   if (!game) return 0;
   
   // Normalize suffix from basename.
+  //TODO!!! This isn't going to work for Pico-8 (*.p8.png)
   char sfx[16];
   int sfxc=0,basep=0;
   for (;(basep<sizeof(game->base))&&game->base[basep];basep++) {
@@ -61,8 +62,8 @@ struct db_launcher *db_launcher_for_gameid(const struct db *db,uint32_t gameid) 
       const char *suffixes;
       int suffixesc=db_string_get(&suffixes,db,q->suffixes);
       if (suffixesc>0) {
-        if (db_string_in_comma_list(sfx,sfxc,suffixes,suffixesc)) score+=100;
-        else score-=100;
+        if (db_string_in_comma_list(sfx,sfxc,suffixes,suffixesc)) score+=50;
+        else score-=50;
       }
     }
     

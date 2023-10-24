@@ -3,15 +3,17 @@
  */
  
 import { Dom } from "../Dom.js";
+import { Comm } from "../Comm.js";
 import { GameDetailsModal } from "./GameDetailsModal.js";
 
 export class SearchResultCard {
   static getDependencies() {
-    return [HTMLElement, Dom];
+    return [HTMLElement, Dom, Comm];
   }
-  constructor(element, dom) {
+  constructor(element, dom, comm) {
     this.element = element;
     this.dom = dom;
+    this.comm = comm;
     
     this.game = null;
     
@@ -36,7 +38,9 @@ export class SearchResultCard {
     this.dom.spawn(imageRowText, "DIV", ["platform"]);
     this.dom.spawn(imageRowText, "DIV", ["author"]);
     this.dom.spawn(imageRowText, "DIV", ["pubtime"]);
-    this.dom.spawn(imageRowText, "INPUT", { type: "button", value: "Details", "on-click": () => this.editDetails() });
+    const buttonsRow = this.dom.spawn(imageRowText, "DIV", ["buttonsRow"]);
+    this.dom.spawn(buttonsRow, "INPUT", { type: "button", value: "Details", "on-click": () => this.editDetails() });
+    this.dom.spawn(buttonsRow, "INPUT", { type: "button", value: "Launch", "on-click": () => this.launch() });
     this.dom.spawn(body, "DIV", ["desc"]);
   }
   
@@ -76,5 +80,14 @@ export class SearchResultCard {
     const modal = this.dom.spawnModal(GameDetailsModal);
     modal.setupFull(this.game);
     modal.onChanged = game => this.setGame(game);
+  }
+  
+  launch() {
+    if (!this.game) return;
+    this.comm.http("POST", `/api/launch?gameid=${this.game.gameid}`).then(() => {
+      console.log("launch ok");
+    }).catch(error => {
+      console.log("launch failed", error);
+    });
   }
 }

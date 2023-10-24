@@ -813,12 +813,69 @@ static int ra_http_launch(struct http_xfer *req,struct http_xfer *rsp) {
   return db_play_encode(http_xfer_get_body_encoder(rsp),ra.db,play,DB_FORMAT_json,DB_DETAIL_record);
 }
 
+/* POST /api/random
+ */
+ 
+static int ra_http_random(struct http_xfer *req,struct http_xfer *rsp) {
+
+  // Perform a query basically like POST /api/query, but then ask for a random game from the results.
+  struct db_query *query=db_query_new(ra.db);
+  if (!query) return -1;
+  if (http_xfer_for_query(req,db_query_add_parameter,query)<0) {
+    db_query_del(query);
+    return -1;
+  }
+  db_query_add_parameter("limit",5,"999999",6,query); // Don't paginate.
+  struct db_list *results=0;
+  if (
+    (db_query_finish(0,query)<0)||
+    !(results=db_query_get_results(query))
+  ) {
+    db_query_del(query);
+    return -1;
+  }
+  uint32_t gameid=db_query_choose_random(ra.db,results->gameidv,results->gameidc);
+  db_query_del(query);
+  
+  // Then do about what POST /api/launch does.
+  const struct db_game *game=db_game_get_by_id(ra.db,gameid);
+  if (!game) return http_xfer_set_status(rsp,404,"Not found");
+  const struct db_launcher *launcher=db_launcher_for_gameid(ra.db,gameid);
+  if (!launcher) return http_xfer_set_status(rsp,500,"No suitable launcher");
+  
+  const char *cmd=0;
+  int cmdc=db_string_get(&cmd,ra.db,launcher->cmd);
+  if (cmdc<1) return http_xfer_set_status(rsp,500,"Launcher %d, no command",launcher->launcherid);
+  char path[1024];
+  int pathc=db_game_get_path(path,sizeof(path),ra.db,game);
+  if ((pathc<1)||(pathc>=sizeof(path))) return http_xfer_set_status(rsp,500,"Game %d, invalid path",game->gameid);
+  
+  if (ra_process_prepare_launch(&ra.process,cmd,cmdc,path,pathc,game->gameid)<0) {
+    return http_xfer_set_status(rsp,500,"Failed to launch");
+  }
+  
+  struct db_play playref={
+    .gameid=gameid,
+    .time=db_time_now(),
+  };
+  const struct db_play *play=db_play_insert(ra.db,&playref);
+  if (!play) play=&playref;
+  return db_play_encode(http_xfer_get_body_encoder(rsp),ra.db,play,DB_FORMAT_json,DB_DETAIL_record);
+}
+
 /* POST /api/terminate
  */
  
 static int ra_http_terminate(struct http_xfer *req,struct http_xfer *rsp) {
-  //TODO Terminate running game, and db_play_finish
-  return http_xfer_set_status(rsp,500,"TODO %s",__func__);//TODO
+  if (ra_process_get_status(&ra.process)!=RA_PROCESS_STATUS_GAME) {
+    return http_xfer_set_status(rsp,400,"No game running");
+  }
+  uint32_t gameid=ra.process.gameid;
+  if (ra_process_terminate_game(&ra.process)<0) {
+    return http_xfer_set_status(rsp,500,"Failed to terminate");
+  }
+  db_play_finish(ra.db,gameid);
+  return 0;
 }
 
 /* Log call. We only log after the fact. Could be a problem if you want to trace servlet failures?
@@ -921,6 +978,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   
   _(POST,"/api/query",ra_http_query)
   _(POST,"/api/launch",ra_http_launch)
+  _(POST,"/api/random",ra_http_random)
   _(POST,"/api/terminate",ra_http_terminate)
   
   #undef _

@@ -26,7 +26,7 @@ export class SearchResultsUi {
   
   setResults(results, pageCount) {
     this.results = results || [];
-    this.pagec = pageCount || 1;//Math.ceil(this.results.length / this.PAGE_SIZE);
+    this.pagec = pageCount || 1;
     if (this.pagep > this.pagec) this.pagep = this.pagec;
     this.populate();
   }
@@ -50,12 +50,19 @@ export class SearchResultsUi {
   }
   
   depopulate() {
-    this.element.querySelector(".ribbon > .message").innerText = "";
+    this.element.querySelector(".ribbon > .message").innerHTML = "";
     this.element.querySelector(".field").innerHTML = "";
   }
   
   populate() {
-    this.element.querySelector(".ribbon > .message").innerText = this.results.length ? `Page ${this.pagep} of ${this.pagec}` : "";
+  
+    const message = this.element.querySelector(".ribbon > .message");
+    message.innerHTML = "";
+    if (this.results.length) {
+      this.dom.spawn(message, "SPAN", `Page ${this.pagep} of ${this.pagec}`);
+      this.dom.spawn(message, "INPUT", { type: "button", value: "Play Random", "on-click": () => this.searchUi.playRandom() });
+    }
+    
     const field = this.element.querySelector(".field");
     field.innerHTML = "";
     for (const game of this.results) {

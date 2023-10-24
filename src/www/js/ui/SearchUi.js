@@ -4,17 +4,19 @@
  */
  
 import { Dom } from "../Dom.js";
+import { Comm } from "../Comm.js";
 import { DbService } from "../model/DbService.js";
 import { SearchFormUi } from "./SearchFormUi.js";
 import { SearchResultsUi } from "./SearchResultsUi.js";
  
 export class SearchUi {
   static getDependencies() {
-    return [HTMLElement, Dom, DbService];
+    return [HTMLElement, Dom, Comm, DbService];
   }
-  constructor(element, dom, dbService) {
+  constructor(element, dom, comm, dbService) {
     this.element = element;
     this.dom = dom;
+    this.comm = comm;
     this.dbService = dbService;
     
     this.searchForm = null;
@@ -52,5 +54,16 @@ export class SearchUi {
   searchAgain() {
     if (!this.previousQuery) return;
     this.search(this.previousQuery);
+  }
+  
+  playRandom() {
+    if (!this.searchResults) return;
+    if (this.searchResults.length < 1) return;
+    if (!this.previousQuery) return;
+    this.comm.httpJson("POST", "/api/random", this.previousQuery).then(rsp => {
+      console.log(`launched a game`, rsp);
+    }).catch(e => {
+      console.log(`random launch failed`, e);
+    });
   }
 }

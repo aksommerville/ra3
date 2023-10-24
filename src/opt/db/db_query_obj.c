@@ -271,7 +271,7 @@ int db_query_finish(struct sr_encoder *dst,struct db_query *query) {
     // Paginate.
     query->pagec=db_list_paginate(query->results,query->limit,query->pagep-1);
   }
-  return db_list_encode_array(dst,query->db,query->results,DB_FORMAT_json,query->detail);
+  return dst?db_list_encode_array(dst,query->db,query->results,DB_FORMAT_json,query->detail):0;
 }
 
 /* Trivial accessors.
@@ -279,4 +279,8 @@ int db_query_finish(struct sr_encoder *dst,struct db_query *query) {
 
 int db_query_get_page_count(const struct db_query *query) {
   return query->pagec;
+}
+
+struct db_list *db_query_get_results(const struct db_query *query) {
+  return query->results;
 }

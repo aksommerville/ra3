@@ -517,8 +517,19 @@ struct db_query;
 void db_query_del(struct db_query *query);
 struct db_query *db_query_new(struct db *db);
 int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *query);
-int db_query_finish(struct sr_encoder *dst,struct db_query *query);
+int db_query_finish(struct sr_encoder *dst,struct db_query *query); // Null (dst) if you don't need it encoded.
 int db_query_get_page_count(const struct db_query *query); // => 0 if pagination not requested
+struct db_list *db_query_get_results(const struct db_query *query); // Finish first.
+
+/* Select among (gameidv), one game we can randomly recommend to the player.
+ *  - Eliminate any with (launcher=never). (NB we search for the string "never", unlike the smarter db_launcher_for_gameid).
+ *  - Eliminate any with "faulty" flag.
+ *  - Eliminate any with (rating<10), unless they all are.
+ *  - Weight all remaining games by essentially (rating*age), age in weeks to the last play, both clamped to 1..100.
+ * The age parameter helps keep results fresh: If you play whatever we return, it becomes very unlikely in the next few calls.
+ * But it's always random, and anything that doesn't get eliminated could be selected.
+ */
+uint32_t db_query_choose_random(struct db *db,const uint32_t *gameidv,int gameidc);
 
 /* Loose text.
  * Return anything that matches case-insensitively in name, basename, or comments.

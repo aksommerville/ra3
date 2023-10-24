@@ -1,6 +1,108 @@
 #include "db_internal.h"
 #include "opt/serial/serial.h"
 
+/* Random pick.
+ */
+ 
+#define DB_TICKS_PER_WEEK (60*24*7) /* a tick is one minute */
+ 
+static uint32_t db_query_random_score(struct db *db,const struct db_game *game,uint32_t now) {
+  
+  // Rating is simple, just clamp it to 1..100.
+  uint32_t rating=game->rating;
+  if (rating<1) rating=1;
+  else if (rating>100) rating=100;
+  
+  // Age takes some doing...
+  uint32_t age=100;
+  struct db_play *play;
+  int playc=db_plays_get_by_gameid(&play,db,game->gameid);
+  if (playc>0) {
+    play+=playc-1;
+    age=(now-play->time)/DB_TICKS_PER_WEEK;
+  }
+  if (age<1) age=1;
+  else if (age>100) age=100;
+  
+  // And presto!
+  return rating*age;
+}
+ 
+uint32_t db_query_choose_random(struct db *db,const uint32_t *gameidv,int gameidc) {
+  if (gameidc<1) return 0;
+  
+  struct db_game *gamev=malloc(sizeof(struct db_game)*gameidc);
+  if (!gamev) return 0;
+  int gamec=0;
+  
+  uint32_t ratinghi=0,ratinglo=UINT32_MAX;
+  uint32_t stringid_launcher=db_string_lookup(db,"launcher",8);
+  uint32_t stringid_never=db_string_lookup(db,"never",5);
+  for (;gameidc-->0;gameidv++) {
+    const struct db_game *game=db_game_get_by_id(db,*gameidv);
+    if (!game) continue;
+    
+    // Eliminate any with "faulty".
+    if (game->flags&DB_FLAG_faulty) continue;
+    
+    // Eliminate any with "launcher=never" (on the exact string, and don't worry about whether it's the last "launcher" comment).
+    if (stringid_launcher&&stringid_never) {
+      int ok=1;
+      struct db_comment *comment;
+      int commentc=db_comments_get_by_gameid(&comment,db,game->gameid);
+      for (;commentc-->0;comment++) {
+        if (comment->k!=stringid_launcher) continue;
+        if (comment->v!=stringid_never) continue;
+        ok=0;
+        break;
+      }
+      if (!ok) continue;
+    }
+    
+    if (game->rating>ratinghi) ratinghi=game->rating;
+    else if (game->rating<ratinglo) ratinglo=game->rating;
+    gamev[gamec++]=*game;
+  }
+  
+  // Eliminate any (rating<10), if there's at least one (>=10).
+  if ((ratinglo<10)&&(ratinghi>=10)) {
+    int i=gamec; while (i-->0) {
+      if (gamev[i].rating<10) {
+        gamec--;
+        memmove(gamev+i,gamev+i+1,sizeof(struct db_game)*(gamec-i));
+      }
+    }
+  }
+  
+  /* Score each game based on rating and playtime. Write the score into (rating).
+   * Don't worry: This is a copy of the game list, we can write freely.
+   */
+  uint32_t total=0;
+  uint32_t now=db_time_now();
+  struct db_game *game=gamev;
+  int i=gamec;
+  for (;i-->0;game++) {
+    game->rating=db_query_random_score(db,game,now);
+    total+=game->rating;
+  }
+  
+  // Select randomly.
+  uint32_t gameid=0;
+  if (total>0) {
+    uint32_t choice=rand()%total;
+    for (game=gamev,i=gamec;i-->0;game++) {
+      if (choice<game->rating) {
+        gameid=game->gameid;
+        break;
+      }
+      choice-=game->rating;
+    }
+  }
+  
+  free(gamev);
+  return gameid;
+}
+
 /* Search for a query string in a search space that may be nul-terminated, or a fixed limit.
  * Query must be normalized: Lowercase letters, digits, and space with no leading or trailing space.
  */
@@ -22,6 +124,21 @@ static int db_strsearch_limited(const char *q,int qc,const char *text,int textc)
   int textp=0,stopp=textc-qc;
   for (;textp<=stopp;textp++) {
     if (db_strsearch_1(q,text+textp,qc)) return 1;
+  }
+  return 0;
+}
+
+/* Search in a string resource.
+ */
+ 
+static int db_strsearch_stringid(const char *q,int qc,struct db *db,uint32_t stringid) {
+  if (!stringid) return 0;
+  const char *text=0;
+  int textc=db_string_get(&text,db,stringid);
+  int i=textc-qc;
+  while (i>=0) {
+    if (db_strsearch_1(q,text+i,qc)) return 1;
+    i--;
   }
   return 0;
 }
@@ -84,6 +201,7 @@ struct db_list *db_query_text(
     if (
       db_strsearch_limited(norm,normc,game->name,sizeof(game->name))||
       db_strsearch_limited(norm,normc,game->base,sizeof(game->base))||
+      db_strsearch_stringid(norm,normc,db,game->author)||
       db_strsearch_comments(norm,normc,db,game->gameid)
     ) {
       if (db_list_append(db,dst,game->gameid)<0) {

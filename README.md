@@ -30,7 +30,7 @@ Ditto for all the HTTP interfaces.
 - - After blobcache: 13 => 18, much better.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
-- [ ] db: Pick a random game from within the query.
+- [x] db: Pick a random game from within the query.
 - [x] db: Sort query results
 - [ ] Menu
 - [ ] Web
@@ -38,8 +38,9 @@ Ditto for all the HTTP interfaces.
 - - [x] Search
 - - [x] Game details
 - - [x] Lists
-- - [ ] Admin
-- - [ ] Now Playing
+- - [ ] Admin: What is this for?
+- - [ ] Now Playing: Flesh out with WebSocket.
+- - [ ] Search: Preserve state across tab navigations. (and refresh? using url fragment)
 - [ ] Integrate emulators
 - - [ ] akfceu
 - - [ ] aksnes9x

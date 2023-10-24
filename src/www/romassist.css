@@ -204,6 +204,10 @@ h2 {
   text-align: center;
 }
 
+.SearchUi > .SearchResultsUi > .ribbon > .message > input {
+  margin-left: 0.5em;
+}
+
 .SearchUi > .SearchResultsUi > .field {
   flex: 1;
   display: grid;

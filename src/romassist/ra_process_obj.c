@@ -93,11 +93,11 @@ int ra_process_update(struct ra_process *process) {
       int status=WEXITSTATUS(wstatus);
       fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
       process->pid=0;
-      process->gameid=0;
+      if (!process->next_launch) process->gameid=0;
     } else if (err<0) {
       fprintf(stderr,"%s:WARNING: waitpid() error. Assuming child process %d was lost somehow.\n",ra.exename,process->pid);
       process->pid=0;
-      process->gameid=0;
+      if (!process->next_launch) process->gameid=0;
     }
   }
   
@@ -148,8 +148,8 @@ static char *ra_process_combine_command(const char *cmd,int cmdc,const char *pat
   }
   if (insc&&!pathc) return 0;
   if (!insc) pathc=0;
-  int nc=cmdc-insc+pathc+1;
-  char *nv=malloc(nc);
+  int nc=cmdc-insc+pathc;
+  char *nv=malloc(nc+1);
   if (!nv) return 0;
   memcpy(nv,cmd,insp);
   memcpy(nv+insp,path,pathc);

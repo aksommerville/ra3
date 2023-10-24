@@ -63,6 +63,7 @@ DELETE /api/blob?path => nothing
 POST /api/query?text&list&platform&author&genre&flags&notflags&rating&pubtime&detail&limit&page&sort => Game[]
 
 POST /api/launch?gameid => Play
+POST /api/random?text&list&platform&author&genre&flags&notflags&rating&pubtime => Play
 POST /api/terminate => nothing
 ```
 
@@ -225,11 +226,16 @@ And may be prefixed with "-" to reverse.
 
 The HTTP response will include a header `X-Page-Count` when paginated.
 
-## /api/launch, /api/terminate
+## /api/launch, /api/random, /api/terminate
 
 Launches a game.
 Any game in progress will be terminated first.
 A new `play` record will be added and returned.
+
+
+`/api/random` takes the same criteria parameters as `/api/query`, but instead of returning the results,
+it picks a game at random from within them and launches it.
+I expect to expose this behavior directly on frontends wherever the user can search. "Roll dice within this query".
 
 Or `/api/terminate` to stop whatever game is in progress and return to the menu.
 The menu itself does not terminate on this, though it technically could.

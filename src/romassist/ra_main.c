@@ -1,4 +1,5 @@
 #include "ra_internal.h"
+#include <time.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -54,6 +55,7 @@ int main(int argc,char **argv) {
   int status=0;
   
   signal(SIGINT,ra_rcvsig);
+  srand(time(0));
   if (ra_configure(argc,argv)<0) { status=1; goto _done_; }
   if (ra_init_db()<0) { status=1; goto _done_; }
   if (ra_init_http()<0) { status=1; goto _done_; }

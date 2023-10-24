@@ -54,8 +54,13 @@ ifneq (,$(strip $(BUILD_ROMASSIST)))
     mid/opt/fs/% \
   ,$(OFILES))
   $(EXE_ROMASSIST):$(OFILES_ROMASSIST);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
-  run:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --menu=$(PWD)/out/romassist-menu$(EXESFX)
-  run-bg:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --port=6503
+  ifeq (,$(strip $(BUILD_MENU)))
+    run:run-bg
+    run-bg:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www
+  else
+    run:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --menu=$(PWD)/out/romassist-menu$(EXESFX)
+    run-bg:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www
+  endif
 endif
 
 ifneq (,$(strip $(BUILD_MENU)))

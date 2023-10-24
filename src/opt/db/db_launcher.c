@@ -3,21 +3,22 @@
 
 /* Nonzero if a search string is present in a comma-delimited list.
  */
- 
-static int db_string_in_comma_list(const char *q,int qc,const char *list,int listc) {
-  int listp=0;
-  while (listp<listc) {
-    if ((unsigned char)list[listp]<=0x20) {
-      listp++;
-      continue;
+
+static int db_suffix_in_list(const char *sfx,int sfxc,const char *list,int listc) {
+  while (sfxc>0) {
+    int listp=0;
+    while (listp<listc) {
+      if (list[listp]==',') { listp++; continue; }
+      const char *q=list+listp;
+      int qc=0;
+      while ((listp<listc)&&(list[listp++]!=',')) qc++;
+      if ((qc==sfxc)&&!memcmp(q,sfx,sfxc)) return 1;
     }
-    const char *token=list+listp;
-    int tokenc=0;
-    while ((listp<listc)&&(list[listp++]!=',')) tokenc++;
-    while (tokenc&&((unsigned char)token[tokenc-1]<=0x20)) tokenc--;
-    if (tokenc!=qc) continue;
-    if (memcmp(token,q,qc)) continue;
-    return 1;
+    // If there's a dot in (sfx), advance to beyond that and try again.
+    while (sfxc&&(sfx[0]!='.')) { sfx++; sfxc--; }
+    if (!sfxc) break;
+    sfx++;
+    sfxc--;
   }
   return 0;
 }
@@ -26,18 +27,44 @@ static int db_string_in_comma_list(const char *q,int qc,const char *list,int lis
  */
  
 struct db_launcher *db_launcher_for_gameid(const struct db *db,uint32_t gameid) {
+  
+  /* If there's a comment with key "launcher", and its value is the name of a launcher, use it.
+   * This is an important fallback mechanism so the user can pick off individual games that need some nonstandard launcher.
+   * eg launcher "never" for known faulty games.
+   */
+  struct db_launcher *launcher=0;
+  uint32_t stringid_launcher=db_string_lookup(db,"launcher",8);
+  if (stringid_launcher) {
+    struct db_comment *comment=0;
+    int commentc=db_comments_get_by_gameid(&comment,db,gameid);
+    for (;commentc-->0;comment++) {
+      if (comment->k!=stringid_launcher) continue;
+      struct db_launcher *q=db->launchers.v;
+      int qi=db->launchers.c;
+      for (;qi-->0;q++) {
+        if (q->name==comment->v) {
+          launcher=q;
+          break;
+        }
+      }
+      // Even if we found one, keep looking. The latest (ie highest-index) comment naming an existing launcher should win ties.
+    }
+  }
+  if (launcher) return launcher;
+  
   struct db_game *game=db_game_get_by_id(db,gameid);
   if (!game) return 0;
   
   // Normalize suffix from basename.
-  //TODO!!! This isn't going to work for Pico-8 (*.p8.png)
-  char sfx[16];
-  int sfxc=0,basep=0;
+  // Read from just after the first dot.
+  // If there's more than one dot, our string matcher examines the shorter possibilities.
+  char sfx[32];
+  int sfxc=0,basep=0,sfxready=0;
   for (;(basep<sizeof(game->base))&&game->base[basep];basep++) {
     char ch=game->base[basep];
-    if (ch=='.') {
-      sfxc=0;
-    } else if (sfxc>=sizeof(sfx)) {
+    if (!sfxready) {
+      if (ch=='.') sfxready=1;
+    } else if (sfxc>=sizeof(sfx)) { // shouldn't happen; base names are limited to 32 bytes too.
       sfx[0]=0;
     } else if ((ch>='A')&&(ch<='Z')) {
       sfx[sfxc++]=ch+0x20;
@@ -48,6 +75,7 @@ struct db_launcher *db_launcher_for_gameid(const struct db *db,uint32_t gameid) 
   if (!sfx[0]) sfxc=0;
   
   // Check each launcher.
+  //TODO Review this algorithm for weird fuzzy cases, I really don't know whether it's sensible.
   struct db_launcher *best=0;
   int bestscore=0;
   struct db_launcher *q=db->launchers.v;
@@ -62,7 +90,7 @@ struct db_launcher *db_launcher_for_gameid(const struct db *db,uint32_t gameid) 
       const char *suffixes;
       int suffixesc=db_string_get(&suffixes,db,q->suffixes);
       if (suffixesc>0) {
-        if (db_string_in_comma_list(sfx,sfxc,suffixes,suffixesc)) score+=50;
+        if (db_suffix_in_list(sfx,sfxc,suffixes,suffixesc)) score+=50;
         else score-=50;
       }
     }

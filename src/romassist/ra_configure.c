@@ -13,7 +13,7 @@ static void ra_print_usage(const char *topic,int topicc) {
     "  --dbroot=PATH       Directory containing our database.\n"
     "  --htdocs=PATH       Directory containing static files for HTTP service.\n"
     "  --menu=PATH         Executable for front end.\n"
-    "  --port=6502         TCP port for HTTP server.\n"
+    "  --port=2600         TCP port for HTTP server.\n"
     "\n"
   );
 }
@@ -139,7 +139,7 @@ int ra_configure(int argc,char **argv) {
   if ((argc>=1)&&argv[0]&&argv[0][0]) {
     ra.exename=argv[0];
   }
-  ra.http_port=6502;
+  ra.http_port=2600;
   
   //TODO config file?
   

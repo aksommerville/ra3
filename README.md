@@ -23,7 +23,7 @@ Ditto for all the HTTP interfaces.
 - - [x] HTTP server
 - - [ ] WebSocket server
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
-- - [ ] If we're serving on 6502, Emuhost v2 clients will choke. Pick a new port.
+- - [x] If we're serving on 6502, Emuhost v2 clients will choke. Pick a new port. 2600
 - [x] db: Must cache blob list, at least for large game queries. (otherwise each file will re-read the blob directories from scratch).
 - - time curl -sX POST 'http://localhost:6502/api/query?rating=0..100&limit=999999&detail=blobs' >/dev/null
 - - 13 ms at detail=record, 49 ms at detail=blobs (which is actually not bad at all!)
@@ -56,6 +56,6 @@ Ditto for all the HTTP interfaces.
 - [ ] Prepare collection
 - - [x] Bulk import, include all ROMs, and metadata from ra2 if available.
 - - [x] Eliminate "-01-01" from pubtimes, there's a ton of them.
-- - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene.
+- - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".

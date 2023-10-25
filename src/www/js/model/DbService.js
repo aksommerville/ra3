@@ -16,6 +16,9 @@ export class DbService {
     this.platforms = null;
     this.genres = null;
     this.lists = null;
+    
+    // SearchUi abuses this to preserve its path across tab navigations.
+    this.recentSearchPath = null;
   }
   
   suggestAuthors() {

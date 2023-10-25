@@ -38,7 +38,7 @@ export class SearchFlagsUi {
       if (!input) continue;
       input.classList.add("on");
     }
-    if (notflags) for (const name of flags.split(/\s+/)) {
+    if (notflags) for (const name of notflags.split(/\s+/)) {
       const bitix = this.FLAG_NAMES.indexOf(name);
       if (bitix < 0) continue;
       const input = this.element.querySelector(`.toggle[data-bitix='${bitix}']`);

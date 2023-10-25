@@ -110,6 +110,23 @@ export class SearchFormUi {
     return input;
   }
   
+  populateWithQuery(query) {
+    let flags = "", notflags = "";
+    for (const k of Object.keys(query)) {
+      switch (k) {
+        case "flags": flags = query[k]; break;
+        case "notflags": notflags = query[k]; break;
+        case "rating": this.ratingController.setRangeAsString(query[k]); break;
+        case "pubtime": this.pubtimeController.setRangeAsString(query[k]); break;
+        default: {
+            const input = this.element.querySelector(`.field > *[name='${k}']`);
+            if (input) input.value = query[k];
+          }
+      }
+    }
+    if (flags || notflags) this.flagsController.setValue(flags, notflags);
+  }
+  
   readQueryFromUi() {
     const query = {
       flags: this.flagsController.encodeFlags(),

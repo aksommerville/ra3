@@ -40,6 +40,7 @@ export class SearchResultCard {
     this.dom.spawn(imageRowText, "DIV", ["pubtime"]);
     const buttonsRow = this.dom.spawn(imageRowText, "DIV", ["buttonsRow"]);
     this.dom.spawn(buttonsRow, "INPUT", { type: "button", value: "Details", "on-click": () => this.editDetails() });
+    this.dom.spawn(buttonsRow, "INPUT", { type: "button", value: "&", "on-click": () => { this.launch(); this.editDetails(); } });
     this.dom.spawn(buttonsRow, "INPUT", { type: "button", value: "Launch", "on-click": () => this.launch() });
     this.dom.spawn(body, "DIV", ["desc"]);
   }

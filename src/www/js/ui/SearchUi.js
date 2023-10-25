@@ -11,13 +11,14 @@ import { SearchResultsUi } from "./SearchResultsUi.js";
  
 export class SearchUi {
   static getDependencies() {
-    return [HTMLElement, Dom, Comm, DbService];
+    return [HTMLElement, Dom, Comm, DbService, Window];
   }
-  constructor(element, dom, comm, dbService) {
+  constructor(element, dom, comm, dbService, window) {
     this.element = element;
     this.dom = dom;
     this.comm = comm;
     this.dbService = dbService;
+    this.window = window;
     
     this.searchForm = null;
     this.searchResults = null;
@@ -27,7 +28,20 @@ export class SearchUi {
   }
   
   setup(path) {
-    // TODO It is worthwhile to encode the form state, and results page.
+    if (path.length >= 2) {
+      this.dbService.recentSearchPath = path;
+      const query = {};
+      for (const field of path.slice(1)) {
+        let [k, v] = field.split("=");
+        v = decodeURIComponent(v);
+        if (k === "page") this.searchResults.pagep = +v;
+        else query[k] = v;
+      }
+      this.search(query);
+      this.searchForm.populateWithQuery(query);
+    } else if (this.dbService.recentSearchPath?.length >= 2) {
+      this.setup(this.dbService.recentSearchPath);
+    }
   }
   
   buildUi() {
@@ -36,7 +50,32 @@ export class SearchUi {
     this.searchResults = this.dom.spawnController(this.element, SearchResultsUi, [this]);
   }
   
+  reduceQuery(input) {
+    const output = {};
+    for (const k of ["author", "flags", "notflags", "genre", "list", "platform", "pubtime", "rating", "sort", "text"]) {
+      if (input[k]) output[k] = input[k];
+    }
+    if (output.sort === "none") delete output.sort;
+    return output;
+  }
+  
+  encodeUrl(query) {
+    let url = this.window.location.pathname + "#search";
+    if (query) {
+      for (const k of Object.keys(query)) {
+        url += "/" + encodeURIComponent(k) + "=" + encodeURIComponent(query[k]);
+      }
+      if (this.searchResults?.pagep) {
+        url += "/page=" + this.searchResults.pagep;
+      }
+    }
+    this.dbService.recentSearchPath = url.substring(1).split("/");
+    return url;
+  }
+  
   search(query) {
+    query = this.reduceQuery(query);
+    this.window.history.replaceState(null, "", this.encodeUrl(query));
     this.previousQuery = query;
     this.dbService.query({
       ...query,

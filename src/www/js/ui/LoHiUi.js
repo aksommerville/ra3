@@ -33,6 +33,12 @@ export class LoHiUi {
     return `${lo}..${hi}`;
   }
   
+  setRangeAsString(v) {
+    const split = (v || "").split("..");
+    this.element.querySelector("input[name='lo']").value = split[0] || "";
+    this.element.querySelector("input[name='hi']").value = split[1] || "";
+  }
+  
   buildUi() {
     this.element.innerHTML = "";
     this.dom.spawn(this.element, "SPAN", ["caption"], "Value:");

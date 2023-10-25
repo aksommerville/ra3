@@ -65,6 +65,8 @@ POST /api/query?text&list&platform&author&genre&flags&notflags&rating&pubtime&de
 POST /api/launch?gameid => Play
 POST /api/random?text&list&platform&author&genre&flags&notflags&rating&pubtime => Play
 POST /api/terminate => nothing
+
+POST /api/autoscreencap => report
 ```
 
 Some general rules:
@@ -239,3 +241,12 @@ I expect to expose this behavior directly on frontends wherever the user can sea
 
 Or `/api/terminate` to stop whatever game is in progress and return to the menu.
 The menu itself does not terminate on this, though it technically could.
+
+## /api/autoscreencap
+
+Every game that doesn't have a "scap" blob yet, try to generate one.
+Right now this only works for Pico-8, where an image is embedded in the ROM.
+Would be cool in the future if we can launch a headless emulator, run for a few seconds, then grab the framebuffer.
+But that's probably overkill.
+
+Returns a JSON report describing what changed.

@@ -52,6 +52,7 @@ ifneq (,$(strip $(BUILD_ROMASSIST)))
     mid/opt/http/% \
     mid/opt/serial/% \
     mid/opt/fs/% \
+    mid/opt/png/% \
   ,$(OFILES))
   $(EXE_ROMASSIST):$(OFILES_ROMASSIST);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
   ifeq (,$(strip $(BUILD_MENU)))

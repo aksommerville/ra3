@@ -35,4 +35,9 @@ int ra_ws_connect(struct http_socket *sock,void *userdata);
 int ra_ws_disconnect(struct http_socket *sock,void *userdata);
 int ra_ws_message(struct http_socket *sock,int type,const void *v,int c,void *userdata);
 
+/* The meat of the operation, for one file.
+ * Some additional outer layers live in ra_http.c.
+ */
+int ra_autoscreencap(uint32_t gameid,const char *rompath);
+
 #endif

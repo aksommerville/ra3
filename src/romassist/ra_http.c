@@ -878,6 +878,69 @@ static int ra_http_terminate(struct http_xfer *req,struct http_xfer *rsp) {
   return 0;
 }
 
+/* POST /api/autoscreencap
+ */
+
+struct ra_http_autoscreencap_context {
+  uint32_t gameid;
+  int has_scap;
+  int modc;
+  int errc;
+};
+
+static void ra_http_autoscreencap_context_cleanup(struct ra_http_autoscreencap_context *ctx) {
+}
+
+static int ra_http_autoscreencap_check_cb(uint32_t gameid,const char *type,int typec,const char *time,int timec,const char *path,void *userdata) {
+  struct ra_http_autoscreencap_context *ctx=userdata;
+  if ((typec==4)&&!memcmp(type,"scap",4)) {
+    ctx->has_scap=1;
+    return 1;
+  }
+  return 0;
+}
+ 
+static int ra_http_autoscreencap(struct http_xfer *req,struct http_xfer *rsp) {
+  struct ra_http_autoscreencap_context ctx={0};
+  
+  /* Currently we are only able to do anything for Pico-8 ROMs.
+   * So don't bother looking at the thousands of other files!
+   */
+  uint32_t stringid_pico8=db_string_lookup(ra.db,"pico8",5);
+  if (stringid_pico8) {
+  
+    int p=0;
+    for (;;p++) {
+      const struct db_game *game=db_game_get_by_index(ra.db,p);
+      if (!game) break;
+      if (game->platform!=stringid_pico8) continue;
+      ctx.gameid=game->gameid;
+      ctx.has_scap=0;
+      db_blob_for_gameid(ra.db,game->gameid,0,ra_http_autoscreencap_check_cb,&ctx);
+      if (ctx.has_scap) continue;
+      char path[1024];
+      int pathc=db_game_get_path(path,sizeof(path),ra.db,game);
+      if ((pathc>0)&&(pathc<sizeof(path))) {
+        if (ra_autoscreencap(game->gameid,path)>=0) {
+          ctx.modc++;
+        } else {
+          ctx.errc++;
+        }
+      } else {
+        ctx.errc++;
+      }
+    }
+  }
+  
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  sr_encode_json_object_start(dst,0,0);
+  sr_encode_json_int(dst,"gamesModified",13,ctx.modc);
+  sr_encode_json_int(dst,"errors",6,ctx.errc);
+  
+  ra_http_autoscreencap_context_cleanup(&ctx);
+  return sr_encode_json_object_end(dst,0);
+}
+
 /* Log call. We only log after the fact. Could be a problem if you want to trace servlet failures?
  */
  
@@ -980,6 +1043,8 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(POST,"/api/launch",ra_http_launch)
   _(POST,"/api/random",ra_http_random)
   _(POST,"/api/terminate",ra_http_terminate)
+  
+  _(POST,"/api/autoscreencap",ra_http_autoscreencap)
   
   #undef _
   return http_xfer_set_status(rsp,404,"Not found");

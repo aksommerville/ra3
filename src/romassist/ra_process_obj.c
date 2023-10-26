@@ -94,10 +94,12 @@ int ra_process_update(struct ra_process *process) {
       fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
       process->pid=0;
       if (!process->next_launch) process->gameid=0;
+      ra_report_gameid(0);
     } else if (err<0) {
       fprintf(stderr,"%s:WARNING: waitpid() error. Assuming child process %d was lost somehow.\n",ra.exename,process->pid);
       process->pid=0;
       if (!process->next_launch) process->gameid=0;
+      ra_report_gameid(0);
     }
   }
   
@@ -113,6 +115,7 @@ int ra_process_update(struct ra_process *process) {
       }
       free(process->next_launch);
       process->next_launch=0;
+      ra_report_gameid(ra.process.gameid);
     } else if (ra.menu) {
       if (ra_process_launch_command(process,ra.menu)<0) {
         return -2;

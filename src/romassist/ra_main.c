@@ -41,7 +41,8 @@ static int ra_init_http() {
   }
   
   if (!http_listen(ra.http,0,"/api/**",ra_http_api,0)) return -1;
-  if (!http_listen_websocket(ra.http,"/ws/**",ra_ws_connect,ra_ws_disconnect,ra_ws_message,0)) return -1;
+  if (!http_listen_websocket(ra.http,"/ws/menu",ra_ws_connect_menu,ra_ws_disconnect,ra_ws_message,0)) return -1;
+  if (!http_listen_websocket(ra.http,"/ws/game",ra_ws_connect_game,ra_ws_disconnect,ra_ws_message,0)) return -1;
   if (!http_listen(ra.http,HTTP_METHOD_GET,"/**",ra_http_static,0)) return -1;
   
   fprintf(stderr,"%s: Serving HTTP on port %d.\n",ra.exename,ra.http_port);

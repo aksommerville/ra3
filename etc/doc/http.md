@@ -6,7 +6,7 @@ WS   /ws/**   WebSocket
 GET  /**      Static files
 ```
 
-## REST API Overview
+## REST and WebSocket API Overview
 
 ```
 GET /api/meta/flags => array of 32 strings (constant)
@@ -67,6 +67,9 @@ POST /api/random?text&list&platform&author&genre&flags&notflags&rating&pubtime =
 POST /api/terminate => nothing
 
 POST /api/autoscreencap => report
+
+WS /ws/menu => Long running connection for menu clients.
+WS /ws/game => Long running connection for game clients.
 ```
 
 Some general rules:
@@ -250,3 +253,42 @@ Would be cool in the future if we can launch a headless emulator, run for a few 
 But that's probably overkill.
 
 Returns a JSON report describing what changed.
+
+## WebSocket
+
+Connect to `/ws/menu` or `/ws/game` depending on your role.
+I'll document them here as which roles are expected on each side of each packet ("server" is the third role).
+Packet bodies are JSON or binary. In all cases they must be self-describing.
+JSON packets must have "id".
+Binary packets... Make sure the intent is clear based on payload type.
+
+There can be multiple MENU clients, or zero.
+Typical usage on a console, the menu doesn't run while games are running.
+On a PC, the menu is usually a web app that keeps running all times, and there could be more than one.
+
+id=hello ANY=>ANY
+  No further data. Just a nonsense packet to keep the connection alive or whatever.
+  
+id=game GAME=>SERVER SERVER=>MENU
+  Identify game in progress. If it only contains (id), that means no game in progress.
+  {id,name,gameid,platform,path,exename}
+  
+id=requestScreencap MENU=>SERVER SERVER=>GAME
+  Ask the game to send us one screencap at its convenience.
+  Game should respond with a binary packet containing a PNG file of the raw framebuffer.
+  
+Binary=PNG GAME=>SERVER SERVER=>MENU
+  Any binary packet containing a PNG file is presumed to be a response to requestScreencap.
+  Game can send these on its own initiative too; we should have a hotkey for "take screencap".
+  When the server gets one of these without a recent request, it should save a blob and not forward to the menu.
+  
+id=pause MENU=>SERVER SERVER=>GAME
+id=resume MENU=>SERVER SERVER=>GAME
+id=step MENU=>SERVER SERVER=>GAME
+  Hard pause or step by video frame.
+  
+id=comment GAME=>SERVER SERVER=>MENU
+  Game should report scores if it knows how to.
+  Server echoes these to all menus, just for awareness.
+  Server is left to its own discretion whether to record the comment.
+  {id,k,v}

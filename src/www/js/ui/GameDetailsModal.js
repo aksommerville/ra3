@@ -12,17 +12,19 @@ import { GamePlaysForm } from "./GamePlaysForm.js";
 import { GameListsForm } from "./GameListsForm.js";
 import { GameBlobsForm } from "./GameBlobsForm.js";
 import { ChoiceModal } from "./ChoiceModal.js";
+import { StateService } from "../model/StateService.js";
 
 export class GameDetailsModal {
   static getDependencies() {
-    return [HTMLElement, Dom, DbService, Window, Comm];
+    return [HTMLElement, Dom, DbService, Window, Comm, StateService];
   }
-  constructor(element, dom, dbService, window, comm) {
+  constructor(element, dom, dbService, window, comm, stateService) {
     this.element = element;
     this.dom = dom;
     this.dbService = dbService;
     this.window = window;
     this.comm = comm;
+    this.stateService = stateService;
     
     // We call this after a change has been saved.
     this.onChanged = (game) => {};
@@ -47,11 +49,13 @@ export class GameDetailsModal {
       this.window.clearTimeout(this.saveTimeout);
       this.saveTimeout = null;
     }
+    this.stateService.patchState({ detailsGameid: 0 });
   }
   
   setupFull(game) {
     this.game = game;
     this.populate();
+    this.stateService.patchState({ detailsGameid: this.game?.gameid || 0 });
   }
   
   setupGameid(gameid) {

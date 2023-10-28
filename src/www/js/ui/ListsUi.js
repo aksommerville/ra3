@@ -185,3 +185,5 @@ export class ListsUi {
     });
   }
 }
+
+ListsUi.TAB_LABEL = "Lists";

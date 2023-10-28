@@ -81,3 +81,5 @@ export class NowPlayingUi {
     }
   }
 }
+
+NowPlayingUi.TAB_LABEL = "Now Playing";

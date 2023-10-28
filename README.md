@@ -29,6 +29,7 @@ Ditto for all the HTTP interfaces.
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.
+- - [ ] Search results: Screencaps aren't maintaining aspect ratio.
 - [ ] Integrate emulators
 - - [ ] akfceu
 - - [ ] aksnes9x

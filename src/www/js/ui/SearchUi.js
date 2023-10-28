@@ -6,41 +6,37 @@
 import { Dom } from "../Dom.js";
 import { Comm } from "../Comm.js";
 import { DbService } from "../model/DbService.js";
+import { StateService } from "../model/StateService.js";
+import { SearchModel } from "../model/SearchModel.js";
 import { SearchFormUi } from "./SearchFormUi.js";
 import { SearchResultsUi } from "./SearchResultsUi.js";
  
 export class SearchUi {
   static getDependencies() {
-    return [HTMLElement, Dom, Comm, DbService, Window];
+    return [HTMLElement, Dom, Comm, DbService, Window, StateService];
   }
-  constructor(element, dom, comm, dbService, window) {
+  constructor(element, dom, comm, dbService, window, stateService) {
     this.element = element;
     this.dom = dom;
     this.comm = comm;
     this.dbService = dbService;
     this.window = window;
+    this.stateService = stateService;
     
     this.searchForm = null;
     this.searchResults = null;
-    this.previousQuery = null;
+    this.searchModel = new SearchModel();
     
     this.buildUi();
+    
+    this.stateListener = this.stateService.listen("", () => this.onStateChange());
+    this.onStateChange();
   }
   
-  setup(path) {
-    if (path.length >= 2) {
-      this.dbService.recentSearchPath = path;
-      const query = {};
-      for (const field of path.slice(1)) {
-        let [k, v] = field.split("=");
-        v = decodeURIComponent(v);
-        if (k === "page") this.searchResults.pagep = +v;
-        else query[k] = v;
-      }
-      this.search(query);
-      this.searchForm.populateWithQuery(query);
-    } else if (this.dbService.recentSearchPath?.length >= 2) {
-      this.setup(this.dbService.recentSearchPath);
+  onRemoveFromDom() {
+    if (this.stateListener) {
+      this.stateService.unlisten(this.stateListener);
+      this.stateListener = null;
     }
   }
   
@@ -50,49 +46,25 @@ export class SearchUi {
     this.searchResults = this.dom.spawnController(this.element, SearchResultsUi, [this]);
   }
   
-  reduceQuery(input) {
-    const output = {};
-    for (const k of ["author", "flags", "notflags", "genre", "list", "platform", "pubtime", "rating", "sort", "text"]) {
-      if (input[k]) output[k] = input[k];
-    }
-    if (output.sort === "none") delete output.sort;
-    return output;
+  onStateChange() {
+    const newModel = SearchModel.fromState(this.stateService.state);
+    if (newModel.equivalent(this.searchModel)) return;
+    this.searchForm.populateWithQuery(newModel);
+    this.search(newModel);
   }
   
-  encodeUrl(query) {
-    let url = this.window.location.pathname + "#search";
-    if (query) {
-      for (const k of Object.keys(query)) {
-        url += "/" + encodeURIComponent(k) + "=" + encodeURIComponent(query[k]);
-      }
-      if (this.searchResults?.pagep) {
-        url += "/page=" + this.searchResults.pagep;
-      }
-    }
-    this.dbService.recentSearchPath = url.substring(1).split("/");
-    return url;
-  }
-  
-  search(query) {
-    query = this.reduceQuery(query);
-    this.window.history.replaceState(null, "", this.encodeUrl(query));
-    this.previousQuery = query;
-    this.dbService.query({
-      ...query,
+  search(model) {
+    this.searchModel = model;
+    this.dbService.query(this.searchModel.toQuery({
       limit: this.searchResults.PAGE_SIZE,
-      page: this.searchResults.pagep,
       detail: "blobs",
-    }).then(rsp => {
+    })).then(rsp => {
+      this.searchResults.pagep = this.searchModel.page;
       this.searchResults.setResults(rsp.results, rsp.pageCount);
+      this.stateService.patchState(this.searchModel.toState());
     }).catch(e => {
       console.log(`search failed!`, e);
     });
-  }
-  
-  // Repeat the last search. Note that page gets pulled dynamically. Typically this gets called because page changed.
-  searchAgain() {
-    if (!this.previousQuery) return;
-    this.search(this.previousQuery);
   }
   
   playRandom() {
@@ -106,3 +78,5 @@ export class SearchUi {
     });
   }
 }
+
+SearchUi.TAB_LABEL = "Search";

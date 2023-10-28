@@ -30,3 +30,5 @@ export class AdminUi {
     });
   }
 }
+
+AdminUi.TAB_LABEL = "Admin";

@@ -106,6 +106,12 @@ export class Dom {
     return true;
   }
   
+  findModalByControllerClass(cls) {
+    const modal = this.document.querySelector(`.modalContainer > .modal > .${cls.name}`);
+    if (!modal) return null;
+    return modal.__ra_controller;
+  }
+  
   requireModalBlotter() {
     let blotter = this.document.querySelector(".modalBlotter");
     if (blotter) {
@@ -140,12 +146,19 @@ export class Dom {
   onMutation(e) {
     for (const event of e) {
       for (const node of event.removedNodes) {
-        if (node.__ra_controller) {
-          const controller = node.__ra_controller;
-          node.__ra_controller = null;
-          if (controller.onRemoveFromDom) controller.onRemoveFromDom();
-        }
+        this.notifyRemovalDeep(node);
       }
+    }
+  }
+  
+  notifyRemovalDeep(parent) {
+    if (parent.childNodes) {
+      for (const child of parent.childNodes) this.notifyRemovalDeep(child);
+    }
+    if (parent.__ra_controller) {
+      const controller = parent.__ra_controller;
+      parent.__ra_controller = null;
+      if (controller.onRemoveFromDom) controller.onRemoveFromDom();
     }
   }
 }

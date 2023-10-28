@@ -19,9 +19,6 @@ export class DbUi {
     this.buildUi();
   }
   
-  setup(path) {
-  }
-  
   buildUi() {
     this.element.innerHTML = "";
     this.tableControllers = [];
@@ -32,3 +29,5 @@ export class DbUi {
     }
   }
 }
+
+DbUi.TAB_LABEL = "DB";

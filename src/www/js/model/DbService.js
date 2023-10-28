@@ -305,3 +305,21 @@ export class DbService {
 }
 
 DbService.singleton = true;
+
+/* These match the database, little-endianly.
+ * Though they don't actually need to; when we treat them as numbers, it's only for encoding app state.
+ */
+DbService.FLAG_NAMES = [
+  "player1",
+  "player2",
+  "player3",
+  "player4",
+  "playermore",
+  "faulty",
+  "foreign",
+  "hack",
+  "hardware",
+  "review",
+  "obscene",
+  "favorite",
+];

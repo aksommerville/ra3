@@ -4,29 +4,31 @@
 import { Dom } from "../Dom.js";
 import { Comm } from "../Comm.js";
 import { NavBarUi } from "./NavBarUi.js";
-import { SearchUi } from "./SearchUi.js";
-import { NowPlayingUi } from "./NowPlayingUi.js";
-import { DbUi } from "./DbUi.js";
-import { AdminUi } from "./AdminUi.js";
-import { ListsUi } from "./ListsUi.js";
+import { StateService } from "../model/StateService.js";
+import { GameDetailsModal } from "./GameDetailsModal.js";
 
 export class RootUi {
   static getDependencies() {
-    return [HTMLElement, Dom, Comm, Window];
+    return [HTMLElement, Dom, Comm, Window, StateService];
   }
-  constructor(element, dom, comm, window) {
+  constructor(element, dom, comm, window, stateService) {
     this.element = element;
     this.dom = dom;
     this.comm = comm;
     this.window = window;
+    this.stateService = stateService;
     
     this.navBar = null;
     this.mainController = null;
+    this.activePage = -1;
     
     this.hashListener = e => this.onHashChange(e.newURL || "");
     this.window.addEventListener("hashchange", this.hashListener);
     
     this.buildUi();
+    
+    this.stateListener = this.stateService.listen("", () => this.onStateChange());
+    
     this.onHashChange(this.window.location.href || ""); // Capture the initial fragment.
   }
   
@@ -35,36 +37,58 @@ export class RootUi {
       this.window.removeEventListener("hashchange", this.hashListener);
       this.hashListener = null;
     }
+    if (this.stateListener) {
+      this.stateService.unlisten(this.stateListener);
+      this.stateListener = null;
+    }
   }
   
   buildUi() {
     this.element.innerHTML = "";
     this.navBar = this.dom.spawnController(this.element, NavBarUi);
-    this.navBar.onTabChange = (tabid) => this.onTabChange(tabid);
     this.dom.spawn(this.element, "DIV", ["main"]);
-  }
-  
-  onTabChange(tabid) {
-    this.window.location = "#" + tabid;
   }
   
   onHashChange(newUrl) {
     const fragment = newUrl.split("#")[1] || "";
-    const path = fragment.split('/');
-    this.navBar.selectTab(path[0]);
+    this.stateService.setEncoded(fragment);
+  }
+  
+  onStateChange() {
+    const fragment = this.stateService.encode();
+    this.window.history.replaceState(null, "", this.window.location.pathname + "#" + fragment);
+    this.replaceActivePageIfChanged();
+    this.replaceDetailsModalIfChanged();
+  }
+  
+  replaceActivePageIfChanged() {
+    if (this.activePage === this.stateService.state.page) return;
+    this.activePage = this.stateService.state.page;
     const main = this.element.querySelector(".main");
     main.innerHTML = "";
     this.mainController = null;
-    let ctlcls = null;
-    switch (path[0]) {
-      case "search": ctlcls = SearchUi; break;
-      case "nowPlaying": ctlcls = NowPlayingUi; break;
-      case "db": ctlcls = DbUi; break;
-      case "admin": ctlcls = AdminUi; break;
-      case "lists": ctlcls = ListsUi; break;
+    const ctlcls = NavBarUi.controllerClassForIndex(this.stateService.state.page);
+    if (ctlcls) {
+      this.mainController = this.dom.spawnController(main, ctlcls);
     }
-    if (!ctlcls) return;
-    this.mainController = this.dom.spawnController(main, ctlcls);
-    this.mainController.setup?.(path);
+  }
+  
+  replaceDetailsModalIfChanged() {
+    let modal = this.dom.findModalByControllerClass(GameDetailsModal);
+    const desiredGameid = this.stateService.state.detailsGameid;
+    if (desiredGameid) {
+      if (!modal) {
+        modal = this.dom.spawnModal(GameDetailsModal);
+        modal.setupGameid(desiredGameid);
+      } else if (modal.game?.gameid !== desiredGameid) {
+        modal.setupGameid(desiredGameid);
+      } else {
+        // already open
+      }
+    } else if (modal) {
+      this.dom.dismissModalByController(modal);
+    } else {
+      // already closed
+    }
   }
 }

@@ -5,6 +5,7 @@
 import { Dom } from "../Dom.js";
 import { SearchUi } from "./SearchUi.js";
 import { DbService } from "../model/DbService.js";
+import { SearchModel } from "../model/SearchModel.js";
 import { SearchFlagsUi } from "./SearchFlagsUi.js";
 import { LoHiUi } from "./LoHiUi.js";
 
@@ -127,18 +128,19 @@ export class SearchFormUi {
     if (flags || notflags) this.flagsController.setValue(flags, notflags);
   }
   
-  readQueryFromUi() {
+  readModelFromUi() {
     const query = {
       flags: this.flagsController.encodeFlags(),
       notflags: this.flagsController.encodeNotFlags(),
       rating: this.ratingController.getRangeAsString(),
       pubtime: this.pubtimeController.getRangeAsString(),
       sort: this.element.querySelector("select[name='sort']").value,
+      page: 1,
     };
     for (const input of this.element.querySelectorAll(".field > input")) {
       query[input.name] = input.value;
     }
-    return query;
+    return new SearchModel(query);
   }
   
   dirty() {
@@ -149,7 +151,7 @@ export class SearchFormUi {
     this.searchTimeout = this.window.setTimeout(() => {
       this.searchTimeout = null;
       this.element.classList.remove("dirty");
-      this.searchUi.search(this.readQueryFromUi());
+      this.searchUi.search(this.readModelFromUi(), false);
     }, this.SEARCH_DEBOUNCE_TIME);
   }
   
@@ -160,6 +162,6 @@ export class SearchFormUi {
       this.searchTimeout = null;
       this.element.classList.remove("dirty");
     }
-    this.searchUi.search(this.readQueryFromUi());
+    this.searchUi.search(this.readModelFromUi());
   }
 }

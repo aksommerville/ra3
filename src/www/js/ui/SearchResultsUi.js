@@ -5,15 +5,17 @@
 import { Dom } from "../Dom.js";
 import { SearchUi } from "./SearchUi.js";
 import { SearchResultCard } from "./SearchResultCard.js";
+import { StateService } from "../model/StateService.js";
 
 export class SearchResultsUi {
   static getDependencies() {
-    return [HTMLElement, Dom, SearchUi];
+    return [HTMLElement, Dom, SearchUi, StateService];
   }
-  constructor(element, dom, searchUi) {
+  constructor(element, dom, searchUi, stateService) {
     this.element = element;
     this.dom = dom;
     this.searchUi = searchUi;
+    this.stateService = stateService;
     
     this.PAGE_SIZE = 12;
     
@@ -22,6 +24,8 @@ export class SearchResultsUi {
     this.results = [];
     
     this.buildUi();
+    
+    // We don't listen to StateService; SearchUi handles that for us.
   }
   
   setResults(results, pageCount) {
@@ -42,11 +46,11 @@ export class SearchResultsUi {
   
   changePage(d) {
     const np = this.pagep + d;
-    if (np < 1) this.pagep = 1;
-    else if (np > this.pagec) this.pagep = this.pagec;
+    if (np < 1) return;
+    if (np > this.pagec) return;
     else this.pagep = np;
     this.depopulate();
-    this.searchUi.searchAgain();
+    this.stateService.patchState({ searchPage: this.pagep });
   }
   
   depopulate() {

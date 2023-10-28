@@ -17,12 +17,6 @@ export class SearchFlagsUi {
     
     this.onChange = () => {};
     
-    this.FLAG_NAMES = [
-      "player1", "player2", "player3", "player4", "playermore",
-      "faulty", "foreign", "hack", "hardware",
-      "review", "obscene", "favorite",
-    ];
-    
     this.yesFlags = 0;
     this.noFlags = 0;
     this.mode = "yes/no/none"; // "yes/no/none" or "on/off"
@@ -32,14 +26,14 @@ export class SearchFlagsUi {
   
   setValue(flags, notflags) {
     if (flags) for (const name of flags.split(/\s+/)) {
-      const bitix = this.FLAG_NAMES.indexOf(name);
+      const bitix = DbService.FLAG_NAMES.indexOf(name);
       if (bitix < 0) continue;
       const input = this.element.querySelector(`.toggle[data-bitix='${bitix}']`);
       if (!input) continue;
       input.classList.add("on");
     }
     if (notflags) for (const name of notflags.split(/\s+/)) {
-      const bitix = this.FLAG_NAMES.indexOf(name);
+      const bitix = DbService.FLAG_NAMES.indexOf(name);
       if (bitix < 0) continue;
       const input = this.element.querySelector(`.toggle[data-bitix='${bitix}']`);
       if (!input) continue;
@@ -60,11 +54,11 @@ export class SearchFlagsUi {
   }
   
   encodeFlags() {
-    return Array.from(this.element.querySelectorAll(".toggle.on")).map(e => this.FLAG_NAMES[+e.getAttribute("data-bitix")]).join(" ");
+    return Array.from(this.element.querySelectorAll(".toggle.on")).map(e => DbService.FLAG_NAMES[+e.getAttribute("data-bitix")]).join(" ");
   }
   
   encodeNotFlags() {
-    return Array.from(this.element.querySelectorAll(".toggle.off")).map(e => this.FLAG_NAMES[+e.getAttribute("data-bitix")]).join(" ");
+    return Array.from(this.element.querySelectorAll(".toggle.off")).map(e => DbService.FLAG_NAMES[+e.getAttribute("data-bitix")]).join(" ");
   }
   
   buildUi() {
@@ -89,7 +83,7 @@ export class SearchFlagsUi {
       "data-bitix": bitix,
       value: display,
       "on-click": () => this.toggle(bitix),
-      title: this.FLAG_NAMES[+bitix] || "",
+      title: DbService.FLAG_NAMES[+bitix] || "",
       tabindex: -1,
     });
   }

@@ -590,6 +590,40 @@ int sr_string_repr_json(char *dst,int dsta,const char *src,int srcc) {
   return dstc;
 }
 
+/* Split comma-delimited list.
+ */
+ 
+int sr_string_split(
+  const char *src,int srcc,
+  char sep,
+  int (*cb)(const char *word,int wordc,void *userdata),
+  void *userdata
+) {
+  if (!src) return 0;
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  int srcp=0,err;
+  if ((unsigned char)sep<=0x20) {
+    while (srcp<srcc) {
+      if ((unsigned char)src[srcp]<=0x20) { srcp++; continue; }
+      const char *word=src+srcp;
+      int wordc=0;
+      while ((srcp<srcc)&&((unsigned char)src[srcp++]<=0x20)) wordc++;
+      if (err=cb(word,wordc,userdata)) return err;
+    }
+  } else {
+    while (srcp<srcc) {
+      if ((unsigned char)src[srcp]<=0x20) { srcp++; continue; }
+      const char *word=src+srcp;
+      int wordc=0;
+      while ((srcp<srcc)&&(src[srcp]!=sep)) { srcp++; wordc++; }
+      if (srcp<srcc) srcp++;
+      while (wordc&&((unsigned char)word[wordc-1]<=0x20)) wordc--;
+      if (err=cb(word,wordc,userdata)) return err;
+    }
+  }
+  return 0;
+}
+
 /* Match pattern.
  */
 

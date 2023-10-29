@@ -57,6 +57,17 @@ int sr_string_eval(char *dst,int dsta,const char *src,int srcc);
 int sr_string_repr(char *dst,int dsta,const char *src,int srcc);
 int sr_string_repr_json(char *dst,int dsta,const char *src,int srcc);
 
+/* Call for each (sep)-delimited string in (src).
+ * We trim leading and trailing space, and do report empty items.
+ * If (sep) is whitespace, splits on any whitespace and does not report empties.
+ */
+int sr_string_split(
+  const char *src,int srcc,
+  char sep,
+  int (*cb)(const char *word,int wordc,void *userdata),
+  void *userdata
+);
+
 /* Simple pattern matching.
  *   *    Any amount of anything.
  *   \N   Literal "N", case-sensitive.

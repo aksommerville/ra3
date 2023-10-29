@@ -27,9 +27,21 @@ mid/%.o:src/%.s;$(PRECMD) $(AS) -o$@ $<
 ifneq (,$(strip $(BUILD_LIB)))
   LIB:=out/libemuhost.a
   all:$(LIB)
-  #TODO Name all opt units here that lib might need (safe to name ones that aren't included).
   OFILES_LIB:=$(filter \
     mid/lib/% \
+    mid/opt/fs/% \
+    mid/opt/serial/% \
+    mid/opt/glx/% \
+    mid/opt/drm/% \
+    mid/opt/pulse/% \
+    mid/opt/alsa/% \
+    mid/opt/evdev/% \
+    mid/opt/macwm/% \
+    mid/opt/macaudio/% \
+    mid/opt/machid/% \
+    mid/opt/mswm/% \
+    mid/opt/msaudio/% \
+    mid/opt/mshid/% \
   ,$(OFILES))
   $(LIB):$(OFILES_LIB);$(PRECMD) $(AR) $@ $^
   #TODO Name all public headers here.
@@ -74,5 +86,8 @@ ifneq (,$(strip $(BUILD_MENU)))
   $(EXE_MENU):$(OFILES_MENU);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
   run:$(EXE_MENU)
 endif
+
+#XXX A lil convenience while developing emuhost.
+nes:$(LIB) $(LIB_HEADERS_DST);rm -f ../akfceu/out/akfceu ; make -C../akfceu run
 
 endif

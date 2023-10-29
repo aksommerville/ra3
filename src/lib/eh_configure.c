@@ -1,33 +1,19 @@
 #include "eh_internal.h"
+#include "opt/serial/serial.h"
 
-/* Evaluate signed decimal integer.
+/* Set string.
  */
  
-static int eh_decsint_eval(int *dst,const char *src,int srcc) {
-  if (srcc<1) return -1;
-  *dst=0;
-  if (src[0]=='-') {
-    src++;
-    srcc--;
-    if (srcc<1) return -1;
-    for (;srcc--;src++) {
-      if ((*src<'0')||(*src>'9')) return -1;
-      int digit=(*src)-'0';
-      if (*dst<INT_MIN/10) return -1;
-      (*dst)*=10;
-      if (*dst<INT_MIN+digit) return -1;
-      (*dst)-=digit;
-    }
-  } else {
-    for (;srcc--;src++) {
-      if ((*src<'0')||(*src>'9')) return -1;
-      int digit=(*src)-'0';
-      if (*dst>INT_MAX/10) return -1;
-      (*dst)*=10;
-      if (*dst>INT_MAX-digit) return -1;
-      (*dst)+=digit;
-    }
+static int eh_config_set_string(char **dst,const char *src,int srcc) {
+  if (!src) srcc=0; else if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  char *nv=0;
+  if (srcc) {
+    if (!(nv=malloc(srcc+1))) return -1;
+    memcpy(nv,src,srcc);
+    nv[srcc]=0;
   }
+  if (*dst) free(*dst);
+  *dst=nv;
   return 0;
 }
 
@@ -39,7 +25,15 @@ static void eh_print_help(const char *topic,int topicc) {
   fprintf(stderr,
     "\n"
     "OPTIONS:\n"
-    "  --help                Print this message.\n"
+    "  --help                   Print this message.\n"
+    "  --video=LIST             Video drivers, in order of preference.\n"
+    "  --audio=LIST             Audio drivers, in order of preference.\n"
+    "  --input=LIST             Input drivers -- we will instantiate all.\n"
+    "  --fullscreen=0|1\n"
+    "  --audio-rate=HZ\n"
+    "  --audio-chanc=1|2\n"
+    "  --audio-device=STRING\n"
+    "  --glsl-version=INT\n"
     "\n"
   );
 }
@@ -66,7 +60,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   
   // Evaluate (v) as a signed decimal integer.
   int vn=0,vnok=0,err;
-  if (eh_decsint_eval(&vn,v,vc)>=0) vnok=1;
+  if (sr_int_eval(&vn,v,vc)>=0) vnok=1;
   else vn=0;
   
   // Check built-in parameters.
@@ -76,7 +70,15 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
     return 0;
   }
   
-  //TODO driver config
+  if ((kc==5)&&!memcmp(k,"video",5)) return eh_config_set_string(&eh.video_drivers,v,vc);
+  if ((kc==5)&&!memcmp(k,"audio",5)) return eh_config_set_string(&eh.audio_drivers,v,vc);
+  if ((kc==5)&&!memcmp(k,"input",5)) return eh_config_set_string(&eh.input_drivers,v,vc);
+  if ((kc==10)&&!memcmp(k,"fullscreen",10)) { eh.fullscreen=vn; return 0; }
+  if ((kc==10)&&!memcmp(k,"audio-rate",10)) { eh.audio_rate=vn; return 0; }
+  if ((kc==11)&&!memcmp(k,"audio-chanc",11)) { eh.audio_chanc=vn; return 0; }
+  if ((kc==12)&&!memcmp(k,"audio-device",12)) return eh_config_set_string(&eh.audio_device,v,vc);
+  if ((kc==12)&&!memcmp(k,"glsl-version",12)) { eh.glsl_version=vn; return 0; }
+  
   //TODO other params?
   
   // Give the client a whack at it.
@@ -95,10 +97,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
  */
  
 static int eh_argv_positional(const char *arg) {
-  if (!eh.rompath) {
-    eh.rompath=arg;
-    return 0;
-  }
+  if (!eh.rompath) return eh_config_set_string(&eh.rompath,arg,-1);
   fprintf(stderr,"%s: Unexpected argument '%s'.\n",eh.exename,arg);
   return -2;
 }
@@ -112,6 +111,8 @@ int eh_configure(int argc,char **argv) {
   if ((argc>=1)&&argv&&argv[0]&&argv[0][0]) {
     eh.exename=argv[0];
   }
+  
+  eh.glsl_version=120;
   
   int argi=1,err;
   while (argi<argc) {

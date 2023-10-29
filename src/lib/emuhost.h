@@ -24,6 +24,7 @@
 #define EH_AUDIO_FORMAT_S32LE 5
 #define EH_AUDIO_FORMAT_S32BE 6
 #define EH_AUDIO_FORMAT_F32N 7
+#define EH_AUDIO_FORMAT_S32N_LO16 8
 
 #define EH_BTN_LEFT     0x0001
 #define EH_BTN_RIGHT    0x0002
@@ -48,6 +49,17 @@
  ********************************************************************************/
  
 struct eh_delegate {
+
+  /* Typically the executable's stem name, eg "akfceu".
+   * May be used for logging or bookkeeping.
+   * Required.
+   */
+  const char *name;
+  
+  /* Optional. Used as window manager icon if present.
+   */
+  const void *iconrgba;
+  int iconw,iconh;
 
   /* Fixed framebuffer size.
    * This may be (0,0) to request direct OpenGL access instead.
@@ -99,8 +111,14 @@ struct eh_delegate {
   int (*load_serial)(const void *v,int c,const char *name);
   
   /* Run the emulator, generate one frame of video and the equivalent amount of audio.
+   * Return -2 to abort without logging, if you've already logged the error sufficiently.
+   * Anything else <0, we'll display a generic error and then abort.
+   * Clients don't have the option to terminate normally.
+   * If we add that, it will be a function, not an update return value.
+   * (partial) is nonzero if we are going to call again before the next video frame.
+   * Good to know, if you're able to skip rendering.
    */
-  int (*update)();
+  int (*update)(int partial);
   
   /* Optional. Generate (c) samples of PCM, always a multiple of (audio_chanc).
    * If you implement this, it may be called on a separate thread independent of update cycles.
@@ -127,10 +145,14 @@ int eh_main(int argc,char **argv,const struct eh_delegate *delegate);
  ****************************************************************************/
 
 /* If you requested a nonzero framebuffer size, you should provide fresh content at each update.
+ * *** You must keep (fb) in scope after the update ends! ***
+ * During this call, we only record the location of the framebuffer. It gets committed after update.
+ * And for that reason, it's fine to send your framebuffer during partial updates, no need to check.
  */
 void eh_video_write(const void *fb);
 
 /* If you requested (0,0) framebuffer, you should draw with OpenGL, between these fences, each update.
+ * Doing it this way, you should always skip partial updates.
  */
 void eh_video_begin();
 void eh_video_end();
@@ -183,5 +205,14 @@ void eh_audio_unlock();
  * (plrid) zero is the aggregate of all connected devices.
  */
 uint16_t eh_input_get(uint8_t plrid);
+
+/* Odds, ends.
+ *******************************************************************/
+
+/* Composes a path at (*dstpp) naming an existing directory that you can do whatever you like under it.
+ * eg FCEU expects one of these.
+ * Caller must free it. Or keep it alive forever, presumably you're only doing this once.
+ */
+int eh_get_scratch_directory(char **dstpp);
 
 #endif

@@ -1,5 +1,6 @@
 #include "eh_internal.h"
 #include "opt/serial/serial.h"
+#include <unistd.h>
 
 /* Quit.
  */
@@ -7,13 +8,14 @@
 void eh_drivers_quit() {
   if (eh.audio) eh.audio->type->play(eh.audio,0);
   eh_render_del(eh.render);
-  eh_inmgr_del(eh.inmgr);
   eh_audio_driver_del(eh.audio);
   eh_video_driver_del(eh.video);
   if (eh.inputv) {
     while (eh.inputc-->0) eh_input_driver_del(eh.inputv[eh.inputc]);
     free(eh.inputv);
   }
+  eh_aucvt_cleanup(&eh.aucvt);
+  eh_inmgr_del(eh.inmgr);
 }
 
 /* Choose and init video driver.
@@ -99,6 +101,7 @@ static int eh_drivers_init_audio_type(const struct eh_audio_type *type) {
   struct eh_audio_setup setup={
     .rate=eh.audio_rate,
     .chanc=eh.audio_chanc,
+    .buffersize=1024,
   };
   if (!(eh.audio=eh_audio_driver_new(type,&delegate,&setup))) {
     fprintf(stderr,"%s: Failed to instantiate audio driver '%s'.\n",eh.exename,type->name);
@@ -130,7 +133,27 @@ static int eh_drivers_init_audio() {
   }
   fprintf(stderr,"%s: Using audio driver '%s'.\n",eh.exename,eh.audio->type->name);
   
-  //TODO prep resampler
+  if (!eh.delegate.generate_pcm) {
+    int srcrate=eh.delegate.audio_rate;
+    int srcchanc=eh.delegate.audio_chanc;
+    int srcfmt=eh.delegate.audio_format;
+    if ((err=eh_aucvt_init(&eh.aucvt,
+      eh.audio->rate,eh.audio->chanc,eh.audio->format,
+      srcrate,srcchanc,srcfmt
+    ))<0) {
+      if (err!=-2) fprintf(stderr,
+        "%s: Failed to initialize audio resampler. in=(%d,%d,%d) out=(%d,%d,%d)\n",
+        eh.exename,srcrate,srcchanc,srcfmt,
+        eh.audio->rate,eh.audio->chanc,eh.audio->format
+      );
+      return -2;
+    }
+    fprintf(stderr,
+      "%s: Initialized audio resampler. in=(%d,%d,%d) out=(%d,%d,%d)\n",
+      eh.exename,srcrate,srcchanc,srcfmt,
+      eh.audio->rate,eh.audio->chanc,eh.audio->format
+    );
+  }
   
   return 0;
 }
@@ -248,11 +271,37 @@ int eh_audio_get_format() {
 }
 
 void eh_audio_write(const void *v,int framec) {
-  //TODO
+  if (eh.delegate.generate_pcm) return;
+  int samplec=framec*eh.delegate.audio_chanc;
+  int samplesize;
+  switch (eh.delegate.audio_format) {
+    case EH_AUDIO_FORMAT_S16N:
+    case EH_AUDIO_FORMAT_S16LE:
+    case EH_AUDIO_FORMAT_S16BE:
+      samplesize=2;
+      break;
+    case EH_AUDIO_FORMAT_S32N:
+    case EH_AUDIO_FORMAT_S32LE:
+    case EH_AUDIO_FORMAT_S32BE:
+    case EH_AUDIO_FORMAT_F32N:
+    case EH_AUDIO_FORMAT_S32N_LO16:
+      samplesize=4;
+      break;
+    default: return;
+  }
+  while (samplec>0) {
+    int err=eh_aucvt_input(&eh.aucvt,v,samplec);
+    if (err<0) return;
+    samplec-=err;
+    if (samplec<=0) break;
+    v=(char*)v+err*samplesize;
+    // If aucvt didn't consume it all, busy-loop until it does.
+  }
 }
 
 int eh_audio_guess_framec() {
-  return 123;//TODO
+  if (eh.delegate.generate_pcm) return 0;
+  return (eh.aucvt.bufa-eh.aucvt.bufc)/eh.delegate.audio_chanc;
 }
 
 int eh_audio_lock() {

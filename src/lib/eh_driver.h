@@ -86,6 +86,7 @@ struct eh_audio_delegate {
 struct eh_audio_setup {
   int rate;
   int chanc;
+  int buffersize;
 };
 
 struct eh_audio_driver {

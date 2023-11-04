@@ -43,7 +43,11 @@ void eh_cb_text(int codepoint,void *dummy) {
  */
  
 void eh_cb_pcm(int16_t *v,int c,void *dummy) {
-  memset(v,0,c<<1);//TODO
+  if (eh.delegate.generate_pcm) {
+    eh.delegate.generate_pcm(v,c);
+  } else {
+    eh_aucvt_output(v,c,&eh.aucvt);
+  }
 }
 
 /* Input device connected.

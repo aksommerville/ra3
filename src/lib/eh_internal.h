@@ -5,6 +5,7 @@
 #include "eh_driver.h"
 #include "eh_clock.h"
 #include "eh_inmgr.h"
+#include "eh_aucvt.h"
 #include "render/eh_render.h"
 #include <string.h>
 #include <stdlib.h>
@@ -37,7 +38,7 @@ extern struct eh {
   int devid_keyboard; // nonzero if video driver provides a keyboard
   struct eh_render *render;
   struct eh_inmgr *inmgr;
-  //TODO resampler
+  struct eh_aucvt aucvt;
   
 } eh;
 

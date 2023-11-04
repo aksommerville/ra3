@@ -19,7 +19,10 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] Video drivers
 - - [x] Audio drivers
 - - [x] Input drivers
-- - [ ] Input manager
+- - [x] Input manager
+- - - [ ] Default config for keyboards (when no config file present). See eh_inmgr_config.c
+- - - [x] Don't let system keyboard occupy a player slot.
+- - - [ ] Wire up stateless actions. See eh_cb_digested_event
 - - [x] Renderer: Client supplies a framebuffer and drivers supply an OpenGL context. Emuhost does the rest, it's involved.
 - - [ ] Audio live resampling: We can't force clients to use the hardware sample rate or format.
 - - [ ] Communicate with backend.

@@ -153,6 +153,20 @@ int sr_hexuint_repr(char *dst,int dsta,int src,int mindigitc) {
   return dstc;
 }
 
+int sr_hexuint_repr_prefixed(char *dst,int dsta,int src,int mindigitc) {
+  if (mindigitc>64) mindigitc=64; // arbitrary sanity limit
+  int dstc=3;
+  unsigned int limit=~0x0f;
+  while (limit&src) { dstc++; limit<<=4; }
+  if (dstc<mindigitc) dstc=mindigitc;
+  if (dstc>dsta) return dstc;
+  dst[0]='0';
+  dst[1]='x';
+  int i=dstc; for (;i-->2;src>>=4) dst[i]="0123456789abcdef"[src&15];
+  if (dstc<dsta) dst[dstc]=0;
+  return dstc;
+}
+
 /* Measure float.
  */
 

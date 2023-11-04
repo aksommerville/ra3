@@ -29,7 +29,11 @@ export class RootUi {
     
     this.stateListener = this.stateService.listen("", () => this.onStateChange());
     
-    this.onHashChange(this.window.location.href || ""); // Capture the initial fragment.
+    // Capture initial fragment. If setting it doesn't change anything (eg it's blank),
+    // force a state change anyway to get the initial SearchUi.
+    if (!this.onHashChange(this.window.location.href || "")) {
+      this.onStateChange();
+    }
   }
   
   onRemoveFromDom() {
@@ -51,7 +55,7 @@ export class RootUi {
   
   onHashChange(newUrl) {
     const fragment = newUrl.split("#")[1] || "";
-    this.stateService.setEncoded(fragment);
+    return this.stateService.setEncoded(fragment);
   }
   
   onStateChange() {

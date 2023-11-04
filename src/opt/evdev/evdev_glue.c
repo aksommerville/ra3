@@ -67,6 +67,10 @@ static int _evdev_for_each_button(
   return evdev_device_enumerate(device,_evdev_for_each_button_cb,&ctx);
 }
 
+static int _evdev_has_device(struct eh_input_driver *driver,int devid) {
+  return evdev_device_by_devid(DRIVER->evdev,devid)?1:0;
+}
+
 const struct eh_input_type eh_input_type_evdev={
   .name="evdev",
   .desc="Linux input via evdev.",
@@ -77,4 +81,5 @@ const struct eh_input_type eh_input_type_evdev={
   .update=_evdev_update,
   .get_ids=_evdev_get_ids,
   .list_buttons=_evdev_for_each_button,
+  .has_device=_evdev_has_device,
 };

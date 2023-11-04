@@ -151,6 +151,7 @@ struct eh_input_type {
     int (*cb)(int btnid,uint32_t usage,int lo,int hi,int value,void *userdata),
     void *userdata
   );
+  int (*has_device)(struct eh_input_driver *driver,int devid);
 };
 
 void eh_input_driver_del(struct eh_input_driver *driver);

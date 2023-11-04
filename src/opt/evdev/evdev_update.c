@@ -62,6 +62,7 @@ static int evdev_check_file(struct evdev *evdev,const char *base,int basec) {
   device->evdev=evdev;
   device->fd=fd;
   device->kid=kid;
+  device->devid=eh_input_devid_next();
   
   // Tell our owner, and we're done.
   if (evdev->delegate.cb_connect) evdev->delegate.cb_connect(device->devid,evdev->delegate.userdata);

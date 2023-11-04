@@ -38,6 +38,7 @@ int sr_int_eval(int *dst,const char *src,int srcc);
 int sr_decsint_repr(char *dst,int dsta,int src);
 int sr_decuint_repr(char *dst,int dsta,int src,int mindigitc);
 int sr_hexuint_repr(char *dst,int dsta,int src,int mindigitc);
+int sr_hexuint_repr_prefixed(char *dst,int dsta,int src,int mindigitc);
 
 /* Doubles as string.
  * The "json" format produces "null" for inf and nan, and no exponents, always JSON-legal.

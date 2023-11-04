@@ -34,6 +34,7 @@ static void eh_print_help(const char *topic,int topicc) {
     "  --audio-chanc=1|2\n"
     "  --audio-device=STRING\n"
     "  --glsl-version=INT\n"
+    "  --input-config=PATH\n"
     "\n"
   );
 }
@@ -78,6 +79,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==11)&&!memcmp(k,"audio-chanc",11)) { eh.audio_chanc=vn; return 0; }
   if ((kc==12)&&!memcmp(k,"audio-device",12)) return eh_config_set_string(&eh.audio_device,v,vc);
   if ((kc==12)&&!memcmp(k,"glsl-version",12)) { eh.glsl_version=vn; return 0; }
+  if ((kc==12)&&!memcmp(k,"input-config",12)) return eh_config_set_string(&eh.input_config_path,v,vc);
   
   //TODO other params?
   
@@ -102,6 +104,34 @@ static int eh_argv_positional(const char *arg) {
   return -2;
 }
 
+/* Start configuration.
+ * Set any defaults if we can cheaply and passively.
+ */
+ 
+static void eh_configure_start() {
+  eh.glsl_version=120;
+}
+
+/* Finish configuration.
+ * Last chance for defaults or validation.
+ */
+ 
+static int eh_configure_finish() {
+
+  // input-config, default to "~/.romassist/input.cfg"
+  if (!eh.input_config_path) {
+    char tmp[1024];
+    int tmpc=eh_get_romassist_directory(tmp,sizeof(tmp));
+    if ((tmpc>0)&&(tmpc<sizeof(tmp)-10)) {
+      memcpy(tmp+tmpc,"/input.cfg",11);
+      tmpc+=10;
+      if (eh_config_set_string(&eh.input_config_path,tmp,tmpc)<0) return -1;
+    }
+  }
+
+  return 0;
+}
+
 /* Configure, main entry point.
  */
  
@@ -112,7 +142,7 @@ int eh_configure(int argc,char **argv) {
     eh.exename=argv[0];
   }
   
-  eh.glsl_version=120;
+  eh_configure_start();
   
   int argi=1,err;
   while (argi<argc) {
@@ -167,5 +197,5 @@ int eh_configure(int argc,char **argv) {
     }
   }
   
-  return 0;
+  return eh_configure_finish();
 }

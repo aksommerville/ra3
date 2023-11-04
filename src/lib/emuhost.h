@@ -41,7 +41,23 @@
 #define EH_BTN_AUX1     0x1000
 #define EH_BTN_AUX2     0x2000
 #define EH_BTN_AUX3     0x4000
-#define EH_BTN_CD       0x8000
+#define EH_BTN_CD       0x8000 /* Fake button, always 1 if connected. */
+#define EH_BTN_NONE     0 /* Fake button, convenient in a few places. */
+#define EH_BTN_HORZ (EH_BTN_LEFT|EH_BTN_RIGHT) /* Aggregate buttons for config file only. */
+#define EH_BTN_VERT (EH_BTN_UP|EH_BTN_DOWN)
+#define EH_BTN_DPAD (EH_BTN_HORZ|EH_BTN_VERT)
+
+/* More buttons, with bits >=0x00010000 set, for stateless actions.
+ */
+#define EH_BTN_QUIT        0x00010001
+#define EH_BTN_SCREENCAP   0x00010002
+#define EH_BTN_FULLSCREEN  0x00010003
+#define EH_BTN_PAUSE       0x00010004
+#define EH_BTN_DEBUG       0x00010005
+#define EH_BTN_STEP        0x00010006
+#define EH_BTN_FASTFWD     0x00010007
+#define EH_BTN_SAVESTATE   0x00010008
+#define EH_BTN_LOADSTATE   0x00010009
 
 /* Inversion of control.
  * Consumers must surrender control of the main loop entirely to emuhost.
@@ -206,6 +222,12 @@ void eh_audio_unlock();
  */
 uint16_t eh_input_get(uint8_t plrid);
 
+/* For more detailed interaction with the input manager, use this and see eh_inmgr.h.
+ * The inmgr instance is created between your 'configure' and 'load' callbacks, and will not change after that.
+ */
+struct eh_inmgr;
+struct eh_inmgr *eh_get_inmgr();
+
 /* Odds, ends.
  *******************************************************************/
 
@@ -214,5 +236,10 @@ uint16_t eh_input_get(uint8_t plrid);
  * Caller must free it. Or keep it alive forever, presumably you're only doing this once.
  */
 int eh_get_scratch_directory(char **dstpp);
+
+/* Normally "~/.romassist", where all our caches and config can go.
+ * This is also the root for emulator-specific scratch directories.
+ */
+int eh_get_romassist_directory(char *dst,int dsta);
 
 #endif

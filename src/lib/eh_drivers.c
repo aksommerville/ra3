@@ -7,6 +7,7 @@
 void eh_drivers_quit() {
   if (eh.audio) eh.audio->type->play(eh.audio,0);
   eh_render_del(eh.render);
+  eh_inmgr_del(eh.inmgr);
   eh_audio_driver_del(eh.audio);
   eh_video_driver_del(eh.video);
   if (eh.inputv) {
@@ -54,6 +55,8 @@ static int eh_drivers_init_video_index(int p) {
 }
  
 static int eh_drivers_init_video() {
+  
+  // Instantiate video driver.
   int err=-1;
   if (eh.video_drivers) {
     err=sr_string_split(eh.video_drivers,-1,',',eh_drivers_init_video_name,0);
@@ -67,10 +70,19 @@ static int eh_drivers_init_video() {
     return -2;
   }
   fprintf(stderr,"%s: Using video driver '%s'.\n",eh.exename,eh.video->type->name);
+  
+  // Instantiate renderer.
   if (!(eh.render=eh_render_new())) {
     fprintf(stderr,"%s: Failed to instantiate renderer.\n",eh.exename);
     return -2;
   }
+  
+  // Apportion an input device id for the keyboard if there is one.
+  if (eh.video->type->provides_keyboard) {
+    eh.devid_keyboard=eh_input_devid_next();
+    eh_cb_connect(eh.devid_keyboard,0);
+  }
+  
   return 0;
 }
 
@@ -162,6 +174,8 @@ static int eh_drivers_init_input_index(int p) {
 }
  
 static int eh_drivers_init_input() {
+
+  // Instantiate drivers.
   int err=0;
   if (eh.input_drivers) {
     sr_string_split(eh.input_drivers,-1,',',eh_drivers_init_input_name,0);
@@ -175,7 +189,7 @@ static int eh_drivers_init_input() {
     return -2;
   }
   
-  //TODO prep mapper
+  // You'd expect to see inmgr instantiation here, but we do that earlier, so it exists before video initializes.
   
   return 0;
 }
@@ -184,6 +198,28 @@ static int eh_drivers_init_input() {
  */
  
 int eh_drivers_init() {
+
+  // Instantiate and configure inmgr.
+  // This would be part of eh_driver_init_input(), but video uses it too.
+  struct eh_inmgr_delegate delegate={
+    .userdata=0,
+    .cb_event=eh_cb_digested_event,
+    .cb_config_dirty=eh_cb_inmgr_config_dirty,
+  };
+  int playerc=eh.delegate.playerc;
+  if ((playerc<1)||(playerc>30)) playerc=1;
+  if (!(eh.inmgr=eh_inmgr_new(&delegate,playerc))) {
+    fprintf(stderr,"%s: Failed to instantiate input manager.\n",eh.exename);
+    return -2;
+  }
+  if (eh.input_config_path) {
+    int err=eh_inmgr_load_config(eh.inmgr,eh.input_config_path);
+    if (err<0) {
+      if (err!=-2) fprintf(stderr,"%s: Failed to process input config.\n",eh.input_config_path);
+      return -2;
+    }
+  }
+
   int err;
   if (
     ((err=eh_drivers_init_video())<0)||
@@ -233,7 +269,7 @@ void eh_audio_unlock() {
  */
  
 uint16_t eh_input_get(uint8_t plrid) {
-  return 0;//TODO
+  return eh_inmgr_get_player_state(eh.inmgr,plrid);
 }
 
 // The public video API is at lib/render/eh_render_obj.c

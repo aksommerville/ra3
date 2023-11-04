@@ -45,7 +45,7 @@ ifneq (,$(strip $(BUILD_LIB)))
   ,$(OFILES))
   $(LIB):$(OFILES_LIB);$(PRECMD) $(AR) $@ $^
   #TODO Name all public headers here.
-  LIB_HEADERS_SRC:=src/lib/emuhost.h
+  LIB_HEADERS_SRC:=src/lib/emuhost.h src/lib/eh_inmgr.h
   LIB_HEADERS_DST:=$(patsubst src/lib/%,out/include/%,$(LIB_HEADERS_SRC))
   all:$(LIB_HEADERS_DST)
   out/include/%:src/lib/%;$(PRECMD) cp $< $@

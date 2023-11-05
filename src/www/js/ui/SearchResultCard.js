@@ -86,7 +86,6 @@ export class SearchResultCard {
   launch() {
     if (!this.game) return;
     this.comm.http("POST", `/api/launch?gameid=${this.game.gameid}`).then(() => {
-      console.log("launch ok");
     }).catch(error => {
       console.log("launch failed", error);
     });

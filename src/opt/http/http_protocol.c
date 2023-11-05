@@ -32,6 +32,17 @@ int http_socket_encode_xfer(struct http_socket *socket,struct http_xfer *xfer) {
  */
  
 static int http_xfer_upgrade_websocket(struct http_socket *socket,struct http_xfer *xfer,struct http_listener *listener) {
+
+  if ((xfer->linec>=13)&&!memcmp(xfer->line,"FAKEWEBSOCKET",13)) {
+    socket->protocol=HTTP_PROTOCOL_FAKEWEBSOCKET;
+    if (http_listener_ref(listener)<0) return -1;
+    if (socket->listener) http_listener_del(socket->listener);
+    socket->listener=listener;
+    if (socket->listener->cb_connect) {
+      if (socket->listener->cb_connect(socket,socket->listener->userdata)<0) return -1;
+    }
+    return 0;
+  }
   
   const char *hkey=0;
   int hkeyc=http_xfer_get_header(&hkey,xfer,"Sec-WebSocket-Key",17);
@@ -289,11 +300,26 @@ static int http_protocol_ws_input(struct http_socket *socket,uint8_t *src,int sr
   }
   
   // Send to delegate.
-  if (socket->listener&&socket->listener->cb_message) {
+  if (socket->cb_message) {
+    if (socket->cb_message(socket,opcode,body,len,socket->userdata)<0) return -1;
+  } else if (socket->listener&&socket->listener->cb_message) {
     if (socket->listener->cb_message(socket,opcode,body,len,socket->listener->userdata)<0) return -1;
   }
   
   return srcp;
+}
+
+static int http_protocol_fakews_input(struct http_socket *socket,uint8_t *src,int srcc) {
+  if (srcc<3) return 0;
+  int paylen=(src[1]<<8)|src[2];
+  int pktlen=3+paylen;
+  if (srcc<pktlen) return 0;
+  if (socket->cb_message) {
+    if (socket->cb_message(socket,src[0],src+3,paylen,socket->userdata)<0) return -1;
+  } else if (socket->listener&&socket->listener->cb_message) {
+    if (socket->listener->cb_message(socket,src[0],src+3,paylen,socket->listener->userdata)<0) return -1;
+  }
+  return pktlen;
 }
 
 /* Digest input, return length consumed or zero if not ready.
@@ -333,6 +359,9 @@ static int http_socket_digest_input_1(struct http_socket *socket,const char *src
   // WEBSOCKET: Unpack frames and deliver.
   if (socket->protocol==HTTP_PROTOCOL_WEBSOCKET) {
     return http_protocol_ws_input(socket,(uint8_t*)src,srcc);
+  }
+  if (socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET) {
+    return http_protocol_fakews_input(socket,(uint8_t*)src,srcc);
   }
 
   return 0;

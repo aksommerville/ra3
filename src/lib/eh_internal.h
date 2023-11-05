@@ -7,6 +7,7 @@
 #include "eh_inmgr.h"
 #include "eh_aucvt.h"
 #include "render/eh_render.h"
+#include "opt/fakews/fakews.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,6 +40,12 @@ extern struct eh {
   struct eh_render *render;
   struct eh_inmgr *inmgr;
   struct eh_aucvt aucvt;
+  struct fakews *fakews;
+  
+  int screencap_requested;
+  int hard_pause;
+  int hard_pause_stepc;
+  int fastfwd;
   
 } eh;
 
@@ -61,5 +68,8 @@ void eh_cb_disconnect(int devid,void *dummy);
 void eh_cb_button(int devid,int btnid,int value,void *dummy);
 int eh_cb_digested_event(void *userdata,const struct eh_inmgr_event *event);
 void eh_cb_inmgr_config_dirty(void *userdata);
+void eh_cb_ws_connect(void *userdata);
+void eh_cb_ws_disconnect(void *userdata);
+void eh_cb_ws_message(int opcode,const void *v,int c,void *userdata);
 
 #endif

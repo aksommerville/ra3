@@ -141,9 +141,8 @@ int http_socket_wbuf_appendf(struct http_socket *socket,const char *fmt,...) {
  */
  
 static int http_socket_write_complete(struct http_socket *socket) {
-  if (socket->protocol==HTTP_PROTOCOL_WEBSOCKET) {
-    return 0;
-  }
+  if (socket->protocol==HTTP_PROTOCOL_WEBSOCKET) return 0;
+  if (socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET) return 0;
   http_xfer_del(socket->req); socket->req=0;
   http_xfer_del(socket->rsp); socket->rsp=0;
   http_listener_del(socket->listener); socket->listener=0;
@@ -188,6 +187,7 @@ int http_socket_ok_to_close(const struct http_socket *socket) {
   if (!socket) return 1;
   if (socket->fd<0) return 1;
   if (socket->protocol==HTTP_PROTOCOL_WEBSOCKET) return 1;
+  if (socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET) return 1;
   if (socket->req||socket->rsp) return 0;
   return 1;
 }
@@ -206,29 +206,40 @@ int http_websocket_send(struct http_socket *socket,int type,const void *v,int c)
   if (!socket) return -1;
   if ((c<0)||(c&&!v)) return -1;
   
-  // Preamble can go up to 10 bytes.
-  char preamble[10];
-  int preamblec=0;
-  preamble[preamblec++]=0x80|(type&0x0f); // 0x80=terminator, we don't allow continued packets.
-  if (c<0x7e) { // short
-    preamble[preamblec++]=c;
-  } else if (c<0x10000) { // medium
-    preamble[preamblec++]=0x7e;
-    preamble[preamblec++]=c>>8;
-    preamble[preamblec++]=c;
-  } else { // huge
-    preamble[preamblec++]=0x7f;
-    preamble[preamblec++]=0;
-    preamble[preamblec++]=0;
-    preamble[preamblec++]=0;
-    preamble[preamblec++]=0;
-    preamble[preamblec++]=c>>24;
-    preamble[preamblec++]=c>>16;
-    preamble[preamblec++]=c>>8;
-    preamble[preamblec++]=c;
+  if (socket->protocol==HTTP_PROTOCOL_WEBSOCKET) {
+    // Preamble can go up to 10 bytes.
+    char preamble[10];
+    int preamblec=0;
+    preamble[preamblec++]=0x80|(type&0x0f); // 0x80=terminator, we don't allow continued packets.
+    if (c<0x7e) { // short
+      preamble[preamblec++]=c;
+    } else if (c<0x10000) { // medium
+      preamble[preamblec++]=0x7e;
+      preamble[preamblec++]=c>>8;
+      preamble[preamblec++]=c;
+    } else { // huge
+      preamble[preamblec++]=0x7f;
+      preamble[preamblec++]=0;
+      preamble[preamblec++]=0;
+      preamble[preamblec++]=0;
+      preamble[preamblec++]=0;
+      preamble[preamblec++]=c>>24;
+      preamble[preamblec++]=c>>16;
+      preamble[preamblec++]=c>>8;
+      preamble[preamblec++]=c;
+    }
+    if (http_socket_wbuf_append(socket,preamble,preamblec)<0) return -1;
+    if (http_socket_wbuf_append(socket,v,c)<0) return -1;
+    return 0;
   }
-  if (http_socket_wbuf_append(socket,preamble,preamblec)<0) return -1;
-  if (http_socket_wbuf_append(socket,v,c)<0) return -1;
+  
+  if (socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET) {
+    if ((type<0)||(type>0xff)||(c>0xffff)) return -1;
+    char preamble[3]={type,c>>8,c};
+    if (http_socket_wbuf_append(socket,preamble,sizeof(preamble))<0) return -1;
+    if (http_socket_wbuf_append(socket,v,c)<0) return -1;
+    return 0;
+  }
   
   return 0;
 }

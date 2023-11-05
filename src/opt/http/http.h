@@ -142,6 +142,9 @@ int http_xfer_ref(struct http_xfer *xfer);
 void http_xfer_del(struct http_xfer *xfer);
 
 /* Clients.
+ * XXX I didn't write this stuff the first time thru, just the headers, and now
+ * I'm thinking it would be better to split client stuff into a separate unit.
+ * No sense implementing all kinds of server logic for an app that only acts as a client.
  ****************************************************************************/
 
 /* Conveniences to begin a request with a specific method.
@@ -197,6 +200,14 @@ int http_xfer_set_header(struct http_xfer *xfer,const char *k,int kc,const char 
 int http_xfer_append_body(struct http_xfer *xfer,const void *src,int srcc);
 int http_xfer_set_body(struct http_xfer *xfer,const void *src,int srcc);
 int http_xfer_append_bodyf(struct http_xfer *xfer,const char *fmt,...);
+
+struct http_socket *http_websocket_connect(
+  struct http_context *context,
+  const char *url,int urlc,
+  int (*cb_disconnect)(struct http_socket *socket,void *userdata),
+  int (*cb_message)(struct http_socket *socket,int type,const void *v,int c,void *userdata),
+  void *userdata
+);
 
 /* General helpers.
  *************************************************************************/

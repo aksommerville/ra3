@@ -9,6 +9,7 @@
 #define HTTP_PROTOCOL_HTTP_SERVER 1
 #define HTTP_PROTOCOL_HTTP_CLIENT 2
 #define HTTP_PROTOCOL_WEBSOCKET 3
+#define HTTP_PROTOCOL_FAKEWEBSOCKET 4
 
 struct http_socket {
   int refc;
@@ -33,7 +34,11 @@ struct http_socket {
    */
   struct http_listener *listener;
   
+  /* These callbacks are relevant to client-side WebSockets.
+   */
   void *userdata;
+  int (*cb_disconnect)(struct http_socket *socket,void *userdata);
+  int (*cb_message)(struct http_socket *socket,int type,const void *v,int c,void *userdata);
 };
  
 void http_socket_del(struct http_socket *socket);

@@ -75,6 +75,21 @@ static int eh_update() {
   if (eh.audio->type->update) {
     eh.audio->type->update(eh.audio);
   }
+  if (fakews_update(eh.fakews,0)<0) {
+    fprintf(stderr,"%s: Error updating network.\n",eh.exename);
+    return -2;
+  }
+  
+  // If we're hard-paused, stop here.
+  if (eh.hard_pause) {
+    if (!eh.hard_pause_stepc) return 0;
+    eh.hard_pause_stepc--;
+  }
+  
+  // If we're fast-forwarding, execute 5 frames instead of 1. (framec is always 1 in normal times).
+  if (eh.fastfwd) {
+    framec=5;
+  }
   
   // Update the client.
   eh_render_before(eh.render);

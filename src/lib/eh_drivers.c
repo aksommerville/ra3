@@ -16,6 +16,7 @@ void eh_drivers_quit() {
   }
   eh_aucvt_cleanup(&eh.aucvt);
   eh_inmgr_del(eh.inmgr);
+  fakews_del(eh.fakews);
 }
 
 /* Choose and init video driver.
@@ -249,6 +250,18 @@ int eh_drivers_init() {
     ((err=eh_drivers_init_audio())<0)||
     ((err=eh_drivers_init_input())<0)
   ) return err;
+  
+  //TODO Romassist host and port, and path, definitely need to be configurable and optional.
+  if (!(eh.fakews=fakews_new(
+    "localhost",9,
+    2600,
+    "/ws/game",8,
+    eh_cb_ws_connect,
+    eh_cb_ws_disconnect,
+    eh_cb_ws_message,
+    0
+  ))) return -1;
+  
   return 0;
 }
 

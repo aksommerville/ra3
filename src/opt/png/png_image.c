@@ -40,6 +40,16 @@ int png_image_ref(struct png_image *image) {
  */
 
 struct png_image *png_image_new(int w,int h,uint8_t depth,uint8_t colortype) {
+  
+  // Straight zeroes is a special case, that's "give me a valid object and i'll fill it in".
+  if (!w&&!h&&!depth&&!colortype) {
+    struct png_image *image=calloc(1,sizeof(struct png_image));
+    if (!image) return 0;
+    image->refc=1;
+    return image;
+  }
+  
+  // Dimensions (0,0) remain legal to request no pixels, but now you must provide valid (depth,colortype).
   if ((w<0)||(w>PNG_IMAGE_SIZE_LIMIT)) return 0;
   if ((h<0)||(h>PNG_IMAGE_SIZE_LIMIT)) return 0;
   if ((!w||!h)&&(w||h)) return 0;

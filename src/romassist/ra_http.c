@@ -743,6 +743,7 @@ static int ra_http_put_blob(struct http_xfer *req,struct http_xfer *rsp) {
   }
   err=sr_encode_json_string(http_xfer_get_body_encoder(rsp),0,0,path,-1);
   free(path);
+  db_invalidate_blobs(ra.db);
   return err;
 }
 
@@ -755,6 +756,7 @@ static int ra_http_delete_blob(struct http_xfer *req,struct http_xfer *rsp) {
   if ((pathc<1)||(pathc>=sizeof(path))) return http_xfer_set_status(rsp,404,"Not found");
   if (db_blob_validate_path(ra.db,path,pathc)<0) return http_xfer_set_status(rsp,404,"Not found");
   if (file_unlink(path)<0) return http_xfer_set_status(rsp,404,"Not found");
+  db_invalidate_blobs(ra.db);
   return 0;
 }
 

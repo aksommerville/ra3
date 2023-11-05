@@ -49,6 +49,7 @@ int http_method_eval(const char *src,int srcc) {
   _(UNKNOWN)
   _(WEBSOCKET)
   #undef _
+  if ((srcc==13)&&!memcmp(norm,"FAKEWEBSOCKET",13)) return HTTP_METHOD_WEBSOCKET;
   return HTTP_METHOD_UNKNOWN;
 }
 

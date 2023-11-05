@@ -24,12 +24,12 @@ struct http_xfer {
   char *line; // Request-Line or Status-Line
   int linec;
   struct http_dict headers;
-  //XXX char *body;
-  //int bodyc,bodya;
   struct sr_encoder body;
   
   int body_pendingc; // remaining body length
   int chunked;
+  
+  struct sockaddr raddr; // Clients only.
 };
  
 void http_xfer_del(struct http_xfer *xfer);

@@ -106,11 +106,12 @@ static int ra_ws_rcv_png(struct ra_websocket_extra *extra,const void *v,int c) {
    */
   const int64_t max_age=1000000;
   int64_t now=ra_now();
-  int sent_to_menu=0;
+  int sent_to_menu=0,menuc=0;
   struct ra_websocket_extra *menu=ra.websocket_extrav;
   int i=RA_WEBSOCKET_LIMIT;
   for (;i-->0;menu++) {
     if (menu->role!=RA_WEBSOCKET_ROLE_MENU) continue;
+    menuc++;
     if (now-menu->screencap_request_time<=max_age) {
       http_websocket_send(menu->socket,2,v,c);
       menu->screencap_request_time=0;
@@ -118,6 +119,18 @@ static int ra_ws_rcv_png(struct ra_websocket_extra *extra,const void *v,int c) {
     }
   }
   if (sent_to_menu) return 0;
+  
+  /* If any menu is running, send it to all of them.
+   * This is for screencaps initiated in game, we do have an assignable button for it.
+   */
+  if (menuc) {
+    for (i=RA_WEBSOCKET_LIMIT,menu=ra.websocket_extrav;i-->0;menu++) {
+      if (menu->role!=RA_WEBSOCKET_ROLE_MENU) continue;
+      http_websocket_send(menu->socket,2,v,c);
+      menu->screencap_request_time=0;
+    }
+    return 0;
+  }
   
   /* If a game is running, save this cap as a blob.
    */
@@ -131,6 +144,7 @@ static int ra_ws_rcv_png(struct ra_websocket_extra *extra,const void *v,int c) {
         fprintf(stderr,"%s: Failed to write file, %d bytes.\n",blobpath,c);
       }
       free(blobpath);
+      return 0;
     }
   }
   

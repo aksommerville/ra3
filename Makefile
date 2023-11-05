@@ -31,6 +31,8 @@ ifneq (,$(strip $(BUILD_LIB)))
     mid/lib/% \
     mid/opt/fs/% \
     mid/opt/serial/% \
+    mid/opt/fakews/% \
+    mid/opt/png/% \
     mid/opt/glx/% \
     mid/opt/drm/% \
     mid/opt/pulse/% \
@@ -88,6 +90,6 @@ ifneq (,$(strip $(BUILD_MENU)))
 endif
 
 #XXX A lil convenience while developing emuhost.
-nes:$(LIB) $(LIB_HEADERS_DST);rm -f ../akfceu/out/akfceu ; make -C../akfceu run
+nes:$(LIB) $(LIB_HEADERS_DST) $(EXE_ROMASSIST);rm -f ../akfceu/out/akfceu ; make -C../akfceu ; make run
 
 endif

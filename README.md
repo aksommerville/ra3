@@ -18,14 +18,18 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Config: Use a file that menu can edit.
 - - [x] Input manager
 - - - [ ] Default config for keyboards (when no config file present). See eh_inmgr_config.c
-- - - [ ] Wire up stateless actions. See eh_cb_digested_event
+- - - [x] Wire up stateless actions. See eh_cb_digested_event
 - - [x] Audio live resampling: We can't force clients to use the hardware sample rate or format.
-- - [ ] Communicate with backend.
+- - [x] Communicate with backend.
+- - [ ] Deliver screencaps.
+- - - [ ] Screencaps from OpenGL context. Need a native OpenGL client to test this.
+- - [x] Hard pause and step.
 - [ ] Backend
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
-- - [ ] http: Add a "fakewebsocket" upgrade option, so native clients don't need to bugger around with proper WebSocket framing.
+- - [x] http: Add a "fakewebsocket" upgrade option, so native clients don't need to bugger around with proper WebSocket framing.
+- - [x] db: I think deleting blobs is not flushing the cache? I see them delete in the FS, but they still get listed for games right after.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu

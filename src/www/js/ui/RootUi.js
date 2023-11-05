@@ -6,6 +6,7 @@ import { Comm } from "../Comm.js";
 import { NavBarUi } from "./NavBarUi.js";
 import { StateService } from "../model/StateService.js";
 import { GameDetailsModal } from "./GameDetailsModal.js";
+import { ScreencapModal } from "./ScreencapModal.js";
 
 export class RootUi {
   static getDependencies() {
@@ -34,6 +35,8 @@ export class RootUi {
     if (!this.onHashChange(this.window.location.href || "")) {
       this.onStateChange();
     }
+    
+    this.wsListener = this.comm.listenWs((type, packet) => this.onWsMessage(type, packet));
   }
   
   onRemoveFromDom() {
@@ -44,6 +47,10 @@ export class RootUi {
     if (this.stateListener) {
       this.stateService.unlisten(this.stateListener);
       this.stateListener = null;
+    }
+    if (this.wsListener) {
+      this.comm.unlistenWs(this.wsListener);
+      this.wsListener = null;
     }
   }
   
@@ -94,5 +101,26 @@ export class RootUi {
     } else {
       // already closed
     }
+  }
+  
+  onWsMessage(type, packet) {
+    //console.log(`RootUi.onWsMessage`, { type, packet });
+    if (type === "binary") {
+      if (this.decodeAndDisplayScreencap(packet)) ;
+    }
+  }
+  
+  // Returns false if it's not a PNG file; we might add other binary things in the future.
+  // (but PNG packets will always be screencaps)
+  decodeAndDisplayScreencap(packet) {
+    if (packet instanceof ArrayBuffer) packet = new Uint8Array(packet);
+    if (packet.length < 8) return false;
+    // memcmp.... this is less elegant in JS than in C :(
+    const header = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    for (let i=0; i<8; i++) if (packet[i] !== header[i]) return false;
+    // OK it's close enough to PNG. Let's show it in a modal.
+    const modal = this.dom.spawnModal(ScreencapModal);
+    modal.setupPng(packet);
+    return true;
   }
 }

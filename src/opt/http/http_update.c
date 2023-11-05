@@ -38,7 +38,10 @@ static int http_update_fd_read(struct http_context *context,int fd) {
     if (http_socket_read(socket)<0) {
       if (http_socket_ok_to_close(socket)) {
         //fprintf(stderr,"Lost socket on fd %d and it seems ok.\n",fd);
-        if ((socket->protocol==HTTP_PROTOCOL_WEBSOCKET)&&socket->listener&&socket->listener->cb_disconnect) {
+        if (
+          ((socket->protocol==HTTP_PROTOCOL_WEBSOCKET)||(socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET))&&
+          socket->listener&&socket->listener->cb_disconnect
+        ) {
           socket->listener->cb_disconnect(socket,socket->listener->userdata);
         }
         http_context_remove_socket(context,socket);

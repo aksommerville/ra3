@@ -30,8 +30,8 @@ export class Comm {
       switch (result) {
         case "response": return rsp;
         case "json": return rsp.json();
-        case "arraybuffer": return rsp.body.arraybuffer();
-        case "text": return rsp.body.text();
+        case "arraybuffer": return rsp.arrayBuffer();
+        case "text": return rsp.text();
       }
       return rsp;
     });

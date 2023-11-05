@@ -1,4 +1,5 @@
 #include "eh_render_internal.h"
+#include "eh_screencap.h"
 
 /* Delete.
  */
@@ -301,6 +302,10 @@ void eh_render_after(struct eh_render *render) {
  
 void eh_video_write(const void *fb) {
   eh.render->srcfb=fb;
+  if (eh.screencap_requested) {
+    eh.screencap_requested=0;
+    eh_screencap_send_from_fb(fb);
+  }
 }
 
 void eh_video_begin() {
@@ -312,6 +317,10 @@ void eh_video_begin() {
 void eh_video_end() {
   if (!eh.render->gx_in_progress) return;
   eh.render->gx_in_progress=0;
+  if (eh.screencap_requested) {
+    eh.screencap_requested=0;
+    eh_screencap_send_from_opengl();
+  }
   eh.video->type->end(eh.video);
 }
 

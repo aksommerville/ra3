@@ -18,6 +18,7 @@ export class SearchModel {
     this.pubtime = src.pubtime || "";
     this.flags = src.flags || "";
     this.notflags = src.notflags || "";
+    this.sort = src.sort || 0;
     this.page = src.page || 1;
   }
   
@@ -32,6 +33,7 @@ export class SearchModel {
       pubtime: state.searchPubtime,
       flags: SearchModel.flagNamesFromBits(state.searchFlagsTrue),
       notflags: SearchModel.flagNamesFromBits(state.searchFlagsFalse),
+      sort: state.searchSort,
       page: state.searchPage,
     });
   }
@@ -47,6 +49,7 @@ export class SearchModel {
       searchPubtime: this.pubtime,
       searchFlagsTrue: SearchModel.flagBitsFromNames(this.flags),
       searchFlagsFalse: SearchModel.flagBitsFromNames(this.notflags),
+      searchSort: this.sort,
       searchPage: this.page,
     };
   }
@@ -70,6 +73,7 @@ export class SearchModel {
       (this.pubtime === other.pubtime) &&
       (this.flags === other.flags) &&
       (this.notflags === other.notflags) &&
+      (this.sort === other.sort) &&
       (this.page === other.page)
     );
   }

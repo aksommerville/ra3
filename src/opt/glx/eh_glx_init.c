@@ -1,4 +1,5 @@
 #include "eh_glx_internal.h"
+#include "lib/emuhost.h"
 
 /* Initialize display and atoms.
  */
@@ -241,6 +242,21 @@ int eh_glx_init_finish(struct eh_video_driver *driver,const struct eh_video_setu
     eh_glx_set_icon(driver,setup->iconrgba,setup->iconw,setup->iconh);
   }
   
+  XMapWindow(DRIVER->dpy,DRIVER->win);
+  XSync(DRIVER->dpy,0);
+  XSetWMProtocols(DRIVER->dpy,DRIVER->win,&DRIVER->atom_WM_DELETE_WINDOW,1);
+  
+  // You'd think the (x,y) we supply to XCreateWindow control its position, but I guess those get ignored.
+  if (setup->screen) {
+    int screenw=DisplayWidth(DRIVER->dpy,0),screenh=DisplayHeight(DRIVER->dpy,0);
+    switch (setup->screen) {
+      case EH_SCREEN_TOP:    XMoveWindow(DRIVER->dpy,DRIVER->win,(screenw>>1)-(driver->w>>1),0); break;
+      case EH_SCREEN_BOTTOM: XMoveWindow(DRIVER->dpy,DRIVER->win,(screenw>>1)-(driver->w>>1),screenh-driver->h); break;
+      case EH_SCREEN_LEFT:   XMoveWindow(DRIVER->dpy,DRIVER->win,0,(screenh>>1)-(driver->h>>1)); break;
+      case EH_SCREEN_RIGHT:  XMoveWindow(DRIVER->dpy,DRIVER->win,screenw-driver->w,(screenh>>1)-(driver->h>>1)); break;
+    }
+  }
+  
   if (setup->fullscreen) {
     XChangeProperty(
       DRIVER->dpy,DRIVER->win,
@@ -250,10 +266,6 @@ int eh_glx_init_finish(struct eh_video_driver *driver,const struct eh_video_setu
     );
     driver->fullscreen=1;
   }
-  
-  XMapWindow(DRIVER->dpy,DRIVER->win);
-  XSync(DRIVER->dpy,0);
-  XSetWMProtocols(DRIVER->dpy,DRIVER->win,&DRIVER->atom_WM_DELETE_WINDOW,1);
   
   // Hide cursor.
   XColor color;

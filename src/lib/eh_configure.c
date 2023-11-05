@@ -1,5 +1,6 @@
 #include "eh_internal.h"
 #include "opt/serial/serial.h"
+#include "opt/fs/fs.h"
 
 /* Set string.
  */
@@ -35,8 +36,26 @@ static void eh_print_help(const char *topic,int topicc) {
     "  --audio-device=STRING\n"
     "  --glsl-version=INT\n"
     "  --input-config=PATH\n"
+    "  --screen=any             (left,right,top,bottom) Try to land window on the given monitor.\n"
     "\n"
   );
+}
+
+/* --screen
+ */
+ 
+static int eh_config_screen_eval(const char *src,int srcc) {
+  char norm[16];
+  if ((srcc<1)||(srcc>sizeof(norm))) return 0;
+  int i=srcc; while (i-->0) {
+    if ((src[i]>='a')&&(src[i]<='z')) norm[i]=src[i]-0x20;
+    else norm[i]=src[i];
+  }
+  if ((srcc==4)&&!memcmp(norm,"LEFT",4)) return EH_SCREEN_LEFT;
+  if ((srcc==5)&&!memcmp(norm,"RIGHT",5)) return EH_SCREEN_RIGHT;
+  if ((srcc==3)&&!memcmp(norm,"TOP",3)) return EH_SCREEN_TOP;
+  if ((srcc==6)&&!memcmp(norm,"BOTTOM",6)) return EH_SCREEN_BOTTOM;
+  return 0;
 }
 
 /* Key=value arguments.
@@ -80,8 +99,14 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==12)&&!memcmp(k,"audio-device",12)) return eh_config_set_string(&eh.audio_device,v,vc);
   if ((kc==12)&&!memcmp(k,"glsl-version",12)) { eh.glsl_version=vn; return 0; }
   if ((kc==12)&&!memcmp(k,"input-config",12)) return eh_config_set_string(&eh.input_config_path,v,vc);
-  
-  //TODO other params?
+  if ((kc==6)&&!memcmp(k,"screen",6)) { eh.prefer_screen=eh_config_screen_eval(v,vc); return 0; }
+
+  /* A few parameters left over from v2 that we're not using anymore.
+   * Ignore them if present, otherwise our shared config file would throw some errors.
+   */
+  if ((kc==12)&&!memcmp(k,"audio-format",12)) return 0;
+  if ((kc==6)&&!memcmp(k,"shader",6)) return 0;
+  if ((kc==7)&&!memcmp(k,"fastfwd",7)) return 0;
   
   // Give the client a whack at it.
   if (eh.delegate.configure) {
@@ -102,6 +127,55 @@ static int eh_argv_positional(const char *arg) {
   if (!eh.rompath) return eh_config_set_string(&eh.rompath,arg,-1);
   fprintf(stderr,"%s: Unexpected argument '%s'.\n",eh.exename,arg);
   return -2;
+}
+
+/* Parse and apply config file.
+ */
+ 
+static int eh_config_apply_file(const char *src,int srcc,const char *path) {
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  int lineno=0,err,linec;
+  const char *line;
+  while ((linec=sr_decode_line(&line,&decoder))>0) {
+    lineno++;
+    int i=0; for (;i<linec;i++) if (line[i]=='#') linec=i;
+    while (linec&&((unsigned char)line[linec-1]<=0x20)) linec--;
+    while (linec&&((unsigned char)line[0]<=0x20)) { line++; linec--; }
+    if (!linec) continue;
+    
+    const char *k=line;
+    int kc=0,linep=0;
+    while ((linep<linec)&&(line[linep++]!='=')) kc++;
+    while (kc&&((unsigned char)k[kc-1]<=0x20)) kc--;
+    while ((linep<linec)&&((unsigned char)line[linep]<=0x20)) linep++;
+    const char *v=line+linep;
+    int vc=linec-linep;
+    
+    if ((err=eh_argv_kv(k,kc,v,vc))<0) {
+      fprintf(stderr,"%s:%d: Error applying config '%.*s' = '%.*s'\n",path,lineno,kc,k,vc,v);
+      return -2;
+    }
+  }
+  return 0;
+}
+
+/* Find a config file and if it exists, apply configuration from there.
+ */
+ 
+static int eh_config_from_file() {
+  char path[1024];
+  int pathc=eh_get_romassist_directory(path,sizeof(path));
+  if ((pathc<1)||(pathc>=sizeof(path)-12)) return 0;
+  memcpy(path+pathc,"/emuhost.cfg",13);
+  char *serial=0;
+  int serialc=file_read(&serial,path);
+  if (serialc<0) {
+    fprintf(stderr,"%s: Config file not found or failed to read. (this is ok)\n",path);
+    return 0;
+  }
+  int err=eh_config_apply_file(serial,serialc,path);
+  free(serial);
+  return err;
 }
 
 /* Start configuration.
@@ -143,8 +217,13 @@ int eh_configure(int argc,char **argv) {
   }
   
   eh_configure_start();
+  int err=eh_config_from_file();
+  if (err<0) {
+    if (err!=-2) fprintf(stderr,"%s: Unspecified error loading general config file.\n",eh.exename);
+    return -2;
+  }
   
-  int argi=1,err;
+  int argi=1;
   while (argi<argc) {
     const char *arg=argv[argi++];
     if (!arg||!arg[0]) continue;

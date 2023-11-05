@@ -218,7 +218,7 @@ int eh_aucvt_init(
   if (!(aucvt->rdframe=eh_aucvt_get_frame_reader(aucvt->srcfmt,aucvt->srcchanc))) return -1;
   if (!(aucvt->wrframe=eh_aucvt_get_frame_writer(aucvt->dstfmt,aucvt->dstchanc))) return -1;
   
-  aucvt->bufa=2048; //TODO configurable?
+  aucvt->bufa=1024; //TODO configurable?
   if (!(aucvt->buf=calloc(aucvt->bufa,aucvt->srcsamplesize))) {
     aucvt->bufa=0;
     return -1;
@@ -259,7 +259,8 @@ void eh_aucvt_warn_if_converting(const struct eh_aucvt *aucvt) {
  
 int eh_aucvt_input(struct eh_aucvt *aucvt,const void *src,int samplec) {
   int okc=aucvt->bufa-aucvt->bufc;
-  if (okc>samplec) okc=samplec;
+  if (okc>=samplec) okc=samplec;
+  else aucvt->overframec=samplec-okc;
   if (okc<1) return 0;
   
   int headc=0,tailc=0;

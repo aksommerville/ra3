@@ -59,6 +59,13 @@
 #define EH_BTN_SAVESTATE   0x00010008
 #define EH_BTN_LOADSTATE   0x00010009
 
+// Initial window placement hint (--screen=*)
+#define EH_SCREEN_ANY 0
+#define EH_SCREEN_LEFT 1
+#define EH_SCREEN_RIGHT 2
+#define EH_SCREEN_TOP 3
+#define EH_SCREEN_BOTTOM 4
+
 /* Inversion of control.
  * Consumers must surrender control of the main loop entirely to emuhost.
  * Call eh_main() from your main(), and it triggers the delegate as warranted.

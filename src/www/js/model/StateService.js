@@ -291,7 +291,7 @@ StateService.TOC = [
   { k: "searchFlagsFalse",  t: "int", s: 5 },
   { k: "searchRating",      t: "str", s: 1 },
   { k: "searchPubtime",     t: "str", s: 1 },
-  { k: "searchSort",        t: "int", s: 1 },
+  { k: "searchSort",        t: "str", s: 1 },
   { k: "searchPage",        t: "int", s: 2 },
 ];
 

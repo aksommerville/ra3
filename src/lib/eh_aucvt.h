@@ -24,7 +24,8 @@ struct eh_aucvt {
   double fbufpd;
   eh_auframe_read_fn rdframe;
   eh_auframe_write_fn wrframe;
-  int badframec;
+  int badframec; // Too little input.
+  int overframec; // Too much input.
   int (*output)(void *dst,int samplec,struct eh_aucvt *aucvt); // if not generic
 };
 

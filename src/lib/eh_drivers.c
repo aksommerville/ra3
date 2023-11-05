@@ -37,10 +37,12 @@ static int eh_drivers_init_video_type(const struct eh_video_type *type) {
     .w=eh.delegate.video_width,
     .h=eh.delegate.video_height,
     .rate=eh.delegate.video_rate,
+    .fullscreen=eh.fullscreen,
     .title=eh.delegate.name,
     .iconrgba=eh.delegate.iconrgba,
     .iconw=eh.delegate.iconw,
     .iconh=eh.delegate.iconh,
+    .screen=eh.prefer_screen,
   };
   if (!(eh.video=eh_video_driver_new(type,&delegate,&setup))) {
     fprintf(stderr,"%s: Failed to instantiate video driver '%s'.\n",eh.exename,type->name);

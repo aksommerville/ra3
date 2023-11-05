@@ -56,6 +56,19 @@ static int eh_update() {
 
   // Regulate timing. This may block.
   int framec=eh_clock_tick(&eh.clock);
+  
+  // Timing adjustment per audio conversion.
+  // It is perfectly normal to overrun and underrun regularly.
+  // Longer aucvt buffer makes it less frequent.
+  if (eh.aucvt.badframec) {
+    //fprintf(stderr,"%s:%d: badframec=%d. Running one extra update frame.\n",__FILE__,__LINE__,eh.aucvt.badframec);
+    eh.aucvt.badframec=0;
+    framec++;
+  } else if (eh.aucvt.overframec) {
+    //fprintf(stderr,"%s:%d: overframec=%d. Eliminating one frame.\n",__FILE__,__LINE__,eh.aucvt.overframec);
+    eh.aucvt.overframec=0;
+    framec=0;
+  }
 
   // Update all drivers.
   int i=eh.inputc;
@@ -92,15 +105,17 @@ static int eh_update() {
   }
   
   // Update the client.
-  eh_render_before(eh.render);
-  while (framec-->0) {
-    int err=eh.delegate.update(framec);
-    if (err<0) {
-      if (err!=-2) fprintf(stderr,"%s: Unspecified error updating VM.\n",eh.exename);
-      return -2;
+  if (framec>0) {
+    eh_render_before(eh.render);
+    while (framec-->0) {
+      int err=eh.delegate.update(framec);
+      if (err<0) {
+        if (err!=-2) fprintf(stderr,"%s: Unspecified error updating VM.\n",eh.exename);
+        return -2;
+      }
     }
+    eh_render_after(eh.render);
   }
-  eh_render_after(eh.render);
   
   return 0;
 }

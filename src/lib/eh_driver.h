@@ -40,6 +40,7 @@ struct eh_video_setup {
   const char *title; // utf-8
   const void *iconrgba;
   int iconw,iconh;
+  int screen; // EH_SCREEN_(LEFT|RIGHT|TOP|BOTTOM), window placement hint
 };
  
 struct eh_video_driver {

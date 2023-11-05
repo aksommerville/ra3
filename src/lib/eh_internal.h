@@ -30,6 +30,7 @@ extern struct eh {
   char *audio_device;
   int glsl_version;
   char *input_config_path;
+  int prefer_screen;
   
   struct eh_clock clock;
   struct eh_video_driver *video;

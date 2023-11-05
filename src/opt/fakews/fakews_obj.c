@@ -218,7 +218,8 @@ int fakews_connect_now(struct fakews *fakews) {
   if ((reqc<1)||(reqc>=sizeof(req))) return -1;
   if ((fakews->fd=socket(fakews->family,fakews->socktype,fakews->protocol))<0) return -1;
   if (connect(fakews->fd,fakews->raddr,fakews->raddrc)<0) {
-    fprintf(stderr,"Failed to connect to %.*s:%d: %m\n",fakews->hostc,fakews->host,fakews->port);
+    // Don't log these. If the server isn't running, we'll keep retrying and failing, and that's just fine.
+    //fprintf(stderr,"Failed to connect to %.*s:%d: %m\n",fakews->hostc,fakews->host,fakews->port);
     close(fakews->fd);
     fakews->fd=-1;
     return -1;

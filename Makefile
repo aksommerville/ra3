@@ -90,6 +90,7 @@ ifneq (,$(strip $(BUILD_MENU)))
 endif
 
 #XXX A lil convenience while developing emuhost.
-nes:$(LIB) $(LIB_HEADERS_DST) $(EXE_ROMASSIST);rm -f ../akfceu/out/akfceu ; make -C../akfceu ; make run
+#nes:$(LIB) $(LIB_HEADERS_DST) $(EXE_ROMASSIST);rm -f ../akfceu/out/akfceu ; make -C../akfceu ; make run
+nes:$(LIB) $(LIB_HEADERS_DST) $(EXE_ROMASSIST);rm -f ../akfceu/out/akfceu ; make -C../akfceu run
 
 endif

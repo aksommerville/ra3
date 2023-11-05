@@ -15,7 +15,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 ## TODO
 
 - [ ] Emuhost
-- - [ ] Config: Use a file that menu can edit.
+- - [x] Config: Use a file that menu can edit. Use the same file as v2: ~/.romassist/emuhost.cfg
 - - [x] Input manager
 - - - [ ] Default config for keyboards (when no config file present). See eh_inmgr_config.c
 - - - [x] Wire up stateless actions. See eh_cb_digested_event
@@ -24,6 +24,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Deliver screencaps.
 - - - [ ] Screencaps from OpenGL context. Need a native OpenGL client to test this.
 - - [x] Hard pause and step.
+- - [x] When window loses focus, CPU spikes and audio starts to barf. ...needed some aucvt-driven timing regulation.
+- - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
 - [ ] Backend
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.

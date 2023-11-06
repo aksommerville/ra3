@@ -101,7 +101,7 @@ static void eh_trigger_action(int action) {
       } break;
     case EH_BTN_DEBUG: fprintf(stderr,"TODO debug\n"); break;
     case EH_BTN_STEP: if (eh.hard_pause) eh.hard_pause_stepc++; break;
-    case EH_BTN_FASTFWD: break; //eh.fastfwd=eh.fastfwd?0:1; break; disabled for now to protect our CPUs
+    case EH_BTN_FASTFWD: eh.fastfwd=eh.fastfwd?0:1; fprintf(stderr,"fastfwd=%d\n",eh.fastfwd); break; //disabled for now to protect our CPUs
     case EH_BTN_SAVESTATE: fprintf(stderr,"TODO savestate\n"); break;
     case EH_BTN_LOADSTATE: fprintf(stderr,"TODO loadstate\n"); break;
   }

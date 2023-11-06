@@ -40,6 +40,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Now Playing: Flesh out with WebSocket.
 - - [ ] Search results: Screencaps aren't maintaining aspect ratio.
 - - [ ] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
+- - [x] Details modal: Save on dismiss if dirty. It's easy to lose a comment by accident.
 - [ ] Integrate emulators
 - - [ ] akfceu
 - - [ ] aksnes9x

@@ -1,4 +1,4 @@
-#include "emuhost.h"
+#include "eh_internal.h"
 #include "eh_aucvt.h"
 #include "eh_driver.h"
 #include <stdlib.h>
@@ -258,6 +258,10 @@ void eh_aucvt_warn_if_converting(const struct eh_aucvt *aucvt) {
  */
  
 int eh_aucvt_input(struct eh_aucvt *aucvt,const void *src,int samplec) {
+  
+  // Eliminate all audio while fast-forwarding.
+  if (eh.fastfwd) return samplec;
+  
   int okc=aucvt->bufa-aucvt->bufc;
   if (okc>=samplec) okc=samplec;
   else aucvt->overframec=samplec-okc;
@@ -361,6 +365,13 @@ static int eh_aucvt_output_fceu(void *dst,int samplec,struct eh_aucvt *aucvt) {
  
 int eh_aucvt_output(void *dst,int samplec,struct eh_aucvt *aucvt) {
   if (!aucvt->ready) return 0;
+  
+  // While fast-forwarding, there's no sense even trying to keep up with audio.
+  if (eh.fastfwd) {
+    memset(dst,0,samplec*aucvt->dstsamplesize);
+    return 0;
+  }
+  
   if (aucvt->output) return aucvt->output(dst,samplec,aucvt);
   
   // Different rates, need to resample.

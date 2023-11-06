@@ -45,9 +45,7 @@ export class GameDetailsModal {
   
   onRemoveFromDom() {
     if (this.saveTimeout) {
-      // Dismiss the modal while it's dirty, the change is lost. Is that correct behavior?
-      this.window.clearTimeout(this.saveTimeout);
-      this.saveTimeout = null;
+      this.saveNow();
     }
     this.stateService.patchState({ detailsGameid: 0 });
   }

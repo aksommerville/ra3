@@ -99,9 +99,9 @@ static int eh_update() {
     eh.hard_pause_stepc--;
   }
   
-  // If we're fast-forwarding, execute 5 frames instead of 1. (framec is always 1 in normal times).
+  // If we're fast-forwarding, execute more than 1 frame at a time.
   if (eh.fastfwd) {
-    framec=5;
+    framec=10; // TODO configurable. 10 is extremely fast, one certainly can't play like this. Great for cutscenes.
   }
   
   // Update the client.

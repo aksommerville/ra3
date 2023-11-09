@@ -313,8 +313,6 @@ struct db_list *db_query_header_prelookupped(
   if (rating_lo>rating_hi) return dst;
   if (pubtime_lo>pubtime_hi) return dst;
   
-  fprintf(stderr,"%s pubtime:0x%08x..0x%08x\n",__func__,pubtime_lo,pubtime_hi);
-  
   for (;i-->0;game++) {
   
     if (platform&&(game->platform!=platform)) continue;

@@ -98,6 +98,26 @@ static int eh_screencap_add_ctab_if_needed(struct png_image *image,const struct 
   return 0;
 }
 
+/* From RGB32.
+ */
+ 
+static int eh_screencap_from_rgb32(struct png_image *image,const uint32_t *fb,const struct eh_screencap_format *format) {
+  uint32_t tmp;
+  #define shift(ch) int ch##shift=0; if (!format->ch##mask) return -1; tmp=format->ch##mask; while (!(tmp&1)) { tmp>>=1; ch##shift++; } if (tmp!=0xff) return -1;
+  shift(r)
+  shift(g)
+  shift(b)
+  #undef shift
+  uint8_t *dst=image->pixels;
+  int i=format->w*format->h;
+  for (;i-->0;dst+=3,fb++) {
+    dst[0]=(*fb)>>rshift;
+    dst[1]=(*fb)>>gshift;
+    dst[2]=(*fb)>>bshift;
+  }
+  return 0;
+}
+
 /* Generate PNG from framebuffer, the main event.
  */
  
@@ -135,10 +155,19 @@ static struct png_image *eh_screencap_convert_pngable(const void *fb,const struc
     return image;
   }
   
+  /* If we have 32-bit RGB coming in, converting is not too painful.
+   */
+  if (format->format==EH_VIDEO_FORMAT_RGB32) {
+    struct png_image *image=png_image_new(format->w,format->h,8,2);
+    if (!image) return 0;
+    eh_screencap_from_rgb32(image,fb,format);
+    return image;
+  }
+  
   /* Any other situation is unlikely, I think bordering on impossible.
    * If this comes up, we'll need some painful generic image conversion.
    */
-  fprintf(stderr,"%s:%d:%s: No easy framebuffer=>PNG conversion. Implement generic conversion.\n",__FILE__,__LINE__,__func__);
+  fprintf(stderr,"%s:%d:%s: No easy framebuffer=>PNG conversion. Implement generic conversion. format=%d\n",__FILE__,__LINE__,__func__,format->format);
   return 0;
 }
 

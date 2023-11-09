@@ -197,7 +197,7 @@ static int ra_http_get_flags(struct http_xfer *req,struct http_xfer *rsp) {
 static int ra_http_finish_histogram(struct http_xfer *req,struct http_xfer *rsp,struct db_histogram *hist,int status) {
   if (status>=0) {
     struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
-    if (db_histogram_encode(dst,ra.db,hist,DB_FORMAT_json,ra_http_get_detail(req,DB_DETAIL_name))<0) return -1;
+    if (db_histogram_encode(dst,ra.db,hist,DB_FORMAT_json,DB_DETAIL_name)<0) return -1;
   }
   db_histogram_cleanup(hist);
   return status;

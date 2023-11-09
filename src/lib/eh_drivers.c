@@ -290,6 +290,9 @@ void eh_audio_write(const void *v,int framec) {
   int samplec=framec*eh.delegate.audio_chanc;
   int samplesize;
   switch (eh.delegate.audio_format) {
+    case EH_AUDIO_FORMAT_S8:
+      samplesize=1;
+      break;
     case EH_AUDIO_FORMAT_S16N:
     case EH_AUDIO_FORMAT_S16LE:
     case EH_AUDIO_FORMAT_S16BE:

@@ -600,3 +600,23 @@ h2 {
   display: flex;
   flex-direction: row;
 }
+
+/* HistogramUi
+ **********************************/
+ 
+.HistogramUi .reportRow {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 1em;
+}
+
+.HistogramUi .reportCol {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0.5em;
+}
+
+.HistogramUi .ratingChart {
+  width: 100%;
+  height: 200px;
+}

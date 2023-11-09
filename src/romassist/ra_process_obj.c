@@ -148,6 +148,7 @@ static char *ra_process_combine_command(const char *cmd,int cmdc,const char *pat
       insc=5;
       break;
     }
+    cmdp--;
   }
   if (insc&&!pathc) return 0;
   if (!insc) pathc=0;

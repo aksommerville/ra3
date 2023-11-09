@@ -42,6 +42,11 @@ static struct eh_auframe eh_aurd_s32_lo16_1(const void *src) {
   float v=(*(int32_t*)src)/32768.0f;
   return (struct eh_auframe){v,v};
 }
+
+static struct eh_auframe eh_aurd_s8_1(const void *src) {
+  float v=(*(int8_t*)src)/128.0f;
+  return (struct eh_auframe){v,v};
+}
  
 static struct eh_auframe eh_aurd_s16_2(const void *src) {
   float l=((int16_t*)src)[0]/32768.0f;
@@ -103,8 +108,14 @@ static void eh_auwr_s32_lo16_2(void *dst,struct eh_auframe src) {
   ((int32_t*)dst)[1]=(src.r*32767.0f);
 }
 
+static void eh_auwr_s8_1(void *dst,struct eh_auframe src) {
+  ((int8_t*)dst)[0]=src.l*127.0f;
+}
+
 static int eh_audio_sample_size(int format) {
   switch (format) {
+    case EH_AUDIO_FORMAT_S8:
+      return 1;
     case EH_AUDIO_FORMAT_S16N:
     case EH_AUDIO_FORMAT_S16LE:
     case EH_AUDIO_FORMAT_S16BE:
@@ -126,6 +137,7 @@ static eh_auframe_read_fn eh_aucvt_get_frame_reader(int fmt,int chanc) {
         case EH_AUDIO_FORMAT_S32N: return eh_aurd_s32_1;
         case EH_AUDIO_FORMAT_F32N: return eh_aurd_float_1;
         case EH_AUDIO_FORMAT_S32N_LO16: return eh_aurd_s32_lo16_1;
+        case EH_AUDIO_FORMAT_S8: return eh_aurd_s8_1;
         //TODO byte-order-specific formats
       } break;
     case 2: switch (fmt) {
@@ -145,6 +157,7 @@ static eh_auframe_write_fn eh_aucvt_get_frame_writer(int fmt,int chanc) {
         case EH_AUDIO_FORMAT_S32N: return eh_auwr_s32_1;
         case EH_AUDIO_FORMAT_F32N: return eh_auwr_float_1;
         case EH_AUDIO_FORMAT_S32N_LO16: return eh_auwr_s32_lo16_1;
+        case EH_AUDIO_FORMAT_S8: return eh_auwr_s8_1;
       } break;
     case 2: switch (fmt) {
         case EH_AUDIO_FORMAT_S16N: return eh_auwr_s16_2;
@@ -218,7 +231,7 @@ int eh_aucvt_init(
   if (!(aucvt->rdframe=eh_aucvt_get_frame_reader(aucvt->srcfmt,aucvt->srcchanc))) return -1;
   if (!(aucvt->wrframe=eh_aucvt_get_frame_writer(aucvt->dstfmt,aucvt->dstchanc))) return -1;
   
-  aucvt->bufa=1024; //TODO configurable?
+  aucvt->bufa=4096; //TODO configurable?
   if (!(aucvt->buf=calloc(aucvt->bufa,aucvt->srcsamplesize))) {
     aucvt->bufa=0;
     return -1;
@@ -264,7 +277,7 @@ int eh_aucvt_input(struct eh_aucvt *aucvt,const void *src,int samplec) {
   
   int okc=aucvt->bufa-aucvt->bufc;
   if (okc>=samplec) okc=samplec;
-  else aucvt->overframec=samplec-okc;
+  else aucvt->overframec+=samplec-okc;
   if (okc<1) return 0;
   
   int headc=0,tailc=0;

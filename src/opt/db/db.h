@@ -122,6 +122,7 @@ uint32_t db_time_pack(int year,int month,int day,int hour,int minute);
 int db_time_unpack(int *year,int *month,int *day,int *hour,int *minute,uint32_t dbtime);
 uint32_t db_time_advance(uint32_t from); // => lowest valid time > from, 0 if overflowed
 uint32_t db_time_diff_m(uint32_t older,uint32_t newer); // => difference in minutes (result is not a time)
+#define DB_YEAR_FROM_TIME(time) ((time)>>20)
 
 /* Flags are 32 bits with hard-coded meanings, for each game.
  * One debates making these user-configurable. I've opted to hard-code to keep it simple.
@@ -646,9 +647,17 @@ int db_histogram_platform(struct db_histogram *hist,const struct db *db);
 int db_histogram_author(struct db_histogram *hist,const struct db *db);
 int db_histogram_genre(struct db_histogram *hist,const struct db *db);
 
+/* We can also histogram by rating and pubtime. Beware that "stringid" in the output is not actual strings.
+ * (pubtime) uses granularity of one year, always (because that's usually all we have).
+ * (rating) you can provide a bucket size. Output keys will be multiples of that, starting at zero.
+ */
+int db_histogram_rating(struct db_histogram *hist,const struct db *db,int bucket_size);
+int db_histogram_pubtime(struct db_histogram *hist,const struct db *db);
+
 /* Only JSON is currently supported.
- * Use DB_DETAIL_id for an array of strings, discarding count.
+ * Use DB_DETAIL_name for an array of strings, discarding count.
  * Or DB_DETAIL_record for [{v,c}...].
+ * Or DB_DETAIL_id for [{v,c}...] but with numeric keys (for rating or pubtime).
  */
 int db_histogram_encode(
   struct sr_encoder *dst,

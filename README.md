@@ -15,23 +15,17 @@ Old emulators are of course still compatible generically, as long we don't serve
 ## TODO
 
 - [ ] Emuhost
-- - [x] Config: Use a file that menu can edit. Use the same file as v2: ~/.romassist/emuhost.cfg
 - - [x] Input manager
 - - - [ ] Default config for keyboards (when no config file present). See eh_inmgr_config.c
-- - - [x] Wire up stateless actions. See eh_cb_digested_event
-- - [x] Audio live resampling: We can't force clients to use the hardware sample rate or format.
-- - [x] Communicate with backend.
 - - [ ] Deliver screencaps.
 - - - [ ] Screencaps from OpenGL context. Need a native OpenGL client to test this.
-- - [x] Hard pause and step.
-- - [x] When window loses focus, CPU spikes and audio starts to barf. ...needed some aucvt-driven timing regulation.
 - - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
 - [ ] Backend
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
-- - [x] http: Add a "fakewebsocket" upgrade option, so native clients don't need to bugger around with proper WebSocket framing.
-- - [x] db: I think deleting blobs is not flushing the cache? I see them delete in the FS, but they still get listed for games right after.
+- - [x] !!! Freeze trying to launch a game immediately after creating the new `stella` launcher. ...because I forgot "$FILE" in the command? YES
+- - [x] Is query (pubtime) broken? Doesn't seem to have any effect.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
@@ -40,20 +34,22 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Now Playing: Flesh out with WebSocket.
 - - [ ] Search results: Screencaps aren't maintaining aspect ratio.
 - - [ ] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
-- - [x] Details modal: Save on dismiss if dirty. It's easy to lose a comment by accident.
 - [ ] Integrate emulators
-- - [ ] akfceu
-- - [ ] aksnes9x
-- - [ ] akgambatte
-- - - [ ] Ensure ".sav" files go somewhere outside the roms dir.
-- - [ ] akprosys
-- - [ ] Stella
-- - [ ] Super Cassette Vision?
-- - [ ] N64?
-- - [ ] Genesis?
-- - [ ] PC Engine?
+- - [x] akfceu
+- - [x] Stella ...went with z26 instead
+- - [x] aksnes9x
+- - [x] akgambatte
+- - - [x] Ensure ".sav" files go somewhere outside the roms dir.
+- - [x] akprosys
+- - [x] Super Cassette Vision?
+- - - See MAME: src/main/epoch/scv.cpp. Can we tease it out of there? I definitely don't want all of MAME.
+- - - Crunching to get v3 done and polished before Christmas 2023, so let's forget about SCV for the near future at least. -ak 2023-11-08
+- - [x] N64? NO
+- - [x] Genesis? NO
+- - [x] PC Engine? NO
 - - [ ] Pico-8. No integration, but do get it running on the Pi with DRM.
 - - [ ] Solarus, try again.
+- - [ ] Validate 4 player in all emulators
 - [ ] Prepare collection
 - - [ ] Drop records for everything on platforms we're not supporting yet, no sense keeping these in the mix.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
@@ -62,3 +58,4 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".
+- - [x] There's one game with platform unset, which is it?

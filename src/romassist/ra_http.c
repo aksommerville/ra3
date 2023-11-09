@@ -197,7 +197,7 @@ static int ra_http_get_flags(struct http_xfer *req,struct http_xfer *rsp) {
 static int ra_http_finish_histogram(struct http_xfer *req,struct http_xfer *rsp,struct db_histogram *hist,int status) {
   if (status>=0) {
     struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
-    if (db_histogram_encode(dst,ra.db,hist,DB_FORMAT_json,ra_http_get_detail(req,DB_DETAIL_id))<0) return -1;
+    if (db_histogram_encode(dst,ra.db,hist,DB_FORMAT_json,ra_http_get_detail(req,DB_DETAIL_name))<0) return -1;
   }
   db_histogram_cleanup(hist);
   return status;
@@ -784,6 +784,44 @@ static int ra_http_query(struct http_xfer *req,struct http_xfer *rsp) {
   return 0;
 }
 
+/* GET /api/histograms
+ */
+ 
+static int ra_http_histograms(struct http_xfer *req,struct http_xfer *rsp) {
+  struct db_histogram hist={0};
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  int err=0;
+  
+  if ((err=sr_encode_raw(dst,"{\"platform\":",-1))<0) goto _done_;
+  if ((err=db_histogram_platform(&hist,ra.db))<0) goto _done_;
+  if ((err=db_histogram_encode(dst,ra.db,&hist,DB_FORMAT_json,DB_DETAIL_record))<0) goto _done_;
+  
+  hist.c=0;
+  if ((err=sr_encode_raw(dst,",\"author\":",-1))<0) goto _done_;
+  if ((err=db_histogram_author(&hist,ra.db))<0) goto _done_;
+  if ((err=db_histogram_encode(dst,ra.db,&hist,DB_FORMAT_json,DB_DETAIL_record))<0) goto _done_;
+  
+  hist.c=0;
+  if ((err=sr_encode_raw(dst,",\"genre\":",-1))<0) goto _done_;
+  if ((err=db_histogram_genre(&hist,ra.db))<0) goto _done_;
+  if ((err=db_histogram_encode(dst,ra.db,&hist,DB_FORMAT_json,DB_DETAIL_record))<0) goto _done_;
+  
+  hist.c=0;
+  if ((err=sr_encode_raw(dst,",\"rating\":",-1))<0) goto _done_;
+  if ((err=db_histogram_rating(&hist,ra.db,1))<0) goto _done_;
+  if ((err=db_histogram_encode(dst,ra.db,&hist,DB_FORMAT_json,DB_DETAIL_id))<0) goto _done_;
+  
+  hist.c=0;
+  if ((err=sr_encode_raw(dst,",\"pubtime\":",-1))<0) goto _done_;
+  if ((err=db_histogram_pubtime(&hist,ra.db))<0) goto _done_;
+  if ((err=db_histogram_encode(dst,ra.db,&hist,DB_FORMAT_json,DB_DETAIL_id))<0) goto _done_;
+  
+  err=sr_encode_raw(dst,"}",1);
+ _done_:
+  db_histogram_cleanup(&hist);
+  return err;
+}
+
 /* POST /api/launch
  */
  
@@ -1042,6 +1080,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(DELETE,"/api/blob",ra_http_delete_blob)
   
   _(POST,"/api/query",ra_http_query)
+  _(GET,"/api/histograms",ra_http_histograms)
   _(POST,"/api/launch",ra_http_launch)
   _(POST,"/api/random",ra_http_random)
   _(POST,"/api/terminate",ra_http_terminate)

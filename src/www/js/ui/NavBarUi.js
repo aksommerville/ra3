@@ -5,6 +5,7 @@
 import { Dom } from "../Dom.js";
 import { StateService } from "../model/StateService.js";
 import { SearchUi } from "./SearchUi.js";
+import { HistogramUi } from "./HistogramUi.js";
 import { ListsUi } from "./ListsUi.js";
 import { NowPlayingUi } from "./NowPlayingUi.js";
 import { DbUi } from "./DbUi.js";
@@ -76,6 +77,7 @@ export class NavBarUi {
 
 NavBarUi.CONTROLLER_CLASSES = [
   SearchUi,
+  HistogramUi,
   ListsUi,
   NowPlayingUi,
   DbUi,

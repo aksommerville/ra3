@@ -62,6 +62,8 @@ DELETE /api/blob?path => nothing
 
 POST /api/query?text&list&platform&author&genre&flags&notflags&rating&pubtime&detail&limit&page&sort => Game[]
 
+GET /api/histograms => ...
+
 POST /api/launch?gameid => Play
 POST /api/random?text&list&platform&author&genre&flags&notflags&rating&pubtime => Play
 POST /api/terminate => nothing
@@ -230,6 +232,18 @@ Sort is one of:
 And may be prefixed with "-" to reverse.
 
 The HTTP response will include a header `X-Page-Count` when paginated.
+
+## /api/histograms
+
+Return a report showing the entire collection sliced by various properties.
+
+{
+  platform: {v,c}[]
+  author: {v,c}[]
+  genre: {v,c}[]
+  rating: {v,c}[] v numeric (exact rating)
+  pubtime: {v,c}[] v numeric (year)
+}
 
 ## /api/launch, /api/random, /api/terminate
 

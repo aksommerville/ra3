@@ -8,8 +8,28 @@ int eh_get_scratch_directory(char **dstpp) {
   char tmp[1024];
   int tmpc=eh_get_romassist_directory(tmp,sizeof(tmp));
   if ((tmpc<1)||(tmpc>=sizeof(tmp))) return -1;
+  
+  const char *sfx=eh.delegate.name;
+  int sfxc=0;
+  if (sfx) while (sfx[sfxc]) sfxc++;
+  if (sfxc) {
+    char *dst=malloc(tmpc+1+sfxc+1);
+    if (!dst) return -1;
+    memcpy(dst,tmp,tmpc);
+    dst[tmpc]='/';
+    memcpy(dst+tmpc+1,sfx,sfxc);
+    dst[tmpc+1+sfxc]=0;
+    if (dir_mkdirp(dst)<0) {
+      free(dst);
+      return -1;
+    }
+    *dstpp=dst;
+    return tmpc+1+sfxc;
+  }
+  
   if (dir_mkdirp(tmp)<0) return -1;
   char *dst=malloc(tmpc+1);
+  if (!dst) return -1;
   memcpy(dst,tmp,tmpc+1);
   *dstpp=dst;
   return tmpc;

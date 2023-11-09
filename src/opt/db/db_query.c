@@ -313,6 +313,8 @@ struct db_list *db_query_header_prelookupped(
   if (rating_lo>rating_hi) return dst;
   if (pubtime_lo>pubtime_hi) return dst;
   
+  fprintf(stderr,"%s pubtime:0x%08x..0x%08x\n",__func__,pubtime_lo,pubtime_hi);
+  
   for (;i-->0;game++) {
   
     if (platform&&(game->platform!=platform)) continue;
@@ -582,6 +584,7 @@ int db_histogram_platform(struct db_histogram *hist,const struct db *db) {
   }
   const struct db_launcher *launcher=db->launchers.v;
   for (i=db->launchers.c;i-->0;launcher++) {
+    if (!launcher->platform) continue;
     if (db_histogram_add(hist,launcher->platform,0)<0) return -1;
   }
   return 0;
@@ -605,6 +608,25 @@ int db_histogram_genre(struct db_histogram *hist,const struct db *db) {
   return 0;
 }
 
+int db_histogram_rating(struct db_histogram *hist,const struct db *db,int bucket_size) {
+  if (bucket_size<1) bucket_size=1;
+  const struct db_game *game=db->games.v;
+  int i=db->games.c;
+  for (;i-->0;game++) {
+    if (db_histogram_add(hist,(game->rating/bucket_size)*bucket_size,1)<0) return -1;
+  }
+  return 0;
+}
+
+int db_histogram_pubtime(struct db_histogram *hist,const struct db *db) {
+  const struct db_game *game=db->games.v;
+  int i=db->games.c;
+  for (;i-->0;game++) {
+    if (db_histogram_add(hist,DB_YEAR_FROM_TIME(game->pubtime),1)<0) return -1;
+  }
+  return 0;
+}
+
 /* Encode histogram.
  */
 
@@ -622,7 +644,15 @@ int db_histogram_encode(
         if (jsonctx<0) return -1;
         const struct db_histogram_entry *entry=hist->v;
         int i=hist->c;
-        if ((detail==DB_DETAIL_id)||(detail==DB_DETAIL_name)) {
+        if (detail==DB_DETAIL_id) {
+          for (;i-->0;entry++) {
+            int subctx=sr_encode_json_object_start(dst,0,0);
+            if (subctx<0) return -1;
+            if (sr_encode_json_int(dst,"v",1,entry->stringid)<0) return -1;
+            if (sr_encode_json_int(dst,"c",1,entry->count)<0) return -1;
+            if (sr_encode_json_object_end(dst,subctx)<0) return -1;
+          }
+        } else if (detail==DB_DETAIL_name) {
           for (;i-->0;entry++) {
             if (db_encode_json_string(dst,db,0,0,entry->stringid)<0) return -1;
           }

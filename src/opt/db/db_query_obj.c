@@ -172,6 +172,7 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *_quer
     const char *lo=0,*hi=0;
     int loc=0,hic=0;
     if (db_split_range(&lo,&loc,&hi,&hic,v,vc)<0) return -1;
+    fprintf(stderr,"pubtime: '%.*s' .. '%.*s'\n",loc,lo,hic,hi);
     if (loc&&hic) {
       query->pubtimelo=db_time_eval(lo,loc);
       query->pubtimehi=db_time_eval_upper(hi,hic);

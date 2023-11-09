@@ -8,7 +8,7 @@
 int eh_inmgr_load_config(struct eh_inmgr *inmgr,const char *path) {
   void *src=0;
   int srcc=file_read(&src,path);
-  if (srcc<0) return -1;
+  if (srcc<0) return 0; // File not found is not a real error here.
   int err=eh_inmgr_decode_config(inmgr,src,srcc,path);
   free(src);
   return err;

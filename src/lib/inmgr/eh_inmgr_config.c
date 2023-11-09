@@ -367,16 +367,35 @@ static int eh_inmgr_config_finalize(struct eh_inmgr_config *config) {
   return 0;
 }
 
-/* Report all the buttons we expect to find on a system keyboard.
+/* Generate rules for the system keyboard.
+ * We don't query capabilities in this case, since it's fair to make a lot of assumptions.
  */
  
-static int eh_list_buttons_for_system_keyboard(
-  int (*cb)(int btnid,uint32_t hidusage,int lo,int hi,int value,void *userdata),
-  void *userdata
-) {
-  int err,usage;
-  for (usage=0x00070004;usage<0x00070058;usage++) if (err=cb(usage,usage,0,2,0,userdata)) return err;
-  for (usage=0x000700e0;usage<0x000700e8;usage++) if (err=cb(usage,usage,0,2,0,userdata)) return err;
+static int eh_set_simple_map(struct eh_inmgr_config *config,uint32_t srcbtnid,uint32_t dstbtnid) {
+  struct eh_inmgr_rule *rule=eh_inmgr_config_add_rule(config,srcbtnid);
+  if (!rule) return -1;
+  rule->dstbtnid=dstbtnid;
+  return 0;
+}
+ 
+static int eh_generate_default_keyboard_mapping(struct eh_inmgr *inmgr,struct eh_inmgr_config *config) {
+  if (eh_set_simple_map(config,0x00070050,EH_BTN_LEFT)<0) return -1;
+  if (eh_set_simple_map(config,0x0007004f,EH_BTN_RIGHT)<0) return -1;
+  if (eh_set_simple_map(config,0x00070052,EH_BTN_UP)<0) return -1;
+  if (eh_set_simple_map(config,0x00070051,EH_BTN_DOWN)<0) return -1;
+  if (eh_set_simple_map(config,0x0007001d,EH_BTN_SOUTH)<0) return -1;
+  if (eh_set_simple_map(config,0x0007001b,EH_BTN_WEST)<0) return -1;
+  if (eh_set_simple_map(config,0x00070004,EH_BTN_EAST)<0) return -1;
+  if (eh_set_simple_map(config,0x00070016,EH_BTN_NORTH)<0) return -1;
+  if (eh_set_simple_map(config,0x00070035,EH_BTN_L1)<0) return -1;
+  if (eh_set_simple_map(config,0x0007002a,EH_BTN_R1)<0) return -1;
+  if (eh_set_simple_map(config,0x0007002b,EH_BTN_L2)<0) return -1;
+  if (eh_set_simple_map(config,0x00070031,EH_BTN_R2)<0) return -1;
+  if (eh_set_simple_map(config,0x00070028,EH_BTN_AUX1)<0) return -1;
+  if (eh_set_simple_map(config,0x0007002c,EH_BTN_AUX2)<0) return -1;
+  if (eh_set_simple_map(config,0x00070038,EH_BTN_AUX3)<0) return -1;
+  if (eh_set_simple_map(config,0x00070029,EH_BTN_QUIT)<0) return -1;
+  if (eh_set_simple_map(config,0x00070044,EH_BTN_FULLSCREEN)<0) return -1;
   return 0;
 }
 
@@ -412,7 +431,7 @@ struct eh_inmgr_config *eh_inmgr_guess_config(struct eh_inmgr *inmgr,struct eh_i
       return 0;
     }
   } else {
-    if (eh_list_buttons_for_system_keyboard(eh_inmgr_config_cb_button,config)<0) {
+    if (eh_generate_default_keyboard_mapping(inmgr,config)<0) {
       eh_inmgr_configv_remove(inmgr,config);
       return 0;
     }

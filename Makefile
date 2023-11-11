@@ -81,17 +81,20 @@ endif
 ifneq (,$(strip $(BUILD_MENU)))
   EXE_MENU:=out/romassist-menu$(EXESFX)
   all:$(EXE_MENU)
-  OFILES_MENU:=$(filter \
+  OFILES_MENU:=$(OFILES_LIB) $(filter \
     mid/menu/% \
-    mid/lib/% \
   ,$(OFILES))
   $(EXE_MENU):$(OFILES_MENU);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
   run:$(EXE_MENU)
 endif
 
-#XXX A lil convenience while developing emuhost.
-# First option builds akfceu and then launches Romassist. Second option launches akfceu directly.
-nes:$(LIB) $(LIB_HEADERS_DST) $(EXE_ROMASSIST);rm -f ../akfceu/out/akfceu ; make -C../akfceu ; make run
-#nes:$(LIB) $(LIB_HEADERS_DST) $(EXE_ROMASSIST);rm -f ../akfceu/out/akfceu ; make -C../akfceu run
+# Some helpers to build the emulators dependent on Emuhost...
+
+EMULATORS:=akfceu aksnes9x akgambatte akz26 akprosys
+emulators:$(addprefix emu-,$(EMULATORS))
+emu-%:$(LIB) $(LIB_HEADERS_DST);rm -f ../$*/out/$* ; make -C../$*
+
+#nes:emu-akfceu run
+nes:emu-akfceu;make -C../akfceu run
 
 endif

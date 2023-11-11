@@ -24,6 +24,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
+- - [ ] Protect against immediate failure from the menu.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
@@ -37,7 +38,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Solarus, try again.
 - - [ ] Validate 4 player in all emulators
 - [ ] Prepare collection
-- - [ ] Drop records for everything on platforms we're not supporting yet, no sense keeping these in the mix.
+- - [x] Drop records for everything on platforms we're not supporting yet, no sense keeping these in the mix.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.

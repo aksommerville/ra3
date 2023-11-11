@@ -306,3 +306,17 @@ id=comment GAME=>SERVER SERVER=>MENU
   Server echoes these to all menus, just for awareness.
   Server is left to its own discretion whether to record the comment.
   {id,k,v}
+  
+id=http GAME=>SERVER MENU=>SERVER
+  Cheap trick to allow HTTP requests over a WebSocket connection, for (typical) clients that don't want multiple sockets open.
+  Requests are served immediately.
+  Provide (path) and (query) separate.
+  (body) must be a string. There's no good way to send a binary body (and I think, shouldn't ever be a need for one).
+  All HTTP calls documented above should work, and should grok all future changes automatically; this abstraction is implemented generically.
+  If you need to be certain which response is associated with which request, add a header "X-Correlation-Id", and server echoes it back.
+  Long response bodies are no problem, but most other fields have static limits. (src/romassist/ra_websocket.c if you need to tweak).
+  {id,method,path,query,headers,body}
+  
+id=httpresponse SERVER=>GAME SERVER=>MENU
+  Every "http" packet results in exactly one "httpresponse" packet back.
+  {id,status,message,headers,body}

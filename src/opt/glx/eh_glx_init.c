@@ -34,7 +34,7 @@ static int eh_glx_init_display(struct eh_video_driver *driver,const struct eh_vi
  
 static void eh_glx_estimate_monitor_size(int *w,int *h,const struct eh_video_driver *driver) {
   *w=*h=0;
-  #if EH_USE_xinerama
+  #if USE_xinerama
     int infoc=0;
     XineramaScreenInfo *infov=XineramaQueryScreens(DRIVER->dpy,&infoc);
     if (infov) {

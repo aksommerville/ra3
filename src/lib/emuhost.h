@@ -130,9 +130,11 @@ struct eh_delegate {
    * You only need to implement one of these, typically load_serial.
    * load_file is provided in case the emulator's core is set up to read files on its own.
    * Emuhost will never ask you to re-load or to load another different game in the same run.
+   * load_none if you can sensibly launch without a ROM file, eg the menu.
    */
   int (*load_file)(const char *path);
   int (*load_serial)(const void *v,int c,const char *name);
+  int (*load_none)();
   
   /* Run the emulator, generate one frame of video and the equivalent amount of audio.
    * Return -2 to abort without logging, if you've already logged the error sufficiently.
@@ -156,6 +158,17 @@ struct eh_delegate {
    * (do about what you do at load, if there isn't specific Reset handling in the core).
    */
   int (*reset)();
+  
+  /* Nonzero to connect to Romassist as MENU instead of the default GAME.
+   */
+  int use_menu_role;
+  
+  /* Triggered for any "httpresponse" packets we get from the server.
+   * You can send HTTP requests over our fakews instance. (TODO: Provide simpler API for this)
+   * There is no mechanism for correlating requests and responses; I don't think it should be necessary.
+   * You receive the entire JSON text of what came over the wire. {id,status,message,headers,body}
+   */
+  void (*http_response)(const char *src,int srcc);
 };
 
 /* Call from your main, typically the only thing your main should do.
@@ -249,5 +262,12 @@ int eh_get_scratch_directory(char **dstpp);
  * This is also the root for emulator-specific scratch directories.
  */
 int eh_get_romassist_directory(char *dst,int dsta);
+
+/* Null if we are not configured to connect to a Romassist server.
+ * (mind that that configuration can be influenced at the command line, so never assume that fakews is in play).
+ * Existence of a fakews does not necessarily mean it's connected.
+ */
+struct fakews;
+struct fakews *eh_get_fakews();
 
 #endif

@@ -135,6 +135,8 @@ void eh_cb_ws_disconnect(void *userdata) {
 }
 
 void eh_cb_ws_message(int opcode,const void *v,int c,void *userdata) {
+  //fprintf(stderr,"%s opcode=%d c=%d\n",__func__,opcode,c);
+  //if (opcode==1) fprintf(stderr,"v: %.*s\n",c,(char*)v);
   // We don't respond to any binary packets.
   if (opcode!=1) return;
   // And so nice, every packet we do respond to, only contains "id".
@@ -152,6 +154,7 @@ void eh_cb_ws_message(int opcode,const void *v,int c,void *userdata) {
           if ((idc==5)&&!memcmp(id,"pause",5)) { eh_trigger_action(EH_BTN_PAUSE); return; }
           if ((idc==6)&&!memcmp(id,"resume",6)) { eh_trigger_action(EH_BTN_PAUSE); return; } // our PAUSE is a toggle. oh well, close enough
           if ((idc==4)&&!memcmp(id,"step",4)) { eh_trigger_action(EH_BTN_STEP); return; }
+          if ((idc==12)&&!memcmp(id,"httpresponse",12)) { if (eh.delegate.http_response) eh.delegate.http_response(v,c); return; }
         
         }
         break;

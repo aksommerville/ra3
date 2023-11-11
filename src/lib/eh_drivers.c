@@ -253,16 +253,17 @@ int eh_drivers_init() {
     ((err=eh_drivers_init_input())<0)
   ) return err;
   
-  //TODO Romassist host and port, and path, definitely need to be configurable and optional.
-  if (!(eh.fakews=fakews_new(
-    "localhost",9,
-    2600,
-    "/ws/game",8,
-    eh_cb_ws_connect,
-    eh_cb_ws_disconnect,
-    eh_cb_ws_message,
-    0
-  ))) return -1;
+  if (eh.romassist_port) {
+    if (!(eh.fakews=fakews_new(
+      eh.romassist_host,-1,
+      eh.romassist_port,
+      eh.delegate.use_menu_role?"/ws/menu":"/ws/game",8,
+      eh_cb_ws_connect,
+      eh_cb_ws_disconnect,
+      eh_cb_ws_message,
+      0
+    ))) return -1;
+  }
   
   return 0;
 }
@@ -337,6 +338,17 @@ void eh_audio_unlock() {
  
 uint16_t eh_input_get(uint8_t plrid) {
   return eh_inmgr_get_player_state(eh.inmgr,plrid);
+}
+
+/* Trivial global accessors.
+ */
+ 
+struct eh_inmgr *eh_get_inmgr() {
+  return eh.inmgr;
+}
+ 
+struct fakews *eh_get_fakews() {
+  return eh.fakews;
 }
 
 // The public video API is at lib/render/eh_render_obj.c

@@ -32,20 +32,30 @@ static void eh_cleanup() {
  */
  
 static int eh_startup_vm() {
-  if (eh.delegate.load_file) return eh.delegate.load_file(eh.rompath);
-  if (eh.delegate.load_serial) {
-    void *serial=0;
-    int serialc=file_read(&serial,eh.rompath);
-    if (serialc<0) {
-      fprintf(stderr,"%s: Failed to read file.\n",eh.rompath);
-      return -2;
+
+  if (eh.rompath) {
+    if (eh.delegate.load_file) return eh.delegate.load_file(eh.rompath);
+    if (eh.delegate.load_serial) {
+      void *serial=0;
+      int serialc=file_read(&serial,eh.rompath);
+      if (serialc<0) {
+        fprintf(stderr,"%s: Failed to read file.\n",eh.rompath);
+        return -2;
+      }
+      int err=eh.delegate.load_serial(serial,serialc,eh.rompath);
+      free(serial);
+      return err;
     }
-    int err=eh.delegate.load_serial(serial,serialc,eh.rompath);
-    free(serial);
-    return err;
+    fprintf(stderr,"%s: Emuhost delegate does not implement load_file or load_serial.\n",eh.exename);
+    return -2;
+  
+  } else {
+    if (eh.delegate.load_none) {
+      return eh.delegate.load_none();
+    }
+    fprintf(stderr,"%s: Emuhost delegate does not implement load_none.\n",eh.exename);
+    return -2;
   }
-  fprintf(stderr,"%s: Emuhost delegate does not implement load_file or load_serial.\n",eh.exename);
-  return -2;
 }
 
 /* Update.
@@ -138,8 +148,11 @@ int eh_main(int argc,char **argv,const struct eh_delegate *delegate) {
     // eh_configure() may set (terminate), eg when it processed --help
     return 0;
   }
-  if (!eh.rompath) {
+  if (!eh.rompath&&!eh.delegate.load_none) {
     fprintf(stderr,"%s: Expected ROM path.\n",eh.exename);
+    return 1;
+  } else if (eh.rompath&&!eh.delegate.load_serial&&!eh.delegate.load_file) {
+    fprintf(stderr,"%s: ROM path '%s' provided but we expected none.\n",eh.exename,eh.rompath);
     return 1;
   }
   

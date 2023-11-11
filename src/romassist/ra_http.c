@@ -1034,6 +1034,14 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   int rpathc=http_xfer_get_path(&rpath,req);
   int method=http_xfer_get_method(req);
   
+  /* If there is a header "X-Correlation-Id" in the request, echo it in the response.
+   * This is mostly to help clients making HTTP calls over a WebSocket, otherwise there's no certain way to correlate request and response.
+   * But it's done at this layer, so if regular HTTP users feel a need for it too, great.
+   */
+  const char *correlation=0;
+  int correlationc=http_xfer_get_header(&correlation,req,"X-Correlation-Id",16);
+  if (correlationc>0) http_xfer_set_header(rsp,"X-Correlation-Id",16,correlation,correlationc);
+  
   #define _(m,p,f) if ((method==HTTP_METHOD_##m)&&(rpathc==sizeof(p)-1)&&!memcmp(rpath,p,rpathc)) return ra_http_wrap_call(f,req,rsp);
   
   _(GET,"/api/meta/flags",ra_http_get_flags)

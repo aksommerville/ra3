@@ -35,6 +35,9 @@ struct http_xfer {
 void http_xfer_del(struct http_xfer *xfer);
 int http_xfer_ref(struct http_xfer *xfer);
 
+/* This is safe to use, and doesn't actually depend on the context for anything.
+ * But it's not a normal thing to do; normally context creates and destroys all xfers on its own.
+ */
 struct http_xfer *http_xfer_new(struct http_context *context);
 
 int http_xfer_set_line(struct http_xfer *xfer,const char *src,int srcc);

@@ -37,6 +37,7 @@ static void eh_print_help(const char *topic,int topicc) {
     "  --glsl-version=INT\n"
     "  --input-config=PATH\n"
     "  --screen=any             (left,right,top,bottom) Try to land window on the given monitor.\n"
+    "  --romassist=HOST:PORT\n"
     "\n"
   );
 }
@@ -55,6 +56,21 @@ static int eh_config_screen_eval(const char *src,int srcc) {
   if ((srcc==5)&&!memcmp(norm,"RIGHT",5)) return EH_SCREEN_RIGHT;
   if ((srcc==3)&&!memcmp(norm,"TOP",3)) return EH_SCREEN_TOP;
   if ((srcc==6)&&!memcmp(norm,"BOTTOM",6)) return EH_SCREEN_BOTTOM;
+  return 0;
+}
+
+/* --romassist=HOST:PORT
+ */
+ 
+static int eh_config_set_romassist(const char *src,int srcc) {
+  const char *host=src;
+  int hostc=0;
+  while ((hostc<srcc)&&(host[hostc]!=':')) hostc++;
+  if ((hostc>=srcc)||(host[hostc]!=':')) return -1;
+  int port=0;
+  if ((sr_int_eval(&port,host+hostc+1,srcc-hostc-1)<2)||(port<0)||(port>0xffff)) return -1;
+  if (eh_config_set_string(&eh.romassist_host,host,hostc)<0) return -1;
+  eh.romassist_port=port;
   return 0;
 }
 
@@ -100,6 +116,10 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==12)&&!memcmp(k,"glsl-version",12)) { eh.glsl_version=vn; return 0; }
   if ((kc==12)&&!memcmp(k,"input-config",12)) return eh_config_set_string(&eh.input_config_path,v,vc);
   if ((kc==6)&&!memcmp(k,"screen",6)) { eh.prefer_screen=eh_config_screen_eval(v,vc); return 0; }
+  
+  /* "--romassist" splits into two fields.
+   */
+  if ((kc==9)&&!memcmp(k,"romassist",9)) return eh_config_set_romassist(v,vc);
 
   /* A few parameters left over from v2 that we're not using anymore.
    * Ignore them if present, otherwise our shared config file would throw some errors.
@@ -184,6 +204,7 @@ static int eh_config_from_file() {
  
 static void eh_configure_start() {
   eh.glsl_version=120;
+  eh.romassist_port=2600;
 }
 
 /* Finish configuration.
@@ -201,6 +222,11 @@ static int eh_configure_finish() {
       tmpc+=10;
       if (eh_config_set_string(&eh.input_config_path,tmp,tmpc)<0) return -1;
     }
+  }
+  
+  // romassist_host, default to "localhost"
+  if (!eh.romassist_host&&eh.romassist_port) {
+    if (eh_config_set_string(&eh.romassist_host,"localhost",9)<0) return -1;
   }
 
   return 0;

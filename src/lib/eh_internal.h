@@ -31,6 +31,8 @@ extern struct eh {
   int glsl_version;
   char *input_config_path;
   int prefer_screen;
+  char *romassist_host;
+  int romassist_port;
   
   struct eh_clock clock;
   struct eh_video_driver *video;

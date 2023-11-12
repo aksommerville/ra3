@@ -189,7 +189,18 @@ int eh_screencap_from_fb(void *dstpp,const void *fb,const struct eh_screencap_fo
 
 int eh_screencap_from_opengl(void *dstpp,int w,int h) {
   if ((w<1)||(h<1)) return -1;
-  // I don't currently have a client to test this with, and not confident to do it blindly.
-  fprintf(stderr,"TODO %s:%d:%s Pull framebuffer off OpenGL and deliver to eh_screencap_from_fb.\n",__FILE__,__LINE__,__func__);
-  return -1;
+  char *pixels=calloc(w*3,h);
+  if (!pixels) return -1;
+  glReadPixels(0,0,w,h,GL_RGB,GL_UNSIGNED_BYTE,pixels);
+  struct eh_screencap_format format={
+    .w=w,
+    .h=h,
+    .format=EH_VIDEO_FORMAT_RGB24,
+    .rmask=0xff0000,
+    .gmask=0x00ff00,
+    .bmask=0x0000ff,
+  };
+  int err=eh_screencap_from_fb(dstpp,pixels,&format);
+  free(pixels);
+  return err;
 }

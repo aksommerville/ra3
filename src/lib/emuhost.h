@@ -270,4 +270,6 @@ int eh_get_romassist_directory(char *dst,int dsta);
 struct fakews;
 struct fakews *eh_get_fakews();
 
+//TODO API for HTTP calls over fakews.
+
 #endif

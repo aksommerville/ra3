@@ -63,7 +63,27 @@ static int ra_ws_rcv_game(struct ra_websocket_extra *extra,const void *v,int c) 
 static int ra_ws_rcv_requestScreencap(struct ra_websocket_extra *extra,const void *v,int c) {
   if (extra->role!=RA_WEBSOCKET_ROLE_MENU) return 0;
   extra->screencap_request_time=ra_now();
-  return ra_websocket_send_to_role(RA_WEBSOCKET_ROLE_GAME,1,v,c);
+  
+  // If any GAME clients exist, send to all of them.
+  int gamec=0,i=RA_WEBSOCKET_LIMIT;
+  const struct ra_websocket_extra *peer=ra.websocket_extrav;
+  for (;i-->0;peer++) {
+    if (!peer->socket) continue;
+    if (peer->role==RA_WEBSOCKET_ROLE_GAME) {
+      http_websocket_send(peer->socket,1,v,c);
+      gamec++;
+    }
+  }
+  if (gamec) return 0;
+  
+  // Send to all clients other than the sender.
+  for (peer=ra.websocket_extrav,i=RA_WEBSOCKET_LIMIT;i-->0;peer++) {
+    if (peer==extra) continue;
+    if (!peer->socket) continue;
+    http_websocket_send(peer->socket,1,v,c);
+  }
+  
+  return 0;
 }
     
 /* id="pause"
@@ -103,7 +123,6 @@ static int ra_ws_rcv_comment(struct ra_websocket_extra *extra,const void *v,int 
  */
  
 static int ra_ws_rcv_png(struct ra_websocket_extra *extra,const void *v,int c) {
-  if (extra->role!=RA_WEBSOCKET_ROLE_GAME) return 0;
   
   /* If any menu client requested a cap within the last second, send it to them and we're done.
    */
@@ -135,19 +154,21 @@ static int ra_ws_rcv_png(struct ra_websocket_extra *extra,const void *v,int c) {
     return 0;
   }
   
-  /* If a game is running, save this cap as a blob.
+  /* If a game is running, and this came from a game, save this cap as a blob.
    */
-  if ((ra_process_get_status(&ra.process)==RA_PROCESS_STATUS_GAME)&&ra.process.gameid) {
-    char *blobpath=db_blob_compose_path(ra.db,ra.process.gameid,"scap",4,".png",4);
-    if (blobpath) {
-      if (file_write(blobpath,v,c)>=0) {
-        db_invalidate_blobs_for_gameid(ra.db,ra.process.gameid);
-        fprintf(stderr,"%s: Saved screencap.\n",blobpath);
-      } else {
-        fprintf(stderr,"%s: Failed to write file, %d bytes.\n",blobpath,c);
+  if (extra->role==RA_WEBSOCKET_ROLE_GAME) {
+    if ((ra_process_get_status(&ra.process)==RA_PROCESS_STATUS_GAME)&&ra.process.gameid) {
+      char *blobpath=db_blob_compose_path(ra.db,ra.process.gameid,"scap",4,".png",4);
+      if (blobpath) {
+        if (file_write(blobpath,v,c)>=0) {
+          db_invalidate_blobs_for_gameid(ra.db,ra.process.gameid);
+          fprintf(stderr,"%s: Saved screencap.\n",blobpath);
+        } else {
+          fprintf(stderr,"%s: Failed to write file, %d bytes.\n",blobpath,c);
+        }
+        free(blobpath);
+        return 0;
       }
-      free(blobpath);
-      return 0;
     }
   }
   

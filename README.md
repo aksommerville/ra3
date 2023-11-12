@@ -17,8 +17,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Emuhost
 - - [x] Input manager
 - - - [x] Default config for keyboards (when no config file present). See eh_inmgr_config.c
-- - [ ] Deliver screencaps.
-- - - [ ] Screencaps from OpenGL context. Need a native OpenGL client to test this.
+- - [x] Deliver screencaps.
+- - - [x] Screencaps from OpenGL context. Need a native OpenGL client to test this.
 - - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
 - [ ] Backend
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.

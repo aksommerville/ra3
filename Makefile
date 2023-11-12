@@ -83,6 +83,7 @@ ifneq (,$(strip $(BUILD_MENU)))
   all:$(EXE_MENU)
   OFILES_MENU:=$(OFILES_LIB) $(filter \
     mid/menu/% \
+    mid/opt/gui/% \
   ,$(OFILES))
   $(EXE_MENU):$(OFILES_MENU);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
   run:$(EXE_MENU)

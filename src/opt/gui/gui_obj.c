@@ -115,3 +115,8 @@ void gui_dirty_pack(struct gui *gui) {
   gui->pvw=0;
   gui->pvh=0;
 }
+
+void gui_get_screen_size(int *w,int *h,struct gui *gui) {
+  *w=gui->pvw;
+  *h=gui->pvh;
+}

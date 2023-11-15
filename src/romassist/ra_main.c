@@ -117,6 +117,10 @@ int main(int argc,char **argv) {
   
  _done_:;
 
+  // It seems ridiculous, but I'm finding under GLX, the menu process typically takes 300-700 ms to terminate.
+  // Why is it so long???
+  ra_process_terminate_and_wait(&ra.process,1000);
+  
   if (!status) db_save(ra.db);
   db_del(ra.db);
   http_context_del(ra.http);

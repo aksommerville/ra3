@@ -62,4 +62,9 @@ int ra_process_prepare_launch(
 int ra_process_terminate_game(struct ra_process *process);
 int ra_process_restart_menu(struct ra_process *process);
 
+/* If we have a child process, whether menu or game, terminate it and wait up to (toms) ms for it to die.
+ * It's advisable to do this before shutdown.
+ */
+void ra_process_terminate_and_wait(struct ra_process *process,int toms);
+
 #endif

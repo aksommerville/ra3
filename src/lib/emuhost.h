@@ -270,6 +270,30 @@ int eh_get_romassist_directory(char *dst,int dsta);
 struct fakews;
 struct fakews *eh_get_fakews();
 
-//TODO API for HTTP calls over fakews.
+/* Variadic arguments are (k1,v1,k2,v2,...,NULL) for the query parameters.
+ * We don't add headers.
+ * The convenience macro expects literal strings for (method) and (path).
+ */
+int eh_request_http_(
+  const char *method,int methodc,
+  const char *path,int pathc,
+  ...
+);
+#define eh_request_http(method,path,...) eh_request_http_(method,sizeof(method)-1,path,sizeof(path)-1,##__VA_ARGS__,(void*)0)
+
+/* For receiving HTTP responses.
+ * Of course, you could decode the JSON by yourself instead.
+ * (message,headers,body) are JSON expressions straight off the source.
+ */
+struct eh_http_response {
+  int status;
+  const char *message;
+  int messagec;
+  const char *headers;
+  int headersc;
+  const char *body;
+  int bodyc;
+};
+int eh_http_response_split(struct eh_http_response *response,const char *src,int srcc);
 
 #endif

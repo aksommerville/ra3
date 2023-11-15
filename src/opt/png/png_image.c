@@ -239,7 +239,7 @@ static uint32_t png_read_plte_as_rgba(const struct png_image *image,uint8_t ix) 
   for (;i-->0;chunk++) {
     if (chunk->chunkid!=PNG_CHUNKID_PLTE) continue;
     if (p>chunk->c-3) return 0;
-    const uint8_t *v=chunk->v;
+    const uint8_t *v=chunk->v+p;
     return (v[0]<<24)|(v[1]<<16)|(v[2]<<8)|0xff;
   }
   return 0;

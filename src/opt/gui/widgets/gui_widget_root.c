@@ -105,14 +105,20 @@ static void _root_draw(struct gui_widget *widget,int x,int y) {
  */
  
 static void _root_motion(struct gui_widget *widget,int dx,int dy) {
-  fprintf(stderr,"%s %+d,%+d\n",__func__,dx,dy);
+  if (widget->childc>0) {
+    struct gui_widget *child=widget->childv[widget->childc-1];
+    if (child->type->motion) child->type->motion(child,dx,dy);
+  }
 }
 
 /* Signals.
  */
  
 static void _root_signal(struct gui_widget *widget,int sigid) {
-  fprintf(stderr,"%s %d\n",__func__,sigid);
+  if (widget->childc>0) {
+    struct gui_widget *child=widget->childv[widget->childc-1];
+    if (child->type->signal) child->type->signal(child,sigid);
+  }
 }
 
 /* Input state.
@@ -156,6 +162,12 @@ static void _root_update(struct gui_widget *widget) {
     }
   }
   
+  /* Update the topmost child only.
+   */
+  if (widget->childc>0) {
+    struct gui_widget *child=widget->childv[widget->childc-1];
+    if (child->type->update) child->type->update(child);
+  }
 }
 
 /* Type definition.

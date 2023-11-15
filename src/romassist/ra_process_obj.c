@@ -1,4 +1,5 @@
 #include "ra_internal.h"
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -190,6 +191,15 @@ int ra_process_prepare_launch(
   return 0;
 }
 
+/* Current real time.
+ */
+ 
+static int64_t ra_process_now() {
+  struct timeval tv={0};
+  gettimeofday(&tv,0);
+  return tv.tv_sec*1000000ll+tv.tv_usec;
+}
+
 /* Terminate current process.
  */
 
@@ -206,4 +216,27 @@ int ra_process_restart_menu(struct ra_process *process) {
     process->next_launch=0;
   }
   return 0;
+}
+
+void ra_process_terminate_and_wait(struct ra_process *process,int toms) {
+  if (!process->pid) return;
+  if (kill(process->pid,SIGINT)<0) return;
+  if (toms>0) {
+    int64_t stoptime=ra_process_now()+toms*1000ll;
+    while (1) {
+      int err,wstatus=0;
+      err=waitpid(process->pid,&wstatus,WNOHANG);
+      if (err<0) break;
+      if (err) {
+        int status=WEXITSTATUS(wstatus);
+        fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
+        process->pid=0;
+        if (!process->next_launch) process->gameid=0;
+        break;
+      }
+      int64_t now=ra_process_now();
+      if (now>=stoptime) break;
+      usleep(5000);
+    }
+  }
 }

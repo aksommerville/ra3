@@ -311,6 +311,7 @@ id=http GAME=>SERVER MENU=>SERVER
   Cheap trick to allow HTTP requests over a WebSocket connection, for (typical) clients that don't want multiple sockets open.
   Requests are served immediately.
   Provide (path) and (query) separate.
+  (query) and (headers) should be simple {key:value} objects.
   (body) must be a string. There's no good way to send a binary body (and I think, shouldn't ever be a need for one).
   All HTTP calls documented above should work, and should grok all future changes automatically; this abstraction is implemented generically.
   If you need to be certain which response is associated with which request, add a header "X-Correlation-Id", and server echoes it back.

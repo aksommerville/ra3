@@ -28,6 +28,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
+- - [ ] Hi-res text is painful... bring in freetype
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.

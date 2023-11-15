@@ -39,6 +39,9 @@ static int mn_load_none() {
   if (!(mn.gui=gui_new(&delegate))) return -1;
   struct gui_widget *home=gui_replace_page(mn.gui,&mn_widget_type_home);
   if (!home) return -1;
+  
+  //TODO fetch persisted dbs state.
+  dbs_refresh_search(&mn.dbs);
 
   return 0;
 }
@@ -47,7 +50,7 @@ static int mn_load_none() {
  */
  
 static void mn_http_response(const char *src,int srcc) {
-  //fprintf(stderr,"%s: Hey got a response! %.*s\n",__func__,srcc,src);
+  dbs_http_response(&mn.dbs,src,srcc);
 }
 
 /* Begin a sound effect.

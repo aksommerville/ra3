@@ -71,6 +71,9 @@ void gui_render(struct gui *gui,int w,int h);
 void gui_dirty_video(struct gui *gui); // Force render next time.
 void gui_dirty_pack(struct gui *gui); // Force repack next time.
 
+// Available during render, same as what as passed to gui_render().
+void gui_get_screen_size(int *w,int *h,struct gui *gui);
+
 /* Generic widget.
  ********************************************************************/
  
@@ -160,6 +163,40 @@ extern const struct gui_widget_type gui_widget_type_text; // multi-line text
 
 /* Rendering primitives.
  ***********************************************************/
+ 
+struct gui_program;
+struct gui_texture;
+
+void gui_program_del(struct gui_program *program);
+int gui_program_ref(struct gui_program *program);
+
+/* (name) must be a static string, we borrow it long term.
+ */
+struct gui_program *gui_program_new(const char *name,const char *vsrc,int vsrcc,const char *fsrc,int fsrcc);
+
+void gui_program_use(struct gui_program *program);
+
+unsigned int gui_program_get_uniform(const struct gui_program *program,const char *name);
+
+/* We always check for these three uniforms, but beyond that they are entirely up to you to use.
+ */
+void gui_program_set_screensize(struct gui_program *program,int w,int h);
+void gui_program_set_texsize(struct gui_program *program,int w,int h);
+void gui_program_set_texsize_obj(struct gui_program *program,struct gui_texture *texture);
+void gui_program_set_sampler(struct gui_program *program,int sampler);
+
+void gui_texture_del(struct gui_texture *texture);
+int gui_texture_ref(struct gui_texture *texture);
+
+struct gui_texture *gui_texture_new();
+
+void gui_texture_set_filter(struct gui_texture *texture,int filter);
+void gui_texture_get_size(int *w,int *h,const struct gui_texture *texture);
+
+int gui_texture_alloc(struct gui_texture *texture,int w,int h,int alpha);
+int gui_texture_upload_rgba(struct gui_texture *texture,int w,int h,const void *src);
+
+void gui_texture_use(struct gui_texture *texture);
 
 // Should be internal use only.
 void gui_prepare_render(struct gui *gui);

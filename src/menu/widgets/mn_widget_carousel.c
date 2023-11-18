@@ -34,6 +34,10 @@ struct mn_widget_carousel {
   int entryc,entrya;
   int entryp;
   int animation_stable;
+  
+  /* -1 or 1 if we should bind to one edge of the next incoming set of games.
+   */
+  int autoselect_direction;
 };
 
 #define WIDGET ((struct mn_widget_carousel*)widget)
@@ -50,10 +54,10 @@ static const char carousel_vsrc[]=
   "varying vec2 vtexcoord;\n"
   "void main() {\n"
     "float adjx=(aposition.x*dstsize.y)/dstsize.x;\n"
-    "float adjz=0.500+aposition.z*0.200;\n"
+    "float adjz=0.300+aposition.z*0.200;\n"
     "gl_Position=vec4(\n"
       "dstposition.x/screensize.x+(adjx*dstsize.x)/screensize.x,\n"
-      "dstposition.y/screensize.y+(aposition.y*dstsize.y)/screensize.y,\n"
+      "dstposition.y/screensize.y+(aposition.y*dstsize.y)/screensize.y-0.100,\n"
       "adjz,\n"
       "adjz\n"
     ");\n"
@@ -364,6 +368,10 @@ static int mn_carousel_decode_game_to_list(struct gui_widget *widget,struct sr_d
   if (sr_decode_json_end(decoder,jsonctx)<0) return -1;
   if (!gameid) return 0;
   
+  if (gameid==mn.dbs.gameid) {
+    WIDGET->entryp=WIDGET->entryc;
+  }
+  
   struct mn_carousel_entry *entry=mn_carousel_append_entry(widget);
   if (!entry) return 0;
   entry->gameid=gameid;
@@ -382,17 +390,26 @@ static int mn_carousel_decode_game_to_list(struct gui_widget *widget,struct sr_d
 }
  
 static int mn_carousel_replace_list(struct gui_widget *widget,const char *src,int srcc) {
+  WIDGET->entryp=-1;
   while (WIDGET->entryc>0) {
     WIDGET->entryc--;
     mn_carousel_entry_cleanup(WIDGET->entryv+WIDGET->entryc);
   }
+  
   struct sr_decoder decoder={.v=src,.c=srcc};
   if (sr_decode_json_array_start(&decoder)<0) return -1;
   while (sr_decode_json_next(0,&decoder)>0) {
     if (mn_carousel_decode_game_to_list(widget,&decoder)<0) return -1;
   }
   if (sr_decode_json_end(&decoder,0)<0) return -1;
-  WIDGET->entryp=WIDGET->entryc>>1;
+  
+  if (WIDGET->entryc>0) {
+    if (WIDGET->autoselect_direction<0) WIDGET->entryp=0;
+    else if (WIDGET->autoselect_direction>0) WIDGET->entryp=WIDGET->entryc-1;
+    else if (WIDGET->entryp<0) WIDGET->entryp=WIDGET->entryc>>1;
+    dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
+  }
+  WIDGET->autoselect_direction=0;
   mn_carousel_reset_entry_positions(widget);
   return 0;
 }
@@ -448,13 +465,17 @@ static void _carousel_motion(struct gui_widget *widget,int dx,int dy) {
     if (WIDGET->entryp>0) {
       WIDGET->entryp--;
       mn_carousel_animate_entry_positions(widget);
-      //TODO report new selected game
+      dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
+    } else {
+      //TODO load previous page and autoselect_direction=1
     }
   } else if (dx>0) {
     if (WIDGET->entryp<WIDGET->entryc-1) {
       WIDGET->entryp++;
       mn_carousel_animate_entry_positions(widget);
-      //TODO report new selected game
+      dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
+    } else {
+      //TODO load next page and autoselect_direction=-1
     }
   }
 }

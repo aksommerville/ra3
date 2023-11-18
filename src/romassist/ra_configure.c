@@ -14,6 +14,7 @@ static void ra_print_usage(const char *topic,int topicc) {
     "  --htdocs=PATH       Directory containing static files for HTTP service.\n"
     "  --menu=PATH         Executable for front end.\n"
     "  --port=2600         TCP port for HTTP server.\n"
+    "  --terminable=1      Relaunch the menu if it quits, don't let the user quit.\n"
     "\n"
   );
 }
@@ -27,7 +28,7 @@ static int ra_configure_kv(const char *k,int kc,const char *v,int vc) {
   
   // Default value.
   if (!vc) {
-    if ((kc>3)&&!memcmp(k,"no-",3)) { v="0"; vc=1; }
+    if ((kc>3)&&!memcmp(k,"no-",3)) { v="0"; vc=1; k+=3; kc-=3; }
     else { v="1"; vc=1; }
   }
   
@@ -64,6 +65,7 @@ static int ra_configure_kv(const char *k,int kc,const char *v,int vc) {
   STROPT("htdocs",htdocs)
   STROPT("menu",menu)
   INTOPT("port",http_port,1,65535)
+  INTOPT("terminable",terminable,0,1)
   
   #undef STROPT
   #undef INTOPT
@@ -140,6 +142,7 @@ int ra_configure(int argc,char **argv) {
     ra.exename=argv[0];
   }
   ra.http_port=2600;
+  ra.terminable=1;
   
   //TODO config file?
   

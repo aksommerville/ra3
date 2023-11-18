@@ -50,3 +50,40 @@ void dbs_refresh_search(struct db_service *dbs) {
     fprintf(stderr,"%s: request sent\n",__func__);
   }
 }
+
+/* Select game.
+ */
+ 
+void dbs_select_game(struct db_service *dbs,int gameid) {
+  if (gameid==dbs->gameid) return;
+  dbs->gameid=gameid;
+}
+
+/* Get game from list.
+ */
+ 
+int dbs_get_game_from_list(struct sr_decoder *dst,const struct db_service *dbs,int gameid) {
+  struct sr_decoder decoder={.v=dbs->gamelist,.c=dbs->gamelistc};
+  if (sr_decode_json_array_start(&decoder)<0) return -1;
+  while (sr_decode_json_next(0,&decoder)>0) {
+    int jsonctx=sr_decode_json_object_start(&decoder);
+    if (jsonctx<0) {
+      if (sr_decode_json_skip(&decoder)<0) return -1;
+      continue;
+    }
+    *dst=decoder;
+    const char *k;
+    int kc;
+    while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+      if ((kc==6)&&!memcmp(k,"gameid",6)) {
+        int qgameid=0;
+        if (sr_decode_json_int(&qgameid,&decoder)<0) return -1;
+        if (qgameid==gameid) return 0; // got it!
+      } else {
+        if (sr_decode_json_skip(&decoder)<0) return -1;
+      }
+    }
+    if (sr_decode_json_end(&decoder,jsonctx)<0) return -1;
+  }
+  return -1;
+}

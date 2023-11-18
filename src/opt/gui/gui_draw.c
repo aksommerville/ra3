@@ -40,3 +40,21 @@ void gui_draw_line(struct gui *gui,int ax,int ay,int bx,int by,uint32_t rgba) {
     glVertex2i(bx,by);
   glEnd();
 }
+
+/* Textured quad.
+ */
+ 
+void gui_draw_texture(struct gui *gui,int x,int y,struct gui_texture *texture) {
+  if (!texture) return;
+  glEnable(GL_TEXTURE_2D);
+  glEnable(GL_BLEND);
+  glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA,GL_DST_ALPHA);
+  gui_texture_use(texture);
+  glBegin(GL_TRIANGLE_STRIP);
+    glColor4ub(0xff,0xff,0xff,0xff);
+    glTexCoord2i(0,0); glVertex2i(x,y);
+    glTexCoord2i(0,1); glVertex2i(x,y+texture->h);
+    glTexCoord2i(1,0); glVertex2i(x+texture->w,y);
+    glTexCoord2i(1,1); glVertex2i(x+texture->w,y+texture->h);
+  glEnd();
+}

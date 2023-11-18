@@ -25,6 +25,7 @@ extern struct ra {
   char *htdocs;
   char *menu;
   int http_port;
+  int terminable;
   
   volatile int sigc;
   struct db *db;

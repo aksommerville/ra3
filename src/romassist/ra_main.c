@@ -103,7 +103,7 @@ int main(int argc,char **argv) {
     if (http_update(ra.http,1000)<0) {
       fprintf(stderr,"%s: Error updating HTTP (could be anything).\n",ra.exename);
       status=1;
-      goto _done_;
+      break;
     }
     if (db_save(ra.db)<0) {
       fprintf(stderr,"%s:!!! Error saving database. Will keep open and try again soon.\n",ra.exename);
@@ -111,7 +111,16 @@ int main(int argc,char **argv) {
     if (ra_process_update(&ra.process)<0) {
       fprintf(stderr,"%s: Error updating child process.\n",ra.exename);
       status=1;
-      goto _done_;
+      break;
+    }
+    if (ra.process.menu_terminated) {
+      ra.process.menu_terminated=0;
+      if (ra.terminable) {
+        fprintf(stderr,"%s: Menu terminated without a game queued. Terminating. (--no-terminable to reopen)\n",ra.exename);
+        break;
+      } else {
+        fprintf(stderr,"%s: Will re-launch terminated menu.\n",ra.exename);
+      }
     }
   }
   

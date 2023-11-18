@@ -161,6 +161,20 @@ extern const struct gui_widget_type gui_widget_type_packer; // single-axis align
 extern const struct gui_widget_type gui_widget_type_label; // image or single-line text
 extern const struct gui_widget_type gui_widget_type_text; // multi-line text
 
+/* Text support.
+ ********************************************************/
+ 
+struct gui_font;
+
+/* Prepare a font for use.
+ * The set of available fonts is established at initialization.
+ * Returns a WEAK reference.
+ */
+struct gui_font *gui_font_get(struct gui *gui,const char *name,int namec);
+
+// Clients should not use this; it happens automatically at init.
+struct gui_font *gui_font_add(struct gui *gui,const char *name,int namec);
+
 /* Rendering primitives.
  ***********************************************************/
  
@@ -198,10 +212,15 @@ int gui_texture_upload_rgba(struct gui_texture *texture,int w,int h,const void *
 
 void gui_texture_use(struct gui_texture *texture);
 
+/* Null (font) is OK to use the gui's default font, which always exists.
+ */
+struct gui_texture *gui_texture_from_text(struct gui *gui,struct gui_font *font,const char *src,int srcc);
+
 // Should be internal use only.
 void gui_prepare_render(struct gui *gui);
  
 void gui_draw_rect(struct gui *gui,int x,int y,int w,int h,uint32_t rgba);
 void gui_draw_line(struct gui *gui,int ax,int ay,int bx,int by,uint32_t rgba);
+void gui_draw_texture(struct gui *gui,int x,int y,struct gui_texture *texture);
 
 #endif

@@ -93,6 +93,7 @@ int ra_process_update(struct ra_process *process) {
     if (err>0) {
       int status=WEXITSTATUS(wstatus);
       fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
+      if (!process->gameid&&!process->next_launch) process->menu_terminated=1;
       process->pid=0;
       if (!process->next_launch) process->gameid=0;
       ra_report_gameid(0);
@@ -117,6 +118,8 @@ int ra_process_update(struct ra_process *process) {
       free(process->next_launch);
       process->next_launch=0;
       ra_report_gameid(ra.process.gameid);
+    } else if (process->menu_terminated) {
+      // Wait for main to acknowledge, or quit if it decides to.
     } else if (ra.menu) {
       if (ra_process_launch_command(process,ra.menu)<0) {
         return -2;

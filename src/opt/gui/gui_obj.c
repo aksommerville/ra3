@@ -6,6 +6,7 @@
 void gui_del(struct gui *gui) {
   if (!gui) return;
   gui_widget_del(gui->root);
+  gui_text_quit(gui);
   free(gui);
 }
 
@@ -15,6 +16,10 @@ void gui_del(struct gui *gui) {
 struct gui *gui_new(const struct gui_delegate *delegate) {
   struct gui *gui=calloc(1,sizeof(struct gui));
   if (delegate) gui->delegate=*delegate;
+  if (gui_text_init(gui)<0) {
+    gui_del(gui);
+    return 0;
+  }
   if (!(gui->root=gui_widget_new(gui,&gui_widget_type_root))) return 0;
   return gui;
 }

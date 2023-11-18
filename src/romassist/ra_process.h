@@ -21,6 +21,13 @@ struct ra_process {
    * This is set during the request stage (next_launch not null), and also while running.
    */
   uint32_t gameid;
+  
+  /* We set nonzero when the menu terminates, if no game is queued for launch.
+   * Backend in a PC setting should respond by terminating.
+   * Or you can zero it again to relaunch the menu at the next update.
+   * (That's appropriate for kiosk environments, where the menu shouldn't have been allowed to quit anyway).
+   */
+  int menu_terminated;
 };
 
 void ra_process_cleanup(struct ra_process *process);

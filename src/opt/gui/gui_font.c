@@ -401,7 +401,8 @@ int gui_font_measure_line(const struct gui_font *font,const char *src,int srcc) 
  
 static void gui_font_render_glyph(
   uint8_t *dst,int dstx,int dstw,int dsth,int dststride,
-  const uint8_t *src,int srcw,int srch,int srcstride
+  const uint8_t *src,int srcw,int srch,int srcstride,
+  uint8_t r,uint8_t g,uint8_t b
 ) {
   if (srch>dsth) srch=dsth;
   if (dstx>dstw-srcw) srcw=dstw-dstx;
@@ -414,7 +415,9 @@ static void gui_font_render_glyph(
     int xi=srcw;
     for (;xi-->0;dstp+=4,srcp++) {
       if (!*srcp) continue;
-      dstp[0]=dstp[1]=dstp[2]=0xff; // output color is always white (TODO?)
+      dstp[0]=r;
+      dstp[1]=g;
+      dstp[2]=b;
       dstp[3]=*srcp; // copy nonzero alphas verbatim (we assume that the unvisited pixels had zero alpha to begin with)
     }
   }
@@ -426,11 +429,13 @@ static void gui_font_render_glyph(
 void gui_font_render_line(
   void *dst,int dstw,int dsth,int dststride,
   const struct gui_font *font,
-  const char *src,int srcc
+  const char *src,int srcc,
+  int rgb
 ) {
   if (!dst||!font||!src) return;
   if (font->pagec<1) return;
   if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  uint8_t r=rgb>>16,g=rgb>>8,b=rgb;
   int cpfirst=font->pagev[0].codepoint;
   int cppagezero=cpfirst+font->pagev[0].glyphc;
   int srcp=0,x=0;
@@ -468,8 +473,102 @@ void gui_font_render_line(
     
     gui_font_render_glyph(
       dst,x,dstw,dsth,dststride,
-      bits,glyphw,font->lineh,page->w
+      bits,glyphw,font->lineh,page->w,
+      r,g,b
     );
     x+=glyphw;
   }
+}
+
+/* Break lines.
+ */
+ 
+int gui_font_break_lines(struct gui_font_line *dst,int dsta,const struct gui_font *font,const char *src,int srcc,int wlimit) {
+  if (!dst||(dsta<0)) dsta=0;
+  if (!font) return -1;
+  if (!src) return 0;
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  int dstc=0,srcp=0;
+  while (srcp<srcc) {
+  
+    if (dstc>=dsta) return dsta+1; // We're not obliged to continue processing after filling (dst), just indicate that it's full.
+    struct gui_font_line *line=dst+dstc++;
+    line->p=srcp;
+    line->c=0;
+    line->w=0;
+    
+    // As a firm rule, each line must contain at least one character, even if it breaches the limit.
+    // Try to take a full UTF-8 unit. But we're not going to bugger around with misencoded bits that the renderer will treat as multiple glyphs.
+    while ((srcp<srcc)&&(src[srcp]&0x80)) { srcp++; line->c++; }
+    if (srcp<srcc) { srcp++; line->c++; }
+    line->w=gui_font_measure_line(font,src+line->p,line->c);
+    
+    // Extend by words until we reach the limit or a linefeed.
+    while (line->w<wlimit) {
+      int nextw=line->w;
+      int nextc=line->c;
+      // Consume non-word characters individually.
+      while (line->p+nextc<srcc) {
+        char ch=src[line->p+nextc];
+        if (ch==0x0a) break;
+        if (
+          ((ch>='a')&&(ch<='z'))||
+          ((ch>='A')&&(ch<='Z'))||
+          ((ch>='0')&&(ch<='9'))||
+          (ch=='_')
+        ) break;
+        int addw=gui_font_measure_line(font,&ch,1);
+        if (addw>0) {
+          if (nextw+addw>wlimit) break;
+          nextw+=addw;
+        }
+        nextc++;
+      }
+      // Measure the next word.
+      int wordlen=0;
+      while (line->p+nextc+wordlen<srcc) {
+        char ch=src[line->p+nextc+wordlen];
+        if (
+          ((ch>='a')&&(ch<='z'))||
+          ((ch>='A')&&(ch<='Z'))||
+          ((ch>='0')&&(ch<='9'))||
+          (ch=='_')
+        ) {
+          wordlen++;
+        } else {
+          break;
+        }
+      }
+      // If the word is followed by punctuation (not space!), add one character to it.
+      // To avoid dots and commas breaking onto the next line.
+      if (line->p+nextc+wordlen<srcc) {
+        char ch=src[line->p+nextc+wordlen];
+        if ((ch>0x20)&&(ch<0x7f)) {
+          wordlen++;
+        }
+      }
+      if (wordlen) {
+        int wordw=gui_font_measure_line(font,src+line->p+nextc,wordlen);
+        if (nextw+wordw<=wlimit) {
+          nextw+=wordw;
+          nextc+=wordlen;
+        } else {
+          break;
+        }
+      }
+      // Commit progress, or if none was possible, stop adding things.
+      if (nextc==line->c) break;
+      line->c=nextc;
+      line->w=nextw;
+    }
+    
+    // Finally, skip whitespace. But stop at linefeed (and consume it).
+    srcp+=line->c;
+    while (srcp<srcc) {
+      if ((unsigned char)src[srcp]>0x20) break;
+      if (src[srcp]==0x0a) { srcp++; break; }
+      srcp++;
+    }
+  }
+  return dstc;
 }

@@ -44,7 +44,7 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
  */
  
 void dbs_refresh_search(struct db_service *dbs) {
-  if (eh_request_http("POST","/api/query","text","drag","detail","blobs")<0) {
+  if (eh_request_http("POST","/api/query","text","zelda","detail","blobs")<0) {
     fprintf(stderr,"%s: request failed\n",__func__);
   } else {
     fprintf(stderr,"%s: request sent\n",__func__);

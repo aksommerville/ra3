@@ -30,6 +30,13 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Menu
 - - [x] Hi-res text is painful... bring in freetype
 - - - ...freetype is fucking ridiculous. Do it with bitmaps.
+- - [ ] Launch games.
+- - [ ] Edit details for focussed game.
+- - [ ] Scroll to next page.
+- - [ ] Persist search.
+- - [ ] Search options: List (mainly), rating, flags, text...
+- - [ ] Admin menu.
+- - [ ] Auto-upgrade.
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.

@@ -83,11 +83,24 @@ int gui_font_basename_parse(struct gui_font_basename *dst,const char *src,int sr
  */
 int gui_font_measure_line(const struct gui_font *font,const char *src,int srcc);
 
+/* Break a chunk of text at sensible places to display on multiple lines no wider than (wlimit).
+ * At the limit, eg (wlimit<=0), we'll make single-character lines, and they will exceed the limit.
+ * If we return >dsta, the returned count is not reliable but everything up to (dsta) is final.
+ * (we expect that dsta is a height limit on your end, and you won't need any detail beyond that).
+ * (p,c) for each line does not necessarily cover the full input. We leave out trailing spaces.
+ */
+struct gui_font_line {
+  int p; // Start position in (src).
+  int c; // Length from (p) in bytes.
+  int w; // Line width in pixels.
+};
+int gui_font_break_lines(struct gui_font_line *dst,int dsta,const struct gui_font *font,const char *src,int srcc,int wlimit);
+
 /* Fill (dst) with an RGBA image of one line of text.
- * Color is pure white, and alpha is taken from the font.
+ * Color is the provided 24-bit RGB, and alpha is taken from the font.
  * It's advisable to initialize the image to transparent white (not transparent black!) if you're going to scale with interpolation.
  * We only visit pixels with nonzero alpha.
  */
-void gui_font_render_line(void *dst,int dstw,int dsth,int dststride,const struct gui_font *font,const char *src,int srcc);
+void gui_font_render_line(void *dst,int dstw,int dsth,int dststride,const struct gui_font *font,const char *src,int srcc,int rgb);
 
 #endif

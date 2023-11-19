@@ -214,7 +214,8 @@ void gui_texture_use(struct gui_texture *texture);
 
 /* Null (font) is OK to use the gui's default font, which always exists.
  */
-struct gui_texture *gui_texture_from_text(struct gui *gui,struct gui_font *font,const char *src,int srcc);
+struct gui_texture *gui_texture_from_text(struct gui *gui,struct gui_font *font,const char *src,int srcc,int rgb);
+struct gui_texture *gui_texture_from_multiline_text(struct gui *gui,struct gui_font *font,const char *src,int srcc,int rgb,int wlimit);
 
 // Should be internal use only.
 void gui_prepare_render(struct gui *gui);

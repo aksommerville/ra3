@@ -117,6 +117,7 @@ static void gui_choose_default_font(struct gui *gui) {
   // Important that we call out all the ones we expect to exist, in the order of preference.
   // Otherwise, we'll pick [0] by default, and the order is determined by readdir(), which is essentially random.
   // If we wanted really to generalize this out, we could examine each font and weigh them by line height and G0 coverage or something.
+  if (gui->font=gui_font_get(gui,"lightv40",-1)) return;
   if (gui->font=gui_font_get(gui,"boldv40",-1)) return;
   if (gui->font=gui_font_get(gui,"vintage8",-1)) return;
   
@@ -126,7 +127,7 @@ static void gui_choose_default_font(struct gui *gui) {
 /* Texture from text.
  */
  
-struct gui_texture *gui_texture_from_text(struct gui *gui,struct gui_font *font,const char *src,int srcc) {
+struct gui_texture *gui_texture_from_text(struct gui *gui,struct gui_font *font,const char *src,int srcc,int rgb) {
   if (!gui) return 0;
   if (!font) {
     if (gui->fontc<1) return 0;
@@ -142,16 +143,16 @@ struct gui_texture *gui_texture_from_text(struct gui *gui,struct gui_font *font,
   void *rgba=malloc(stride*font->lineh);
   if (!rgba) return 0;
   
-  // Don't initialize to zeroes. Initialize to transparent white instead, so we don't get interpolation artifacts if scaling up.
+  // Don't initialize to zeroes. Use the incoming color, so we don't get edge artifacts when scaling up.
   uint32_t blankwhite;
   uint32_t bodetect=0x04030201;
-  if (*(uint8_t*)&bodetect==0x04) blankwhite=0xffffff00;
-  else blankwhite=0x00ffffff;
+  if (*(uint8_t*)&bodetect==0x04) blankwhite=rgb<<8;
+  else blankwhite=rgb&0xffffff;
   uint32_t *dst=rgba;
   int i=w*font->lineh;
   for (;i-->0;dst++) *dst=blankwhite;
   
-  gui_font_render_line(rgba,w,font->lineh,stride,font,src,srcc);
+  gui_font_render_line(rgba,w,font->lineh,stride,font,src,srcc,rgb);
   
   struct gui_texture *texture=gui_texture_new();
   if (!texture) {
@@ -159,6 +160,62 @@ struct gui_texture *gui_texture_from_text(struct gui *gui,struct gui_font *font,
     return 0;
   }
   int err=gui_texture_upload_rgba(texture,w,font->lineh,rgba);
+  free(rgba);
+  if (err<0) {
+    gui_texture_del(texture);
+    return 0;
+  }
+  
+  return texture;
+}
+
+/* Texture from multi-line text.
+ */
+ 
+struct gui_texture *gui_texture_from_multiline_text(struct gui *gui,struct gui_font *font,const char *src,int srcc,int rgb,int wlimit) {
+  if (!gui) return 0;
+  if (!font) {
+    if (gui->fontc<1) return 0;
+    if (!gui->font) gui_choose_default_font(gui);
+    font=gui->font;
+  }
+  if (!src) srcc=0; else if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  
+  struct gui_font_line linev[32];
+  const int linea=sizeof(linev)/sizeof(linev[0]);
+  int linec=gui_font_break_lines(linev,linea,font,src,srcc,wlimit);
+  if (linec<0) linec=0;
+  else if (linec>linea) linec=linea;
+  int h=linec*font->lineh;
+  int w=0;
+  struct gui_font_line *line=linev;
+  int i=linec;
+  for (;i-->0;line++) if (line->w>w) w=line->w;
+  if (w>GUI_TEXT_LINE_SANITY_LIMIT) return 0;
+  if (h>GUI_TEXT_LINE_SANITY_LIMIT) return 0;
+  
+  int stride=w<<2;
+  void *rgba=malloc(stride*h);
+  if (!rgba) return 0;
+  
+  uint32_t blankwhite;
+  uint32_t bodetect=0x04030201;
+  if (*(uint8_t*)&bodetect==0x04) blankwhite=rgb<<8;
+  else blankwhite=rgb&0xffffff;
+  uint32_t *dst=rgba;
+  for (i=w*h;i-->0;dst++) *dst=blankwhite;
+  
+  int y=0;
+  for (line=linev,i=linec;i-->0;line++,y+=font->lineh) {
+    gui_font_render_line(rgba+stride*y,w,font->lineh,stride,font,src+line->p,line->c,rgb);
+  }
+  
+  struct gui_texture *texture=gui_texture_new();
+  if (!texture) {
+    free(rgba);
+    return 0;
+  }
+  int err=gui_texture_upload_rgba(texture,w,h,rgba);
   free(rgba);
   if (err<0) {
     gui_texture_del(texture);

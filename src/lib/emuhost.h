@@ -293,6 +293,7 @@ struct eh_http_response {
   int headersc;
   const char *body;
   int bodyc;
+  int x_correlation_id;
 };
 int eh_http_response_split(struct eh_http_response *response,const char *src,int srcc);
 

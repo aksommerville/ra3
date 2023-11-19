@@ -21,6 +21,9 @@ struct mn_widget_carousel {
   GLuint loc_dstsize;
   struct gui_texture *texture_noscreencap;
   int gamelistseq;
+  struct gui_texture *prev_page_texture;
+  struct gui_texture *next_page_texture;
+  struct png_image *indicators_image;
   
   struct mn_carousel_entry {
     int gameid;
@@ -84,6 +87,9 @@ static void mn_carousel_entry_cleanup(struct mn_carousel_entry *entry) {
 static void _carousel_del(struct gui_widget *widget) {
   gui_program_del(WIDGET->program);
   gui_texture_del(WIDGET->texture_noscreencap);
+  gui_texture_del(WIDGET->prev_page_texture);
+  gui_texture_del(WIDGET->next_page_texture);
+  png_image_del(WIDGET->indicators_image);
   if (WIDGET->entryv) {
     while (WIDGET->entryc-->0) mn_carousel_entry_cleanup(WIDGET->entryv+WIDGET->entryc);
     free(WIDGET->entryv);
@@ -112,23 +118,50 @@ static int _carousel_init(struct gui_widget *widget) {
   gui_texture_upload_rgba(WIDGET->texture_noscreencap,image->w,image->h,image->pixels);
   png_image_del(image);
   
+  if ((serialc=file_read(&serial,"src/menu/data/carousel-edges.png"))>=0) {
+    WIDGET->indicators_image=png_decode(serial,serialc);
+    free(serial);
+    if (WIDGET->indicators_image&&(
+      (WIDGET->indicators_image->w<160)||
+      (WIDGET->indicators_image->h<48)||
+      (WIDGET->indicators_image->depth!=8)||
+      (WIDGET->indicators_image->colortype!=6)
+    )) {
+      png_image_del(WIDGET->indicators_image);
+      WIDGET->indicators_image=0;
+    }
+  }
+  
   WIDGET->animation_stable=1;
   
   return 0;
-}
-
-/* Measure.
- */
- 
-static void _carousel_measure(int *w,int *h,struct gui_widget *widget,int maxw,int maxh) {
-  *w=maxw;
-  *h=400;//TODO
 }
 
 /* Pack.
  */
  
 static void _carousel_pack(struct gui_widget *widget) {
+}
+
+/* Draw a previous-page or next-page indicator.
+ */
+ 
+static void mn_carousel_render_indicator(struct gui_widget *widget,struct gui_texture *texture,GLfloat x) {
+  GLfloat w=0.150f;
+  GLfloat h=0.150f;
+  struct carousel_vertex {
+    GLfloat x,y,z;
+    GLubyte tx,ty;
+  } vtxv[]={
+    {x-w, h,1.0f,0,0},
+    {x-w,-h,1.0f,0,1},
+    {x+w, h,1.0f,1,0},
+    {x+w,-h,1.0f,1,1},
+  };
+  glVertexAttribPointer(0,3,GL_FLOAT,0,sizeof(struct carousel_vertex),&vtxv[0].x);
+  glVertexAttribPointer(1,2,GL_UNSIGNED_BYTE,0,sizeof(struct carousel_vertex),&vtxv[0].tx);
+  gui_texture_use(texture);
+  glDrawArrays(GL_TRIANGLE_STRIP,0,sizeof(vtxv)/sizeof(vtxv[0]));
 }
 
 /* Draw one entry. Caller preps the context in advance.
@@ -198,6 +231,16 @@ static void _carousel_draw(struct gui_widget *widget,int x,int y) {
       if (!image) return;
       gui_texture_upload_rgba(entry->scap,image->w,image->h,image->pixels);
       png_image_del(image);
+    }
+  }
+  
+  // Previous and next page indicators, if present.
+  if (WIDGET->entryc>0) {
+    if (WIDGET->prev_page_texture) {
+      mn_carousel_render_indicator(widget,WIDGET->prev_page_texture,WIDGET->entryv[0].x-0.800f);
+    }
+    if (WIDGET->next_page_texture) {
+      mn_carousel_render_indicator(widget,WIDGET->next_page_texture,WIDGET->entryv[WIDGET->entryc-1].x+0.800f);
     }
   }
   
@@ -330,6 +373,74 @@ static int mn_carousel_encoded_path_looks_like_scap(const char *src,int srcc) {
   return 1;
 }
 
+/* Redraw prev_page_texture and next_page_texture.
+ */
+ 
+static void mn_carousel_indicators_blit(uint8_t *dst,int dstx,int dsty,struct gui_widget *widget,int srcx,int srcy,int w,int h) {
+  int dststride=64*4;
+  dst+=dsty*dststride+(dstx<<2);
+  const uint8_t *src=(uint8_t*)WIDGET->indicators_image->pixels+srcy*WIDGET->indicators_image->stride+(srcx<<2);
+  int cpc=w<<2;
+  for (;h-->0;dst+=dststride,src+=WIDGET->indicators_image->stride) {
+    memcpy(dst,src,cpc);
+  }
+}
+ 
+static void mn_carousel_draw_indicator(struct gui_widget *widget,struct gui_texture *texture,int arrowindex,int pagec) {
+  // It needs to be square. And if we make it 4x4 tiles, we can fit any reasonable content. So 4x4 (64x64 pixels) always.
+  uint8_t *tmp=calloc(64*64,4);
+  if (!tmp) return;
+  
+  if (pagec<1) {
+    mn_carousel_indicators_blit(tmp,16,8,widget,0,0,32,32);
+    mn_carousel_indicators_blit(tmp,16,40,widget,96,0,32,16);
+  } else {
+    int gamec=pagec*DB_SERVICE_SEARCH_LIMIT; // not necessarily the actual count of games (on the right edge, this will usually be too high). but a fair guess.
+    mn_carousel_indicators_blit(tmp,16,0,widget,32+arrowindex*32,0,32,32);
+    if (gamec>=10000) gamec=9999; // room for 4 digits only
+    if (gamec>=1000) {
+      mn_carousel_indicators_blit(tmp,0,32,widget,(gamec/1000)*16,32,16,16);
+      mn_carousel_indicators_blit(tmp,16,32,widget,((gamec/100)%10)*16,32,16,16);
+      mn_carousel_indicators_blit(tmp,32,32,widget,((gamec/10)%10)*16,32,16,16);
+      mn_carousel_indicators_blit(tmp,48,32,widget,(gamec%10)*16,32,16,16);
+    } else if (gamec>=100) {
+      mn_carousel_indicators_blit(tmp,8,32,widget,((gamec/100)%10)*16,32,16,16);
+      mn_carousel_indicators_blit(tmp,24,32,widget,((gamec/10)%10)*16,32,16,16);
+      mn_carousel_indicators_blit(tmp,40,32,widget,(gamec%10)*16,32,16,16);
+    } else if (gamec>=10) {
+      mn_carousel_indicators_blit(tmp,16,32,widget,((gamec/10)%10)*16,32,16,16);
+      mn_carousel_indicators_blit(tmp,32,32,widget,(gamec%10)*16,32,16,16);
+    } else {
+      mn_carousel_indicators_blit(tmp,56,32,widget,(gamec%10)*16,32,16,16);
+    }
+    mn_carousel_indicators_blit(tmp,16,48,widget,96,16,32,16);
+  }
+  
+  gui_texture_upload_rgba(texture,64,64,tmp);
+  gui_texture_set_filter(texture,1);
+  
+  free(tmp);
+}
+ 
+static int mn_carousel_refresh_page_indicators(struct gui_widget *widget) {
+  if (!WIDGET->indicators_image) return 0;
+  
+  if (!WIDGET->prev_page_texture) {
+    WIDGET->prev_page_texture=gui_texture_new();
+  }
+  if (WIDGET->prev_page_texture) {
+    mn_carousel_draw_indicator(widget,WIDGET->prev_page_texture,0,mn.dbs.page-1);
+  }
+  
+  if (!WIDGET->next_page_texture) {
+    WIDGET->next_page_texture=gui_texture_new();
+  }
+  if (WIDGET->next_page_texture) {
+    mn_carousel_draw_indicator(widget,WIDGET->next_page_texture,1,mn.dbs.pagec-mn.dbs.page);
+  }
+  return 0;
+}
+
 /* Replace game list from JSON.
  */
  
@@ -411,6 +522,7 @@ static int mn_carousel_replace_list(struct gui_widget *widget,const char *src,in
   }
   WIDGET->autoselect_direction=0;
   mn_carousel_reset_entry_positions(widget);
+  mn_carousel_refresh_page_indicators(widget);
   return 0;
 }
 
@@ -466,17 +578,51 @@ static void _carousel_motion(struct gui_widget *widget,int dx,int dy) {
       WIDGET->entryp--;
       mn_carousel_animate_entry_positions(widget);
       dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
+      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+    } else if (mn.dbs.page<=1) {
+      mn_cb_sound_effect(GUI_SFXID_REJECT,0);
     } else {
-      //TODO load previous page and autoselect_direction=1
+      mn.dbs.page--;
+      WIDGET->autoselect_direction=1;
+      dbs_refresh_search(&mn.dbs);
+      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
     }
   } else if (dx>0) {
     if (WIDGET->entryp<WIDGET->entryc-1) {
       WIDGET->entryp++;
       mn_carousel_animate_entry_positions(widget);
       dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
+      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+    } else if (mn.dbs.page>=mn.dbs.pagec) {
+      mn_cb_sound_effect(GUI_SFXID_REJECT,0);
     } else {
-      //TODO load next page and autoselect_direction=-1
+      mn.dbs.page++;
+      WIDGET->autoselect_direction=-1;
+      dbs_refresh_search(&mn.dbs);
+      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
     }
+  }
+}
+
+/* Activate: Launch game if one is selected.
+ */
+ 
+static void mn_carousel_activate(struct gui_widget *widget) {
+  if (WIDGET->entryp<0) return;
+  if (WIDGET->entryp>=WIDGET->entryc) return;
+  int gameid=WIDGET->entryv[WIDGET->entryp].gameid;
+  if (dbs_launch(&mn.dbs,gameid)<0) {
+    fprintf(stderr,"Failed to send launch request for gameid %d\n",gameid);
+  }
+}
+
+/* Signal.
+ */
+ 
+static void _carousel_signal(struct gui_widget *widget,int sigid) {
+  fprintf(stderr,"%s %d\n",__func__,sigid);
+  switch (sigid) {
+    case GUI_SIGID_ACTIVATE: mn_carousel_activate(widget); break;
   }
 }
 
@@ -488,9 +634,9 @@ const struct gui_widget_type mn_widget_type_carousel={
   .objlen=sizeof(struct mn_widget_carousel),
   .del=_carousel_del,
   .init=_carousel_init,
-  .measure=_carousel_measure,
   .pack=_carousel_pack,
   .draw=_carousel_draw,
   .update=_carousel_update,
   .motion=_carousel_motion,
+  .signal=_carousel_signal,
 };

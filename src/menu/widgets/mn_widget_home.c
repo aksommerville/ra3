@@ -105,6 +105,11 @@ static void _home_motion(struct gui_widget *widget,int dx,int dy) {
  */
  
 static void _home_signal(struct gui_widget *widget,int sigid) {
+  //TODO where is the focus? For now it is always the carousel.
+  if (widget->childc>=2) {
+    struct gui_widget *child=widget->childv[1];
+    if (child->type->signal) child->type->signal(child,sigid);
+  }
 }
 
 /* Type definition.

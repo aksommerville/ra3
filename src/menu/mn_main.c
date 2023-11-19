@@ -57,7 +57,7 @@ static void mn_http_response(const char *src,int srcc) {
  */
  
 void mn_cb_sound_effect(int sfxid,void *userdata) {
-  fprintf(stderr,"%s %d\n",__func__,sfxid);
+  //fprintf(stderr,"%s %d\n",__func__,sfxid);
 }
 
 /* Main.

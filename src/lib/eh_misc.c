@@ -138,6 +138,25 @@ int eh_request_http_(
   return err;
 }
 
+/* Find numeric "X-Correlation-Id" in HTTP response headers.
+ */
+ 
+static int eh_read_x_correlation_id(const char *src,int srcc) {
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  if (sr_decode_json_object_start(&decoder)<0) return 0;
+  const char *k;
+  int kc;
+  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+    if ((kc==16)&&!memcmp(k,"X-Correlation-Id",16)) { // TODO I guess should be case-insensitive, HTTP is.
+      int v=0;
+      sr_decode_json_int(&v,&decoder);
+      return v;
+    }
+    if (sr_decode_json_skip(&decoder)<0) return 0;
+  }
+  return 0;
+}
+
 /* Split HTTP response.
  */
  
@@ -171,6 +190,7 @@ int eh_http_response_split(struct eh_http_response *response,const char *src,int
     
     if ((kc==7)&&!memcmp(k,"headers",7)) {
       if ((response->headersc=sr_decode_json_expression(&response->headers,&decoder))<0) return -1;
+      response->x_correlation_id=eh_read_x_correlation_id(response->headers,response->headersc);
       continue;
     }
     

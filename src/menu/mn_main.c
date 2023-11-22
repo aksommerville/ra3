@@ -31,6 +31,10 @@ static void mn_generate_pcm(void *v,int c) {
  */
  
 static int mn_load_none() {
+  
+  dbs_init(&mn.dbs);
+  dbs_refresh_search(&mn.dbs);
+  dbs_refresh_all_metadata(&mn.dbs);
 
   struct gui_delegate delegate={
     .userdata=0,
@@ -39,9 +43,6 @@ static int mn_load_none() {
   if (!(mn.gui=gui_new(&delegate))) return -1;
   struct gui_widget *home=gui_replace_page(mn.gui,&mn_widget_type_home);
   if (!home) return -1;
-  
-  //TODO fetch persisted dbs state.
-  dbs_refresh_search(&mn.dbs);
 
   return 0;
 }

@@ -31,6 +31,8 @@ struct gui_widget_type;
 #define GUI_SIGID_ACTIVATE 2
 #define GUI_SIGID_CANCEL 3
 #define GUI_SIGID_AUX 4
+#define GUI_SIGID_FOCUS 5
+#define GUI_SIGID_BLUR 6
 
 /* Global context.
  **********************************************************************/
@@ -57,6 +59,7 @@ void gui_dismiss_top_modal(struct gui *gui);
 void gui_dismiss_all_modals(struct gui *gui);
 struct gui_widget *gui_get_page(const struct gui *gui);
 struct gui_widget *gui_get_modal_by_index(const struct gui *gui,int p); // 0 is the top, 1 below it, etc
+void gui_modal_place_near(struct gui_widget *modal,struct gui_widget *anchor); // eg for popup menus. (anchor) must be in the page, or a lower modal, can't be above.
 
 /* Call each video frame.
  * (input) should come from eh_input_get(0).
@@ -113,6 +116,7 @@ struct gui_widget {
   int childc,childa;
   int x,y,w,h; // (x,y) relative to parent
   int opaque; // Hint that this widget will completely cover its bounds at draw.
+  struct gui_widget *modal_anchor; // private to root
 };
 
 void gui_widget_del(struct gui_widget *widget);
@@ -157,9 +161,27 @@ void gui_widget_remove_child(struct gui_widget *parent,struct gui_widget *child)
  
 extern const struct gui_widget_type gui_widget_type_root;
 
+//XXX I didn't make these yet, and not sure i'm going to...
 extern const struct gui_widget_type gui_widget_type_packer; // single-axis alignment helper
 extern const struct gui_widget_type gui_widget_type_label; // image or single-line text
 extern const struct gui_widget_type gui_widget_type_text; // multi-line text
+
+extern const struct gui_widget_type gui_widget_type_button; // text label you can select and actuate
+extern const struct gui_widget_type gui_widget_type_pickone; // modal controller for single-select list (dropdown menu)
+
+void gui_root_place_modal_near(struct gui_widget *widget,struct gui_widget *modal,struct gui_widget *anchor);
+
+struct gui_widget *gui_widget_button_spawn(
+  struct gui_widget *parent,
+  const char *label,int labelc,
+  int rgb,
+  void (*cb)(struct gui_widget *button,void *userdata),
+  void *userdata
+);
+int gui_widget_button_set_label(struct gui_widget *widget,const char *src,int srcc,int rgb);
+
+void gui_widget_pickone_set_callback(struct gui_widget *widget,void (*cb)(struct gui_widget *pickone,int p,void *userdata),void *userdata);
+struct gui_widget *gui_widget_pickone_add_option(struct gui_widget *widget,const char *label,int labelc);
 
 /* Text support.
  ********************************************************/
@@ -222,6 +244,7 @@ void gui_prepare_render(struct gui *gui);
  
 void gui_draw_rect(struct gui *gui,int x,int y,int w,int h,uint32_t rgba);
 void gui_draw_line(struct gui *gui,int ax,int ay,int bx,int by,uint32_t rgba);
+void gui_frame_rect(struct gui *gui,int x,int y,int w,int h,uint32_t rgba);
 void gui_draw_texture(struct gui *gui,int x,int y,struct gui_texture *texture);
 
 #endif

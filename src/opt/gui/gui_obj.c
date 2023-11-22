@@ -41,11 +41,22 @@ struct gui_widget *gui_replace_page(struct gui *gui,const struct gui_widget_type
   }
   if (prev->type->signal) prev->type->signal(prev,GUI_SIGID_REMOVE);
   gui_widget_del(prev);
+  if (gui->root->childc==1) {
+    if (next->type->signal) next->type->signal(next,GUI_SIGID_FOCUS);
+  }
   return next;
 }
 
 struct gui_widget *gui_push_modal(struct gui *gui,const struct gui_widget_type *type) {
-  return gui_widget_spawn(gui->root,type);
+  struct gui_widget *modal=gui_widget_spawn(gui->root,type);
+  if (!modal) return 0;
+  gui_dirty_pack(gui);
+  if (gui->root->childc>=2) {
+    struct gui_widget *prev=gui->root->childv[gui->root->childc-2];
+    if (prev->type->signal) prev->type->signal(prev,GUI_SIGID_BLUR);
+  }
+  if (modal->type->signal) modal->type->signal(modal,GUI_SIGID_FOCUS);
+  return modal;
 }
 
 void gui_dismiss_modal(struct gui *gui,struct gui_widget *modal) {
@@ -54,6 +65,10 @@ void gui_dismiss_modal(struct gui *gui,struct gui_widget *modal) {
     if (gui->root->childv[i]==modal) {
       if (modal->type->signal) modal->type->signal(modal,GUI_SIGID_REMOVE);
       gui_widget_remove_child(gui->root,modal);
+      if ((i==gui->root->childc)&&(gui->root->childc>=1)) { // Removed the top? Likely. Need to focus whatever's below.
+        struct gui_widget *top=gui->root->childv[gui->root->childc-1];
+        if (top->type->signal) top->type->signal(top,GUI_SIGID_FOCUS);
+      }
       return;
     }
   }
@@ -64,6 +79,10 @@ void gui_dismiss_top_modal(struct gui *gui) {
   struct gui_widget *modal=gui->root->childv[gui->root->childc-1];
   if (modal->type->signal) modal->type->signal(modal,GUI_SIGID_REMOVE);
   gui_widget_remove_child(gui->root,modal);
+  if (gui->root->childc>=1) {
+    struct gui_widget *top=gui->root->childv[gui->root->childc-1];
+    if (top->type->signal) top->type->signal(top,GUI_SIGID_FOCUS);
+  }
 }
 
 void gui_dismiss_all_modals(struct gui *gui) {
@@ -71,6 +90,10 @@ void gui_dismiss_all_modals(struct gui *gui) {
     struct gui_widget *modal=gui->root->childv[gui->root->childc-1];
     if (modal->type->signal) modal->type->signal(modal,GUI_SIGID_REMOVE);
     gui_widget_remove_child(gui->root,modal);
+  }
+  if (gui->root->childc>=1) {
+    struct gui_widget *page=gui->root->childv[0];
+    if (page->type->signal) page->type->signal(page,GUI_SIGID_FOCUS);
   }
 }
 
@@ -83,6 +106,11 @@ struct gui_widget *gui_get_modal_by_index(const struct gui *gui,int p) {
   p++;
   if (p>=gui->root->childc) return 0;
   return gui->root->childv[p];
+}
+
+void gui_modal_place_near(struct gui_widget *modal,struct gui_widget *anchor) {
+  if (!modal) return;
+  gui_root_place_modal_near(modal->gui->root,modal,anchor);
 }
 
 void gui_update(struct gui *gui,uint16_t input) {

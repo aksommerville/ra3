@@ -545,6 +545,28 @@ static int ra_http_delete_launcher(struct http_xfer *req,struct http_xfer *rsp) 
   return db_launcher_delete(ra.db,launcherid);
 }
 
+/* GET /api/listids
+ */
+ 
+static int ra_http_get_listids(struct http_xfer *req,struct http_xfer *rsp) {
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  int jsonctx=sr_encode_json_array_start(dst,0,0);
+  if (jsonctx<0) return -1;
+  int i=0;
+  for (;;i++) {
+    struct db_list *list=db_list_get_by_index(ra.db,i);
+    if (!list) break;
+    const char *name=0;
+    int namec=db_string_get(&name,ra.db,list->name);
+    if (namec>0) {
+      if (sr_encode_json_string(dst,0,0,name,namec)<0) return -1;
+    } else {
+      if (sr_encode_json_int(dst,0,0,list->listid)<0) return -1;
+    }
+  }
+  return sr_encode_json_array_end(dst,jsonctx);
+}
+
 /* GET /api/list/count
  */
  
@@ -1074,6 +1096,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(PATCH,"/api/launcher",ra_http_patch_launcher)
   _(DELETE,"/api/launcher",ra_http_delete_launcher)
   
+  _(GET,"/api/listids",ra_http_get_listids)
   _(GET,"/api/list/count",ra_http_count_list)
   _(GET,"/api/list",ra_http_get_list)
   _(PUT,"/api/list",ra_http_put_list)

@@ -302,7 +302,7 @@ static int ra_ws_http_encode_response_text(struct sr_encoder *dst,struct http_xf
   const char *content_type=0;
   int content_typec=http_xfer_get_header(&content_type,rsp,"Content-Type",12);
   if ((content_typec==16)&&!memcmp(content_type,"application/json",16)) {
-    if (sr_encode_fmt(dst,"\"body\":%.*s",bodyc,body)<0) return -1;
+    if (sr_encode_fmt(dst,",\"body\":%.*s",bodyc,body)<0) return -1;
   } else {
     if (sr_encode_json_string(dst,"body",4,body,bodyc)<0) return -1;
   }
@@ -323,7 +323,9 @@ static int ra_ws_http_encode_response_text(struct sr_encoder *dst,struct http_xf
 static int ra_ws_http_encode_response(struct http_socket *socket,struct http_xfer *rsp) {
   struct sr_encoder dst={0};
   int err=ra_ws_http_encode_response_text(&dst,rsp);
-  if (err>=0) err=http_websocket_send(socket,1,dst.v,dst.c);
+  if (err>=0) {
+    err=http_websocket_send(socket,1,dst.v,dst.c);
+  }
   sr_encoder_cleanup(&dst);
   return err;
 }

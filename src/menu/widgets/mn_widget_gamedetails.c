@@ -15,6 +15,7 @@ static void gamedetails_arrange_bits(struct gui_widget *widget);
 struct mn_widget_gamedetails {
   struct gui_widget hdr;
   int gameid;
+  int retry_fetch; // if >0, the last details fetch failed and we should try again after waiting so many frames.
   struct gui_texture *tex_name;
   struct mn_gamedetails_bit {
     struct gui_texture *texture;
@@ -504,13 +505,20 @@ static void gamedetails_arrange_bits(struct gui_widget *widget) {
     }
     int rowh=0;
     int x=(widget->w>>1)-(w>>1)+(margin>>1);
-    for (;c-->0;p++) {
-      struct mn_gamedetails_bit *bit=WIDGET->bitv+p;
+    int i=0;
+    for (;i<c;i++) {
+      struct mn_gamedetails_bit *bit=WIDGET->bitv+p+i;
       bit->x=x;
       bit->y=y;
       x+=bit->w+margin;
       if (bit->h>rowh) rowh=bit->h;
     }
+    // now that we have the true (rowh), center each bit vertically
+    for (i=0;i<c;i++) {
+      struct mn_gamedetails_bit *bit=WIDGET->bitv+p+i;
+      bit->y=y+(rowh>>1)-(bit->h>>1);
+    }
+    p+=c;
     y+=rowh;
   }
 }
@@ -519,7 +527,11 @@ static void gamedetails_arrange_bits(struct gui_widget *widget) {
  */
  
 static void _gamedetails_update(struct gui_widget *widget) {
-  if (WIDGET->gameid!=mn.dbs.gameid) {
+  if (WIDGET->retry_fetch>0) {
+    if (!--(WIDGET->retry_fetch)) {
+      WIDGET->gameid=0;
+    }
+  } else if (WIDGET->gameid!=mn.dbs.gameid) {
     //fprintf(stderr,"%s:%d: TODO: Display details for gameid %d\n",__FILE__,__LINE__,mn.dbs.gameid);
     WIDGET->gameid=mn.dbs.gameid;
     gamedetails_clear(widget);
@@ -527,6 +539,8 @@ static void _gamedetails_update(struct gui_widget *widget) {
     if (dbs_get_game_from_list(&decoder,&mn.dbs,WIDGET->gameid)>=0) {
       gamedetails_populate(widget,&decoder);
       gamedetails_arrange_bits(widget);
+    } else {
+      WIDGET->retry_fetch=15;
     }
   }
 }

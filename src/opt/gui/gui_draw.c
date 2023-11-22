@@ -41,6 +41,23 @@ void gui_draw_line(struct gui *gui,int ax,int ay,int bx,int by,uint32_t rgba) {
   glEnd();
 }
 
+/* Outline rectangle.
+ */
+ 
+void gui_frame_rect(struct gui *gui,int x,int y,int w,int h,uint32_t rgba) {
+  if ((w<1)||(h<1)) return;
+  glDisable(GL_TEXTURE_2D);
+  glEnable(GL_BLEND);
+  glBegin(GL_LINE_STRIP);
+    glColor4ub(rgba>>24,rgba>>16,rgba>>8,rgba);
+    glVertex2i(x,y);
+    glVertex2i(x,y+h-1);
+    glVertex2i(x+w-1,y+h-1);
+    glVertex2i(x+w-1,y);
+    glVertex2i(x-1,y);
+  glEnd();
+}
+
 /* Textured quad.
  */
  

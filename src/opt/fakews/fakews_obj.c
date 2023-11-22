@@ -102,6 +102,7 @@ static int fakews_read(struct fakews *fakews) {
   if (fakews->rbufp+fakews->rbufc>=fakews->rbufa) {
     if (fakews->rbufp) {
       memmove(fakews->rbuf,fakews->rbuf+fakews->rbufp,fakews->rbufc);
+      fakews->rbufp=0;
     } else {
       if (fakews->rbufa>=FAKEWS_RBUF_SANITY_LIMIT) return -1;
       int na=fakews->rbufa+1024;

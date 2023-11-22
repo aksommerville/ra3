@@ -33,12 +33,16 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] Launch games.
 - - [ ] Edit details for focussed game.
 - - [x] Scroll to next page.
-- - [ ] Persist search.
+- - [x] Persist search.
 - - [ ] Search options: List (mainly), rating, flags, text...
+- - - [ ] rating, date
+- - - [ ] text
+- - - [ ] Popup menus: Highlight current selection when opening
 - - [ ] Admin menu.
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.
+- - [ ] gui render helpers, must rewrite with GL 2
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.

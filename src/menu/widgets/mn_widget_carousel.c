@@ -19,6 +19,8 @@ struct mn_widget_carousel {
   struct gui_program *program;
   GLuint loc_dstposition;
   GLuint loc_dstsize;
+  GLuint loc_alpha;
+  GLfloat alpha,alpha_target;
   struct gui_texture *texture_noscreencap;
   int gamelistseq;
   struct gui_texture *prev_page_texture;
@@ -60,7 +62,7 @@ static const char carousel_vsrc[]=
     "float adjz=0.300+aposition.z*0.200;\n"
     "gl_Position=vec4(\n"
       "dstposition.x/screensize.x+(adjx*dstsize.x)/screensize.x,\n"
-      "dstposition.y/screensize.y+(aposition.y*dstsize.y)/screensize.y-0.100,\n"
+      "dstposition.y/screensize.y+(aposition.y*dstsize.y)/screensize.y,\n"
       "adjz,\n"
       "adjz\n"
     ");\n"
@@ -70,9 +72,11 @@ static const char carousel_vsrc[]=
 
 static const char carousel_fsrc[]=
   "uniform sampler2D sampler;\n"
+  "uniform float alpha;\n"
   "varying vec2 vtexcoord;\n"
   "void main() {\n"
     "gl_FragColor=texture2D(sampler,vtexcoord);\n"
+    "gl_FragColor.a*=alpha;\n"
   "}\n"
 "";
 
@@ -104,6 +108,7 @@ static int _carousel_init(struct gui_widget *widget) {
   if (!(WIDGET->program=gui_program_new("carousel",carousel_vsrc,sizeof(carousel_vsrc)-1,carousel_fsrc,sizeof(carousel_fsrc)-1))) return -1;
   WIDGET->loc_dstposition=gui_program_get_uniform(WIDGET->program,"dstposition");
   WIDGET->loc_dstsize=gui_program_get_uniform(WIDGET->program,"dstsize");
+  WIDGET->loc_alpha=gui_program_get_uniform(WIDGET->program,"alpha");
   
   //XXX be less strict about this, and also don't require working directory!
   if (!(WIDGET->texture_noscreencap=gui_texture_new())) return -1;
@@ -133,6 +138,8 @@ static int _carousel_init(struct gui_widget *widget) {
   }
   
   WIDGET->animation_stable=1;
+  WIDGET->alpha=1.0f;
+  WIDGET->alpha_target=1.0f;
   
   return 0;
 }
@@ -205,8 +212,9 @@ static void _carousel_draw(struct gui_widget *widget,int x,int y) {
   glViewport(x,screenh-widget->h-y,widget->w,widget->h);
   gui_program_set_screensize(WIDGET->program,widget->w,widget->h);
   gui_program_set_sampler(WIDGET->program,0);
-  glUniform2f(WIDGET->loc_dstposition,x,y);
+  glUniform2f(WIDGET->loc_dstposition,0.0f,0.0f);
   glUniform2f(WIDGET->loc_dstsize,widget->w,widget->h);
+  glUniform1f(WIDGET->loc_alpha,WIDGET->alpha);
   glEnable(GL_BLEND);
   glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA,GL_DST_ALPHA);
   glEnableVertexAttribArray(0);
@@ -517,7 +525,7 @@ static int mn_carousel_replace_list(struct gui_widget *widget,const char *src,in
   if (WIDGET->entryc>0) {
     if (WIDGET->autoselect_direction<0) WIDGET->entryp=0;
     else if (WIDGET->autoselect_direction>0) WIDGET->entryp=WIDGET->entryc-1;
-    else if (WIDGET->entryp<0) WIDGET->entryp=WIDGET->entryc>>1;
+    else if (WIDGET->entryp<0) WIDGET->entryp=0;//WIDGET->entryp=WIDGET->entryc>>1; // start at the left. could do center, but why...
     dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
   }
   WIDGET->autoselect_direction=0;
@@ -566,6 +574,13 @@ static void _carousel_update(struct gui_widget *widget) {
         else WIDGET->animation_stable=0;
       }
     }
+  }
+  
+  const GLfloat alpha_speed=0.050f;
+  if (WIDGET->alpha>WIDGET->alpha_target) {
+    if ((WIDGET->alpha-=alpha_speed)<WIDGET->alpha_target) WIDGET->alpha=WIDGET->alpha_target;
+  } else if (WIDGET->alpha<WIDGET->alpha_target) {
+    if ((WIDGET->alpha+=alpha_speed)>WIDGET->alpha_target) WIDGET->alpha=WIDGET->alpha_target;
   }
 }
 
@@ -620,9 +635,10 @@ static void mn_carousel_activate(struct gui_widget *widget) {
  */
  
 static void _carousel_signal(struct gui_widget *widget,int sigid) {
-  fprintf(stderr,"%s %d\n",__func__,sigid);
   switch (sigid) {
     case GUI_SIGID_ACTIVATE: mn_carousel_activate(widget); break;
+    case GUI_SIGID_FOCUS: WIDGET->alpha_target=1.0f; break;
+    case GUI_SIGID_BLUR: WIDGET->alpha_target=0.100f; break;
   }
 }
 

@@ -44,6 +44,7 @@ PUT /api/launcher <= Launcher => Launcher (always new)
 PATCH /api/launcher <= Launcher => Launcher (must exist)
 DELETE /api/launcher?launcherid => nothing
 
+GET /api/listids => (string|number)[]
 GET /api/list/count => integer
 GET /api/list?index&count&detail => List[]
 GET /api/list?listid&detail => List
@@ -174,6 +175,11 @@ launcher {
   desc: string; commentary from user
 }
 ```
+
+## /api/listids
+
+Returns just the name (or ID if no name) of every list in the DB.
+Intended to work like the `/api/meta` calls, for autocomplete and such.
 
 ## /api/list
 

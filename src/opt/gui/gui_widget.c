@@ -15,6 +15,7 @@ void gui_widget_del(struct gui_widget *widget) {
     }
     free(widget->childv);
   }
+  gui_widget_del(widget->modal_anchor);
   free(widget);
 }
 

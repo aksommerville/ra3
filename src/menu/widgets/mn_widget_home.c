@@ -12,6 +12,7 @@
  
 struct mn_widget_home {
   struct gui_widget hdr;
+  int focusp; // index in childv: 0=menubar, 1=carousel, 2=gamedetails
 };
 
 #define WIDGET ((struct mn_widget_home*)widget)
@@ -32,6 +33,7 @@ static int _home_init(struct gui_widget *widget) {
   if (!gui_widget_spawn(widget,&mn_widget_type_carousel)) return -1;
   if (!gui_widget_spawn(widget,&mn_widget_type_gamedetails)) return -1;
   if (widget->childc!=3) return -1;
+  WIDGET->focusp=1; // Focus always begins on the carousel.
   
   return 0;
 }
@@ -90,13 +92,49 @@ static void _home_update(struct gui_widget *widget) {
   }
 }
 
+/* Send focus or blur events to the focussed child, if there is one.
+ */
+ 
+static void mn_home_blur_child(struct gui_widget *widget) {
+  if (WIDGET->focusp<0) return;
+  if (WIDGET->focusp>=widget->childc) return;
+  struct gui_widget *focus=widget->childv[WIDGET->focusp];
+  if (!focus->type->signal) return;
+  focus->type->signal(focus,GUI_SIGID_BLUR);
+}
+ 
+static void mn_home_focus_child(struct gui_widget *widget) {
+  if (WIDGET->focusp<0) return;
+  if (WIDGET->focusp>=widget->childc) return;
+  struct gui_widget *focus=widget->childv[WIDGET->focusp];
+  if (!focus->type->signal) return;
+  focus->type->signal(focus,GUI_SIGID_FOCUS);
+}
+
 /* Motion.
  */
  
 static void _home_motion(struct gui_widget *widget,int dx,int dy) {
-  //TODO where is the focus? For now it is always the carousel.
-  if (widget->childc>=2) {
-    struct gui_widget *child=widget->childv[1];
+  if (dy<0) {
+    if (WIDGET->focusp>0) {
+      mn_home_blur_child(widget);
+      WIDGET->focusp--;
+      mn_home_focus_child(widget);
+      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+    } else {
+      mn_cb_sound_effect(GUI_SFXID_REJECT,0);
+    }
+  } else if (dy>0) {
+    if (WIDGET->focusp<widget->childc-1) {
+      mn_home_blur_child(widget);
+      WIDGET->focusp++;
+      mn_home_focus_child(widget);
+      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+    } else {
+      mn_cb_sound_effect(GUI_SFXID_REJECT,0);
+    }
+  } else if ((WIDGET->focusp>=0)&&(WIDGET->focusp<widget->childc)) {
+    struct gui_widget *child=widget->childv[WIDGET->focusp];
     if (child->type->motion) child->type->motion(child,dx,dy);
   }
 }
@@ -105,9 +143,12 @@ static void _home_motion(struct gui_widget *widget,int dx,int dy) {
  */
  
 static void _home_signal(struct gui_widget *widget,int sigid) {
-  //TODO where is the focus? For now it is always the carousel.
-  if (widget->childc>=2) {
-    struct gui_widget *child=widget->childv[1];
+  if (sigid==GUI_SIGID_BLUR) {
+    mn_home_blur_child(widget);
+  } else if (sigid==GUI_SIGID_FOCUS) {
+    mn_home_focus_child(widget);
+  } else if ((WIDGET->focusp>=0)&&(WIDGET->focusp<widget->childc)) {
+    struct gui_widget *child=widget->childv[WIDGET->focusp];
     if (child->type->signal) child->type->signal(child,sigid);
   }
 }

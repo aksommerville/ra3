@@ -28,7 +28,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [x] Press B. Don't allow focus of the details widget.
 - - [ ] Random launch (Press R). Will need "dry-run" from the backend so we can capture the gameid and page index.
 - - [x] Show total results count at left bookend. Must add to /api/query headers.
-- - [ ] gui_widget_keyboard: Wrap at edges
+- - [x] gui_widget_keyboard: Wrap at edges
 - - [x] Clear details when results go empty, I've seen them linger.
 - - [ ] Admin menu.
 - - [ ] Auto-upgrade.

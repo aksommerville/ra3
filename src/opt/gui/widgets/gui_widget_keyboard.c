@@ -283,8 +283,8 @@ static struct gui_keyboard_button *keyboard_find_neighbor(
   int condx,int condy, // normal vector: (1,0) means look for the highest X value
   int param // limit for that condition
 ) {
-  int bestscore=0;
-  struct gui_keyboard_button *best=0;
+  int bestscore=0,bestoobscore=0;
+  struct gui_keyboard_button *best=0,*bestoob=0;
   struct gui_keyboard_button *q=WIDGET->buttonv;
   int i=WIDGET->buttonc;
   for (;i-->0;q++) {
@@ -295,26 +295,31 @@ static struct gui_keyboard_button *keyboard_find_neighbor(
     if (q->x+q->w<=boundx) continue;
     if (q->y+q->h<=boundy) continue;
     
-    int score=0;
+    int score=0,oob=0;
     if (condx>0) {
-      if (q->x>=param) continue;
+      if (q->x>=param) oob=1;
       score=q->x+1;
     } else if (condx<0) {
-      if (q->x<=param) continue;
+      if (q->x<=param) oob=1;
       score=WIDGET->bw-q->x+1;
     } else if (condy>0) {
-      if (q->y>=param) continue;
+      if (q->y>=param) oob=1;
       score=q->y+1;
     } else if (condy<0) {
-      if (q->y<=param) continue;
+      if (q->y<=param) oob=1;
       score=WIDGET->bh-q->y+1;
     }
-    if (score<=bestscore) continue;
-    
-    best=q;
-    bestscore=score;
+    if (oob) {
+      if (score<=bestoobscore) continue;
+      bestoob=q;
+      bestoobscore=score;
+    } else {
+      if (score<=bestscore) continue;
+      best=q;
+      bestscore=score;
+    }
   }
-  return best;
+  return best?best:bestoob;
 }
 
 /* Motion.

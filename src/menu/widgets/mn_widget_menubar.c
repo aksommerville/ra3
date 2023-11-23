@@ -29,6 +29,73 @@ struct mn_widget_menubar {
 static void _menubar_del(struct gui_widget *widget) {
 }
 
+/* Convert between a loose flags list and the index in our "players" menu.
+ * Index: [any,1,2,>=3]
+ * Flags: player1 player2 player3 player4 playermore
+ */
+ 
+static int menubar_players_index_from_flags(const char *src,int srcc) {
+  int player1=0,player2=0,player3=0,player4=0,playermore=0;
+  int srcp=0;
+  while (srcp<srcc) {
+    if ((unsigned char)src[srcp]<=0x20) { srcp++; continue; }
+    const char *token=src+srcp;
+    int tokenc=0;
+    while ((srcp<srcc)&&((unsigned char)src[srcp++]>0x20)) tokenc++;
+    #define CHK(tag) if ((tokenc==sizeof(#tag)-1)&&!memcmp(token,#tag,tokenc)) tag=1;
+         CHK(player1)
+    else CHK(player2)
+    else CHK(player3)
+    else CHK(player4)
+    else CHK(playermore)
+    #undef CHK
+  }
+  if (playermore) return 3;
+  if (player4) return 3;
+  if (player3) return 3;
+  if (player2) return 2;
+  if (player1) return 1;
+  return 0;
+}
+
+static int menubar_rewrite_flags_with_player_index(char *dst,int dsta,const char *src,int srcc,int optionp) {
+  int dstc=0,srcp=0;
+  while (srcp<srcc) {
+    if ((unsigned char)src[srcp]<=0x20) { srcp++; continue; }
+    const char *token=src+srcp;
+    int tokenc=0;
+    while ((srcp<srcc)&&((unsigned char)src[srcp++]>0x20)) tokenc++;
+    
+    // Strip everything at least 7 characters long starting with "player".
+    if ((tokenc>=7)&&!memcmp(token,"player",6)) {
+    } else {
+      if (dstc) {
+        if (dstc<dsta) dst[dstc]=' ';
+        dstc++;
+      }
+      if (dstc<=dsta-tokenc) memcpy(dst+dstc,token,tokenc);
+      dstc+=tokenc;
+    }
+  }
+  const char *add=0;
+  switch (optionp) {
+    case 1: add="player1"; break;
+    case 2: add="player2"; break;
+    case 3: add="player3"; break; // we'd also be interested in player4 and playermore, but these are AND
+  }
+  if (add) {
+    int addc=0; while (add[addc]) addc++;
+    if (dstc) {
+      if (dstc<dsta) dst[dstc]=' ';
+      dstc++;
+    }
+    if (dstc<=dsta-addc) memcpy(dst+dstc,add,addc);
+    dstc+=addc;
+  }
+  if (dstc<dsta) dst[dstc]=0;
+  return dstc;
+}
+
 /* Replace button's label.
  */
  
@@ -73,7 +140,7 @@ static int menubar_set_label_ints(struct gui_widget *widget,int p,int lo,int hi)
 /* Populate a pickone with strings from a JSON array, as the metadata calls return them.
  */
  
-static int menubar_populate_pickone_from_json(struct gui_widget *pickone,const char *src,int srcc) {
+static int menubar_populate_pickone_from_json(struct gui_widget *pickone,const char *src,int srcc,const char *select,int selectc) {
   struct sr_decoder decoder={.v=src,.c=srcc};
   if (sr_decode_json_array_start(&decoder)<0) return -1;
   while (sr_decode_json_next(0,&decoder)>0) {
@@ -86,6 +153,9 @@ static int menubar_populate_pickone_from_json(struct gui_widget *pickone,const c
     } else {
       struct gui_widget *button=gui_widget_pickone_add_option(pickone,v,c);
       if (!button) return -1;
+      if ((c==selectc)&&!memcmp(v,select,c)) {
+        gui_widget_pickone_focus(pickone,button);
+      }
     }
   }
   return 0;
@@ -125,9 +195,46 @@ static void menubar_cb_choose_list(struct gui_widget *pickone,int p,void *userda
   gui_dirty_pack(mn.gui);
 }
 
+static void menubar_cb_choose_rating(struct gui_widget *rating,int v,void *userdata) {
+  struct gui_widget *widget=userdata;
+  if (v!=mn.dbs.ratinglo) {
+    dbs_search_set_rating(&mn.dbs,v,0);
+    dbs_refresh_search(&mn.dbs);
+  }
+  if (v) menubar_set_label_ints(widget,1,mn.dbs.ratinglo,mn.dbs.ratinghi);
+  else menubar_set_label(widget,1,"rating",6,COLOR_NONE);
+  gui_dismiss_modal(mn.gui,rating);
+  gui_dirty_pack(mn.gui);
+}
+
 static void menubar_cb_choose_playerc(struct gui_widget *pickone,int p,void *userdata) {
   struct gui_widget *widget=userdata;
-  fprintf(stderr,"%s %d\n",__func__,p);
+  char tmp[256];
+  int tmpc=menubar_rewrite_flags_with_player_index(tmp,sizeof(tmp),mn.dbs.flags,mn.dbs.flagsc,p);
+  if ((tmpc>=0)&&(tmpc<=sizeof(tmp))) {
+    if (dbs_search_set_flags(&mn.dbs,tmp,tmpc)<0) return;
+    dbs_refresh_search(&mn.dbs);
+    switch (p) {
+      case 0: menubar_set_label(widget,2,"players",7,COLOR_NONE); break;
+      case 1: menubar_set_label(widget,2,"1 Player",8,COLOR_ACTIVE); break;
+      case 2: menubar_set_label(widget,2,"2 Players",9,COLOR_ACTIVE); break;
+      case 3: menubar_set_label(widget,2,"3+ Players",10,COLOR_ACTIVE); break;
+    }
+    gui_dismiss_modal(mn.gui,pickone);
+    gui_dirty_pack(mn.gui);
+  }
+}
+
+static void menubar_cb_choose_date(struct gui_widget *daterange,void *userdata,int lo,int hi) {
+  struct gui_widget *widget=userdata;
+  if (hi>=9999) hi=0;
+  mn.dbs.pubtimelo=lo;
+  mn.dbs.pubtimehi=hi;
+  dbs_refresh_search(&mn.dbs);
+  if (lo||hi) menubar_set_label_ints(widget,3,lo,hi);
+  else menubar_set_label(widget,3,"date",4,COLOR_NONE);
+  gui_dismiss_modal(mn.gui,daterange);
+  gui_dirty_pack(mn.gui);
 }
 
 static void menubar_cb_choose_genre(struct gui_widget *pickone,int p,void *userdata) {
@@ -142,6 +249,16 @@ static void menubar_cb_choose_genre(struct gui_widget *pickone,int p,void *userd
   gui_dirty_pack(mn.gui);
 }
 
+static void menubar_cb_choose_text(struct gui_widget *entry,const char *v,int c,void *userdata) {
+  struct gui_widget *widget=userdata;
+  if (dbs_search_set_text(&mn.dbs,v,c)<0) return;
+  dbs_refresh_search(&mn.dbs);
+  if (c) menubar_set_label(widget,5,v,c,COLOR_ACTIVE);
+  else menubar_set_label(widget,5,"text",4,COLOR_NONE);
+  gui_dismiss_modal(mn.gui,entry);
+  gui_dirty_pack(mn.gui);
+}
+
 /* Button callbacks.
  * (userdata) is always the menubar widget.
  */
@@ -152,13 +269,17 @@ static void menubar_cb_list(struct gui_widget *button,void *userdata) {
   if (!modal) return;
   gui_modal_place_near(modal,button);
   gui_widget_pickone_set_callback(modal,menubar_cb_choose_list,widget);
-  gui_widget_pickone_add_option(modal,"All Games",-1);
-  menubar_populate_pickone_from_json(modal,mn.dbs.lists,mn.dbs.listsc);
+  struct gui_widget *option0=gui_widget_pickone_add_option(modal,"All Games",-1);
+  if (!mn.dbs.listc) gui_widget_pickone_focus(modal,option0);
+  menubar_populate_pickone_from_json(modal,mn.dbs.lists,mn.dbs.listsc,mn.dbs.list,mn.dbs.listc);
 }
  
 static void menubar_cb_rating(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
-  fprintf(stderr,"%s\n",__func__);//TODO modal with rating slider
+  struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_rating);
+  if (!modal) return;
+  gui_modal_place_near(modal,button);
+  mn_widget_rating_setup(modal,menubar_cb_choose_rating,widget,mn.dbs.ratinglo);
 }
  
 static void menubar_cb_players(struct gui_widget *button,void *userdata) {
@@ -171,11 +292,22 @@ static void menubar_cb_players(struct gui_widget *button,void *userdata) {
   gui_widget_pickone_add_option(modal,"1 Player",-1);
   gui_widget_pickone_add_option(modal,"2 Players",-1);
   gui_widget_pickone_add_option(modal,"3 or More",-1);
+  int optionp=menubar_players_index_from_flags(mn.dbs.flags,mn.dbs.flagsc);
+  if ((optionp>=0)&&(optionp<modal->childc)) gui_widget_pickone_focus(modal,modal->childv[optionp]);
 }
  
 static void menubar_cb_date(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
-  fprintf(stderr,"%s\n",__func__);//TODO modal with date slider
+  struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_daterange);
+  if (!modal) return;
+  gui_modal_place_near(modal,button);
+  int hivalue=mn.dbs.pubtimehi;
+  if (!hivalue) hivalue=9999;
+  mn_widget_daterange_setup(
+    modal,menubar_cb_choose_date,widget,
+    mn.dbs.pubtimelo,hivalue,
+    mn.dbs.daterange[0],mn.dbs.daterange[1]
+  );
 }
  
 static void menubar_cb_genre(struct gui_widget *button,void *userdata) {
@@ -184,13 +316,17 @@ static void menubar_cb_genre(struct gui_widget *button,void *userdata) {
   if (!modal) return;
   gui_modal_place_near(modal,button);
   gui_widget_pickone_set_callback(modal,menubar_cb_choose_genre,widget);
-  gui_widget_pickone_add_option(modal,"Any Genre",-1);
-  menubar_populate_pickone_from_json(modal,mn.dbs.genres,mn.dbs.genresc);
+  struct gui_widget *option0=gui_widget_pickone_add_option(modal,"Any Genre",-1);
+  if (!mn.dbs.genrec) gui_widget_pickone_focus(modal,option0);
+  menubar_populate_pickone_from_json(modal,mn.dbs.genres,mn.dbs.genresc,mn.dbs.genre,mn.dbs.genrec);
 }
 
 static void menubar_cb_text(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
-  fprintf(stderr,"%s\n",__func__);//TODO modal with on-screen keyboard
+  struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
+  if (!modal) return;
+  gui_modal_place_near(modal,button);
+  gui_widget_entry_setup(modal,mn.dbs.text,mn.dbs.textc,menubar_cb_choose_text,widget);
 }
  
 static void menubar_cb_settings(struct gui_widget *button,void *userdata) {
@@ -219,7 +355,11 @@ static int _menubar_init(struct gui_widget *widget) {
   
   if (mn.dbs.listc) menubar_set_label(widget,0,mn.dbs.list,mn.dbs.listc,COLOR_ACTIVE);
   if (mn.dbs.ratinglo||mn.dbs.ratinghi) menubar_set_label_ints(widget,1,mn.dbs.ratinglo,mn.dbs.ratinghi);
-  //TODO playerc as "any,1,2,3,4,more" from mn.dbs.flags
+  switch (menubar_players_index_from_flags(mn.dbs.flags,mn.dbs.flagsc)) {
+    case 1: menubar_set_label(widget,2,"1 Player",8,COLOR_ACTIVE); break;
+    case 2: menubar_set_label(widget,2,"2 Players",9,COLOR_ACTIVE); break;
+    case 3: menubar_set_label(widget,2,"3+ Players",10,COLOR_ACTIVE); break;
+  }
   if (mn.dbs.pubtimelo||mn.dbs.pubtimehi) menubar_set_label_ints(widget,3,mn.dbs.pubtimelo,mn.dbs.pubtimehi);
   if (mn.dbs.genrec) menubar_set_label(widget,4,mn.dbs.genre,mn.dbs.genrec,COLOR_ACTIVE);
   if (mn.dbs.textc) menubar_set_label(widget,5,mn.dbs.text,mn.dbs.textc,COLOR_ACTIVE);

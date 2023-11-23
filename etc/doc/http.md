@@ -13,6 +13,7 @@ GET /api/meta/flags => array of 32 strings (constant)
 GET /api/meta/platform?detail => [name...] (detail="id", default) or [{v,c}...] (detail="record")
 GET /api/meta/author?detail => [name...] (detail="id", default) or [{v,c}...] (detail="record")
 GET /api/meta/genre?detail => [name...] (detail="id", default) or [{v,c}...] (detail="record")
+GET /api/meta/daterange => [lo,hi] (year only, as numbers)
 
 GET /api/game/count => integer
 GET /api/game?index&count&detail => Game[]
@@ -91,6 +92,9 @@ Constant-ish metadata from the database.
 
 `platform`, `author`, and `genre` are generated dynamically on each request, based on values in the games table.
 Use `detail="id"` or omit for a simple array of strings, or `detail="record"` to get `{v,c}` the name and count of each.
+
+`daterange` returns the year of the lowest and highest pubtime in the database, array of two ints, not counting zeroes.
+If no game has a date, we return the current year twice.
 
 ## /api/game
 

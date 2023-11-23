@@ -1,5 +1,7 @@
 #include "../gui_internal.h"
 
+static void pickone_set_scroll_target(struct gui_widget *widget);
+
 /* Object definition.
  */
  
@@ -74,7 +76,7 @@ static void _pickone_pack(struct gui_widget *widget) {
   } else {
     if (WIDGET->scroll>WIDGET->scroll_limit) WIDGET->scroll=WIDGET->scroll_limit;
   }
-  WIDGET->scroll_target=WIDGET->scroll;
+  pickone_set_scroll_target(widget);
 }
 
 /* Draw.
@@ -226,4 +228,23 @@ struct gui_widget *gui_widget_pickone_add_option(struct gui_widget *widget,const
   struct gui_widget *button=gui_widget_button_spawn(widget,label,labelc,0xffffffff,pickone_cb_pick,widget);
   if (!button) return 0;
   return button;
+}
+
+void gui_widget_pickone_focus(struct gui_widget *widget,struct gui_widget *option) {
+  if (!widget||(widget->type!=&gui_widget_type_pickone)) return;
+  if (!option) {
+    pickone_blur(widget);
+    WIDGET->focusp=-1;
+    return;
+  }
+  int i=widget->childc;
+  while (i-->0) {
+    if (widget->childv[i]==option) {
+      pickone_blur(widget);
+      WIDGET->focusp=i;
+      pickone_focus(widget);
+      pickone_set_scroll_target(widget);
+      return;
+    }
+  }
 }

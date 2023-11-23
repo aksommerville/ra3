@@ -22,10 +22,26 @@ void dbs_cleanup(struct db_service *dbs) {
   if (dbs->platforms) free(dbs->platforms);
 }
 
+/* After loading initial state if available, fill in anything missing.
+ */
+ 
+static int dbs_state_default(struct db_service *dbs) {
+
+  // (sort) should be "name". I might not provide UI to change it.
+  if (!dbs->sortc) {
+    if (dbs_search_set_sort(dbs,"name",4)<0) return -1;
+  }
+
+  return 0;
+}
+
 /* Init.
  */
  
 int dbs_init(struct db_service *dbs) {
+
+  dbs->daterange[0]=0;
+  dbs->daterange[1]=9999;
 
   char *dir=0;
   int dirc=eh_get_scratch_directory(&dir);
@@ -41,7 +57,7 @@ int dbs_init(struct db_service *dbs) {
     free(dir);
   }
   
-  fprintf(stderr,"%s: gameid=%d\n",__func__,dbs->gameid);
+  if (dbs_state_default(dbs)<0) return -1;
 
   return 0;
 }
@@ -206,6 +222,19 @@ static int dbs_receive_game_list_headers(struct db_service *dbs,const char *src,
   return 0;
 }
 
+/* Receive daterange response.
+ */
+ 
+static int dbs_set_daterange_json(struct db_service *dbs,const char *src,int srcc) {
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  if (sr_decode_json_array_start(&decoder)<0) return -1;
+  if (sr_decode_json_next(0,&decoder)<1) return -1;
+  if (sr_decode_json_int(dbs->daterange+0,&decoder)<0) return -1;
+  if (sr_decode_json_next(0,&decoder)<1) return -1;
+  if (sr_decode_json_int(dbs->daterange+1,&decoder)<0) return -1;
+  return 0;
+}
+
 /* HTTP response.
  */
  
@@ -215,12 +244,14 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
   if (response.status!=200) return;
   
   if (response.x_correlation_id) {
+  
     if (response.x_correlation_id==dbs->search_correlation_id) {
       dbs->search_correlation_id=0;
       dbs_set_game_list_json(dbs,response.body,response.bodyc);
       dbs_receive_game_list_headers(dbs,response.headers,response.headersc);
       return;
     }
+  
     #define TEXTRSP(tag) { \
       if (response.x_correlation_id==dbs->tag##_correlation_id) { \
         dbs->tag##_correlation_id=0; \
@@ -241,6 +272,12 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
     TEXTRSP(authors)
     TEXTRSP(platforms)
     #undef TEXTRSP
+    
+    if (response.x_correlation_id==dbs->daterange_correlation_id) {
+      dbs->daterange_correlation_id=0;
+      dbs_set_daterange_json(dbs,response.body,response.bodyc);
+      return;
+    }
   }
   
   fprintf(stderr,"%s: Unexpected HTTP response:\n%.*s\n",__func__,srcc,src);
@@ -415,6 +452,7 @@ void dbs_refresh_all_metadata(struct db_service *dbs) {
   dbs_refresh_genres(dbs);
   dbs_refresh_authors(dbs);
   dbs_refresh_platforms(dbs);
+  dbs_refresh_daterange(dbs);
 }
 
 static int dbs_encode_metadata_request(struct sr_encoder *dst,struct db_service *dbs,const char *path,int corrid) {
@@ -467,6 +505,11 @@ void dbs_refresh_authors(struct db_service *dbs) {
 
 void dbs_refresh_platforms(struct db_service *dbs) {
   dbs_refresh_metadata_1(dbs,"/api/meta/platform",&dbs->platforms_correlation_id);
+}
+
+void dbs_refresh_daterange(struct db_service *dbs) {
+  // Doesn't matter that the response format is unlike other /meta/ calls.
+  dbs_refresh_metadata_1(dbs,"/api/meta/daterange",&dbs->daterange_correlation_id);
 }
 
 /* Set search criteria.

@@ -38,6 +38,7 @@ struct db_service {
   int genres_correlation_id;
   int authors_correlation_id;
   int platforms_correlation_id;
+  int daterange_correlation_id;
   char *state_path;
   
   // Managed calls, other than search.
@@ -45,6 +46,7 @@ struct db_service {
   char *genres; int genresc;
   char *authors; int authorsc;
   char *platforms; int platformsc;
+  int daterange[2];
 };
 
 void dbs_cleanup(struct db_service *dbs);
@@ -62,6 +64,7 @@ void dbs_refresh_lists(struct db_service *dbs);
 void dbs_refresh_genres(struct db_service *dbs);
 void dbs_refresh_authors(struct db_service *dbs);
 void dbs_refresh_platforms(struct db_service *dbs);
+void dbs_refresh_daterange(struct db_service *dbs);
 
 /* Don't set (dbs->gameid) directly, call this instead.
  * I might attach some logic to the changes.

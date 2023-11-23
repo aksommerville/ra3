@@ -217,6 +217,25 @@ static int ra_http_get_genre(struct http_xfer *req,struct http_xfer *rsp) {
   struct db_histogram hist={0};
   return ra_http_finish_histogram(req,rsp,&hist,db_histogram_genre(&hist,ra.db));
 }
+
+/* GET /api/meta/daterange
+ */
+ 
+static int ra_http_get_daterange(struct http_xfer *req,struct http_xfer *rsp) {
+  int lo=9999,hi=0;
+  const struct db_game *game=db_game_get_by_index(ra.db,0);
+  int i=db_game_count(ra.db);
+  for (;i-->0;game++) {
+    int year=DB_YEAR_FROM_TIME(game->pubtime);
+    if (year<1) continue;
+    if (year<lo) lo=year;
+    if (year>hi) hi=year;
+  }
+  if (lo>hi) { // If there's no dated games, use current year for both.
+    lo=hi=DB_YEAR_FROM_TIME(db_time_now());
+  }
+  return sr_encode_fmt(http_xfer_get_body_encoder(rsp),"[%d,%d]",lo,hi);
+}
   
 /* GET /api/game/count
  */
@@ -1070,6 +1089,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(GET,"/api/meta/platform",ra_http_get_platform)
   _(GET,"/api/meta/author",ra_http_get_author)
   _(GET,"/api/meta/genre",ra_http_get_genre)
+  _(GET,"/api/meta/daterange",ra_http_get_daterange)
   
   _(GET,"/api/game/count",ra_http_count_game)
   _(GET,"/api/game",ra_http_get_game)

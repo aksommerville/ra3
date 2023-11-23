@@ -34,10 +34,10 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Edit details for focussed game.
 - - [x] Scroll to next page.
 - - [x] Persist search.
-- - [ ] Search options: List (mainly), rating, flags, text...
-- - - [ ] rating, date
-- - - [ ] text
-- - - [ ] Popup menus: Highlight current selection when opening
+- - [x] Search options: List (mainly), rating, flags, text...
+- - - [x] rating, date
+- - - [x] text
+- - - [x] Popup menus: Highlight current selection when opening
 - - [ ] Admin menu.
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.

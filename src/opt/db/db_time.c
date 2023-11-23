@@ -51,7 +51,6 @@ uint32_t db_time_eval_upper(const char *src,int srcc) {
   if (srcc&&(src[srcc-1]>='0')&&(src[srcc-1]<='9')&&(vp<5)) vp++;
   int defs[5]={4095,15,31,31,63};
   memcpy(defs,vv,sizeof(int)*vp);
-  fprintf(stderr,"%s: '%.*s' => {%d,%d,%d,%d,%d}\n",__func__,srcc,src,defs[0],defs[1],defs[2],defs[3],defs[4]);
   return db_time_pack(defs[0],defs[1],defs[2],defs[3],defs[4]);
 }
 

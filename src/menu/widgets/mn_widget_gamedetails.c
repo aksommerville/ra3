@@ -16,6 +16,7 @@ struct mn_widget_gamedetails {
   struct gui_widget hdr;
   int gameid;
   int retry_fetch; // if >0, the last details fetch failed and we should try again after waiting so many frames.
+  int gamelistseq;
   struct gui_texture *tex_name;
   struct mn_gamedetails_bit {
     struct gui_texture *texture;
@@ -531,8 +532,8 @@ static void _gamedetails_update(struct gui_widget *widget) {
     if (!--(WIDGET->retry_fetch)) {
       WIDGET->gameid=0;
     }
-  } else if (WIDGET->gameid!=mn.dbs.gameid) {
-    //fprintf(stderr,"%s:%d: TODO: Display details for gameid %d\n",__FILE__,__LINE__,mn.dbs.gameid);
+  } else if ((WIDGET->gameid!=mn.dbs.gameid)||(WIDGET->gamelistseq!=mn.dbs.gamelistseq)) {
+    WIDGET->gamelistseq=mn.dbs.gamelistseq;
     WIDGET->gameid=mn.dbs.gameid;
     gamedetails_clear(widget);
     struct sr_decoder decoder={0};

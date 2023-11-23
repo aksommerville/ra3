@@ -1,6 +1,8 @@
 #include "gui_internal.h"
 #include "opt/fs/fs.h"
 
+static void gui_choose_default_font(struct gui *gui);
+
 /* Global cleanup.
  */
  
@@ -84,6 +86,12 @@ struct gui_font *gui_font_get(struct gui *gui,const char *name,int namec) {
     return *p;
   }
   return 0;
+}
+
+struct gui_font *gui_font_get_default(struct gui *gui) {
+  if (gui->fontc<1) return 0;
+  if (!gui->font) gui_choose_default_font(gui);
+  return gui->font;
 }
 
 /* Create new font and add to repository.

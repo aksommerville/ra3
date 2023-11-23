@@ -15,10 +15,6 @@ Old emulators are of course still compatible generically, as long we don't serve
 ## TODO
 
 - [ ] Emuhost
-- - [x] Input manager
-- - - [x] Default config for keyboards (when no config file present). See eh_inmgr_config.c
-- - [x] Deliver screencaps.
-- - - [x] Screencaps from OpenGL context. Need a native OpenGL client to test this.
 - - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
 - [ ] Backend
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
@@ -28,16 +24,12 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
-- - [x] Hi-res text is painful... bring in freetype
-- - - ...freetype is fucking ridiculous. Do it with bitmaps.
-- - [x] Launch games.
 - - [ ] Edit details for focussed game.
-- - [x] Scroll to next page.
-- - [x] Persist search.
-- - [x] Search options: List (mainly), rating, flags, text...
-- - - [x] rating, date
-- - - [x] text
-- - - [x] Popup menus: Highlight current selection when opening
+- - - [x] Press B. Don't allow focus of the details widget.
+- - [ ] Random launch (Press R). Will need "dry-run" from the backend so we can capture the gameid and page index.
+- - [ ] Show total results count at left bookend. Must add to /api/query headers.
+- - [ ] gui_widget_keyboard: Wrap at edges
+- - [x] Clear details when results go empty, I've seen them linger.
 - - [ ] Admin menu.
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
@@ -53,10 +45,10 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Solarus, try again.
 - - [ ] Validate 4 player in all emulators
 - [ ] Prepare collection
-- - [x] Drop records for everything on platforms we're not supporting yet, no sense keeping these in the mix.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".
+- [ ] Would it be crazy to bake the menu into the backend app? It's not urgent but think this over some time.

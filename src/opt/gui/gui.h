@@ -168,8 +168,9 @@ extern const struct gui_widget_type gui_widget_type_text; // multi-line text
 
 extern const struct gui_widget_type gui_widget_type_button; // text label you can select and actuate
 extern const struct gui_widget_type gui_widget_type_pickone; // modal controller for single-select list (dropdown menu)
-extern const struct gui_widget_type gui_widget_type_entry; // single-line text suitable for a modal, pops up its own keyboard
+extern const struct gui_widget_type gui_widget_type_entry; // single-line text suitable for a modal, contains its own keyboard
 extern const struct gui_widget_type gui_widget_type_keyboard; // joystick-accessible keyboard
+extern const struct gui_widget_type gui_widget_type_form; // plain key=value form
 
 void gui_root_place_modal_near(struct gui_widget *widget,struct gui_widget *modal,struct gui_widget *anchor);
 
@@ -181,6 +182,9 @@ struct gui_widget *gui_widget_button_spawn(
   void *userdata
 );
 int gui_widget_button_set_label(struct gui_widget *widget,const char *src,int srcc,int rgb);
+void gui_widget_button_enable(struct gui_widget *widget,int enable);
+int gui_widget_button_get_enable(const struct gui_widget *widget);
+int gui_widget_button_get_text(void *dstpp,const struct gui_widget *widget);
 
 void gui_widget_pickone_set_callback(struct gui_widget *widget,void (*cb)(struct gui_widget *pickone,int p,void *userdata),void *userdata);
 struct gui_widget *gui_widget_pickone_add_option(struct gui_widget *widget,const char *label,int labelc);
@@ -195,6 +199,18 @@ int gui_widget_entry_setup(
 
 void gui_widget_keyboard_set_callback(struct gui_widget *widget,void (*cb)(struct gui_widget *keyboard,int codepoint,void *userdata),void *userdata);
 
+struct gui_widget *gui_widget_form_add_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
+struct gui_widget *gui_widget_form_add_int(struct gui_widget *widget,const char *k,int kc,int v);
+struct gui_widget *gui_widget_form_add_readonly_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
+struct gui_widget *gui_widget_form_add_readonly_int(struct gui_widget *widget,const char *k,int kc,int v);
+struct gui_widget *gui_widget_form_add_string_json(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
+struct gui_widget *gui_widget_form_add_readonly_string_json(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
+void gui_widget_form_set_callback( // For fields with no explicit handler.
+  struct gui_widget *widget,
+  void (*cb)(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,void *userdata),
+  void *userdata
+);
+
 /* Text support.
  ********************************************************/
  
@@ -208,6 +224,8 @@ struct gui_font *gui_font_get(struct gui *gui,const char *name,int namec);
 
 // Clients should not use this; it happens automatically at init.
 struct gui_font *gui_font_add(struct gui *gui,const char *name,int namec);
+
+struct gui_font *gui_font_get_default(struct gui *gui);
 
 /* Rendering primitives.
  ***********************************************************/

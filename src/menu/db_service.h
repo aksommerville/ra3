@@ -75,6 +75,32 @@ void dbs_select_game(struct db_service *dbs,int gameid);
  */
 int dbs_get_game_from_list(struct sr_decoder *dst,const struct db_service *dbs,int gameid);
 
+/* Convenience above dbs_get_game_from_list, to split out the most common fields.
+ * Strings are encoded JSON tokens; use sr_string_eval().
+ * Same for objects and arrays.
+ */
+struct dbs_game {
+  int gameid;
+  const char *name; int namec;
+  const char *platform; int platformc;
+  const char *author; int authorc;
+  const char *genre; int genrec;
+  const char *flags; int flagsc;
+  int rating;
+  int pubtime; // year only
+  const char *path; int pathc;
+  const char *comments; int commentsc; // {time,k,v}[]
+  const char *lists; int listsc; // {?}[]
+  const char *blobs; int blobsc; // string[]
+};
+int dbs_game_get(struct dbs_game *game,const struct db_service *dbs,int gameid);
+int dbs_game_decode(struct dbs_game *game,const char *src,int srcc);
+
+/* Sends PATCH /api/game, then refreshes the search.
+ */
+int dbs_replace_game_field_string(struct db_service *dbs,int gameid,const char *k,int kc,const char *v,int vc);
+int dbs_replace_game_field_int(struct db_service *dbs,int gameid,const char *k,int kc,int v);
+
 /* On a success, we may assume that the backend is going to terminate us.
  */
 int dbs_launch(struct db_service *dbs,int gameid);

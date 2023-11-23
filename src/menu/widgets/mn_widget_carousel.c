@@ -631,12 +631,25 @@ static void mn_carousel_activate(struct gui_widget *widget) {
   }
 }
 
+/* Cancel (B): Open details modal for selected game.
+ */
+ 
+static void mn_carousel_edit(struct gui_widget *widget) {
+  if (WIDGET->entryp<0) return;
+  if (WIDGET->entryp>=WIDGET->entryc) return;
+  int gameid=WIDGET->entryv[WIDGET->entryp].gameid;
+  struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_edit);
+  if (!modal) return;
+  mn_widget_edit_setup(modal,gameid);
+}
+
 /* Signal.
  */
  
 static void _carousel_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
     case GUI_SIGID_ACTIVATE: mn_carousel_activate(widget); break;
+    case GUI_SIGID_CANCEL: mn_carousel_edit(widget); break;
     case GUI_SIGID_FOCUS: WIDGET->alpha_target=1.0f; break;
     case GUI_SIGID_BLUR: WIDGET->alpha_target=0.100f; break;
   }

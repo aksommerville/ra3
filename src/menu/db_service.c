@@ -241,7 +241,10 @@ static int dbs_set_daterange_json(struct db_service *dbs,const char *src,int src
 void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
   struct eh_http_response response={0};
   if (eh_http_response_split(&response,src,srcc)<0) return;
-  if (response.status!=200) return;
+  if (response.status!=200) {
+    fprintf(stderr,"%s:ERROR: %.*s\n",__func__,srcc,src);
+    return;
+  }
   
   if (response.x_correlation_id) {
   
@@ -280,7 +283,8 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
     }
   }
   
-  fprintf(stderr,"%s: Unexpected HTTP response:\n%.*s\n",__func__,srcc,src);
+  // Now that we're patching in addition to getting, there will be loose uninteresting responses. No worries.
+  //fprintf(stderr,"%s: Unexpected HTTP response:\n%.*s\n",__func__,srcc,src);
 }
 
 /* Encode search request as an HTTP-over-fake-WebSocket packet.
@@ -432,6 +436,127 @@ int dbs_get_game_from_list(struct sr_decoder *dst,const struct db_service *dbs,i
     if (sr_decode_json_end(&decoder,jsonctx)<0) return -1;
   }
   return -1;
+}
+
+/* Decode game.
+ */
+ 
+int dbs_game_get(struct dbs_game *game,const struct db_service *dbs,int gameid) {
+  struct sr_decoder decoder={0};
+  if (dbs_get_game_from_list(&decoder,dbs,gameid)<0) return -1;
+  return dbs_game_decode(game,decoder.v+decoder.p,decoder.c);
+}
+
+int dbs_game_decode(struct dbs_game *game,const char *src,int srcc) {
+  if (!src) srcc=0; else if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  memset(game,0,sizeof(struct dbs_game));
+  if (!srcc) return 0; // edge case, i'm calling empty valid because "{}" would be too.
+  struct sr_decoder decoder={.v=src,.c=srcc,.jsonctx='{'};
+  const char *k;
+  int kc;
+  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+  
+    if ((kc==6)&&!memcmp(k,"gameid",6)) {
+      if (sr_decode_json_int(&game->gameid,&decoder)<0) return -1;
+      continue;
+    }
+    
+    if ((kc==6)&&!memcmp(k,"rating",6)) {
+      if (sr_decode_json_int(&game->rating,&decoder)<0) return -1;
+      continue;
+    }
+    
+    if ((kc==7)&&!memcmp(k,"pubtime",7)) {
+      // Be careful here. pubtime is usually just the year, but could be a full ISO 8601 date, in which case we only want the first four digits.
+      char tmp[32];
+      int tmpc=sr_decode_json_string(tmp,sizeof(tmp),&decoder);
+      if ((tmpc<0)||(tmpc>sizeof(tmp))) return -1;
+      if (tmpc>4) tmpc=4;
+      else if (!tmpc) { tmp[0]='0'; tmpc=1; }
+      sr_int_eval(&game->pubtime,tmp,tmpc);
+      continue;
+    }
+    
+    // Everything else is a straight JSON token.
+    #define _(tag) if ((kc==sizeof(#tag)-1)&&!memcmp(k,#tag,kc)) { \
+      if ((game->tag##c=sr_decode_json_expression(&game->tag,&decoder))<0) return -1; \
+      continue; \
+    }
+    _(name)
+    _(platform)
+    _(author)
+    _(genre)
+    _(flags)
+    _(path)
+    _(comments)
+    _(lists)
+    _(blobs)
+    #undef _
+    
+    if (sr_decode_json_skip(&decoder)<0) return -1;
+  }
+  return 0;
+}
+
+/* Patch game.
+ */
+ 
+static int dbs_encode_blank_patch(struct sr_encoder *dst,struct db_service *dbs,int gameid) {
+  struct fakews *fakews=eh_get_fakews();
+  if (!fakews) return -1;
+  if (!fakews_is_connected(fakews)) {
+    if (fakews_connect_now(fakews)<0) {
+      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
+      return -1;
+    }
+  }
+  if (sr_encode_json_object_start(dst,0,0)!=0) return -1;
+  if (sr_encode_json_string(dst,"id",2,"http",4)<0) return -1;
+  if (sr_encode_json_string(dst,"method",6,"PATCH",5)<0) return -1;
+  if (sr_encode_json_string(dst,"path",4,"/api/game?detail=id",19)<0) return -1;
+  if (sr_encode_json_object_start(dst,"body",4)!='{') return -1;
+  if (sr_encode_json_int(dst,"gameid",6,gameid)<0) return -1;
+  return 0;
+}
+
+static int dbs_finish_patch(struct sr_encoder *dst) {
+  if (sr_encode_json_object_end(dst,'{')<0) return -1;
+  if (sr_encode_json_object_end(dst,0)<0) return -1;
+  return 0;
+}
+ 
+int dbs_replace_game_field_string(struct db_service *dbs,int gameid,const char *k,int kc,const char *v,int vc) {
+  struct sr_encoder encoder={0};
+  if (
+    (dbs_encode_blank_patch(&encoder,dbs,gameid)<0)||
+    (sr_encode_json_string(&encoder,k,kc,v,vc)<0)||
+    (dbs_finish_patch(&encoder)<0)
+  ) {
+    sr_encoder_cleanup(&encoder);
+    return -1;
+  }
+  int err=fakews_send(eh_get_fakews(),1,encoder.v,encoder.c);
+  sr_encoder_cleanup(&encoder);
+  if (err<0) return err;
+  dbs_refresh_search(dbs);
+  return 0;
+}
+
+int dbs_replace_game_field_int(struct db_service *dbs,int gameid,const char *k,int kc,int v) {
+  struct sr_encoder encoder={0};
+  if (
+    (dbs_encode_blank_patch(&encoder,dbs,gameid)<0)||
+    (sr_encode_json_int(&encoder,k,kc,v)<0)||
+    (dbs_finish_patch(&encoder)<0)
+  ) {
+    sr_encoder_cleanup(&encoder);
+    return -1;
+  }
+  int err=fakews_send(eh_get_fakews(),1,encoder.v,encoder.c);
+  sr_encoder_cleanup(&encoder);
+  if (err<0) return err;
+  dbs_refresh_search(dbs);
+  return 0;
 }
 
 /* Launch game by id.

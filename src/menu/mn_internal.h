@@ -20,6 +20,7 @@ extern const struct gui_widget_type mn_widget_type_carousel;
 extern const struct gui_widget_type mn_widget_type_gamedetails;
 extern const struct gui_widget_type mn_widget_type_daterange;
 extern const struct gui_widget_type mn_widget_type_rating;
+extern const struct gui_widget_type mn_widget_type_edit;
 
 int mn_widget_daterange_setup(
   struct gui_widget *widget,
@@ -34,6 +35,11 @@ int mn_widget_rating_setup(
   void (*cb)(struct gui_widget *rating,int v,void *userdata),
   void *userdata,
   int v
+);
+
+int mn_widget_edit_setup(
+  struct gui_widget *widget,
+  int gameid
 );
 
 void mn_cb_sound_effect(int sfxid,void *userdata);

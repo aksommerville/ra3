@@ -618,9 +618,17 @@ static int ra_http_get_list(struct http_xfer *req,struct http_xfer *rsp) {
   }
   
   // Plain old get-one-resource.
+  // We also allow name as (listid).
   int id;
   if (http_xfer_get_query_int(&id,req,"listid",6)>=0) {
     const struct db_list *list=db_list_get_by_id(ra.db,id);
+    if (list) return db_list_encode(dst,ra.db,list,DB_FORMAT_json,detail);
+    // not found? try that number as a string...
+  }
+  char name[64];
+  int namec=http_xfer_get_query_string(name,sizeof(name),req,"listid",6);
+  if ((namec>0)&&(namec<=sizeof(name))) {
+    const struct db_list *list=db_list_get_by_string(ra.db,name,namec);
     if (!list) return http_xfer_set_status(rsp,404,"Not found");
     return db_list_encode(dst,ra.db,list,DB_FORMAT_json,detail);
   }
@@ -821,6 +829,12 @@ static int ra_http_query(struct http_xfer *req,struct http_xfer *rsp) {
     char text[16];
     int textc=sr_decsint_repr(text,sizeof(text),pagec);
     if ((textc>0)&&(textc<=sizeof(text))) http_xfer_set_header(rsp,"X-Page-Count",12,text,textc);
+  }
+  int totalc=db_query_get_total_count(query);
+  if (totalc) {
+    char text[16];
+    int textc=sr_decsint_repr(text,sizeof(text),totalc);
+    if ((textc>0)&&(textc<=sizeof(text))) http_xfer_set_header(rsp,"X-Total-Count",13,text,textc);
   }
   db_query_del(query);
   return 0;

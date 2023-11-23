@@ -36,6 +36,7 @@ void db_liststore_remove(struct db_liststore *store,int p) {
   memmove(store->v+p,store->v+p+1,sizeof(void*)*(store->c-p));
   db_list_del(list);
   store->dirty=1;
+  if (p<store->contigc) store->contigc=p;
 }
 
 /* Decode.

@@ -12,6 +12,9 @@ struct sr_decoder;
  */
 #define DB_SERVICE_SEARCH_LIMIT 40
 
+#define DB_SERVICE_INTERACTION_other 0
+#define DB_SERVICE_INTERACTION_list 1
+
 struct db_service {
 
   // Current search results.
@@ -19,6 +22,7 @@ struct db_service {
   int gamelistseq; // Increments each time the list changes, so clients can poll.
   int gameid;
   int page,pagec; // 1-based
+  int totalc;
   
   // Current query.
   char *list; int listc;
@@ -31,6 +35,10 @@ struct db_service {
   char *platform; int platformc;
   char *sort; int sortc;
   
+  // DB_SERVICE_INTERACTION_*; the last thing that was set with a structured query parameter call.
+  // Carousel uses this to know whether to propose deleting an empty list.
+  int last_search_interaction;
+  
   // Internal plumbing.
   int next_correlation_id;
   int search_correlation_id;
@@ -40,6 +48,12 @@ struct db_service {
   int platforms_correlation_id;
   int daterange_correlation_id;
   char *state_path;
+  struct dbs_listener {
+    int corrid;
+    void (*cb)(struct eh_http_response *rsp,void *userdata);
+    void *userdata;
+  } *listenerv;
+  int listenerc,listenera;
   
   // Managed calls, other than search.
   char *lists; int listsc;
@@ -104,6 +118,17 @@ int dbs_replace_game_field_int(struct db_service *dbs,int gameid,const char *k,i
 int dbs_create_list(struct db_service *dbs,const char *name,int namec);
 int dbs_add_to_list(struct db_service *dbs,int gameid,const char *listid,int listidc);
 int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *list,int listidc);
+
+/* Instead of adding bespoke plumbing for every API call, for things without request bodies, use this.
+ * Requesting returns 'corrid', which you can use to cancel it later.
+ */
+int dbs_request_http(
+  struct db_service *dbs,
+  const char *method,const char *path,
+  void (*cb)(struct eh_http_response *rsp,void *userdata),
+  void *userdata
+);
+void dbs_cancel_request(struct db_service *dbs,int corrid);
 
 /* On a success, we may assume that the backend is going to terminate us.
  */

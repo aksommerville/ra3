@@ -26,6 +26,8 @@ struct mn_widget_carousel {
   struct gui_texture *prev_page_texture;
   struct gui_texture *next_page_texture;
   struct png_image *indicators_image;
+  struct gui_texture *list_deletion_texture;
+  int list_deletion_listid;
   
   struct mn_carousel_entry {
     int gameid;
@@ -93,6 +95,7 @@ static void _carousel_del(struct gui_widget *widget) {
   gui_texture_del(WIDGET->texture_noscreencap);
   gui_texture_del(WIDGET->prev_page_texture);
   gui_texture_del(WIDGET->next_page_texture);
+  gui_texture_del(WIDGET->list_deletion_texture);
   png_image_del(WIDGET->indicators_image);
   if (WIDGET->entryv) {
     while (WIDGET->entryc-->0) mn_carousel_entry_cleanup(WIDGET->entryv+WIDGET->entryc);
@@ -204,7 +207,14 @@ static void mn_carousel_draw_entry(struct gui_widget *widget,struct mn_carousel_
  */
  
 static void _carousel_draw(struct gui_widget *widget,int x,int y) {
-  if (WIDGET->entryc<1) return;
+  if (WIDGET->entryc<1) {
+    if (WIDGET->list_deletion_texture) {
+      int tw,th;
+      gui_texture_get_size(&tw,&th,WIDGET->list_deletion_texture);
+      gui_draw_texture(widget->gui,x+(widget->w>>1)-(tw>>1),y+(widget->h>>1)-(th>>1),WIDGET->list_deletion_texture);
+    }
+    return;
+  }
 
   gui_program_use(WIDGET->program);
   int screenw,screenh;
@@ -225,18 +235,18 @@ static void _carousel_draw(struct gui_widget *widget,int x,int y) {
   int ii=0; for (;ii<WIDGET->entryc;ii++) {
     struct mn_carousel_entry *entry=WIDGET->entryv+ii;
     if (entry->scpath&&!entry->scap) {
-      if (!(entry->scap=gui_texture_new())) return;
+      if (!(entry->scap=gui_texture_new())) break;
       gui_texture_set_filter(entry->scap,1);
       void *serial=0;
       int serialc=file_read(&serial,entry->scpath);
-      if (serialc<0) return;
+      if (serialc<0) break;
       struct png_image *image=png_decode(serial,serialc);
       free(serial);
-      if (!image) return;
+      if (!image) break;
       struct png_image *alt=png_image_reformat(image,0,0,0,0,8,6,1);
       png_image_del(image);
       image=alt;
-      if (!image) return;
+      if (!image) break;
       gui_texture_upload_rgba(entry->scap,image->w,image->h,image->pixels);
       png_image_del(image);
     }
@@ -394,17 +404,23 @@ static void mn_carousel_indicators_blit(uint8_t *dst,int dstx,int dsty,struct gu
   }
 }
  
-static void mn_carousel_draw_indicator(struct gui_widget *widget,struct gui_texture *texture,int arrowindex,int pagec) {
+static void mn_carousel_draw_indicator(struct gui_widget *widget,struct gui_texture *texture,int arrowindex,int gamec) {
   // It needs to be square. And if we make it 4x4 tiles, we can fit any reasonable content. So 4x4 (64x64 pixels) always.
   uint8_t *tmp=calloc(64*64,4);
   if (!tmp) return;
   
-  if (pagec<1) {
+  int digitsy=0;
+  if (arrowindex<0) {
+    // For the left bookend at first page, show total count.
+    mn_carousel_indicators_blit(tmp,16,0,widget,128,0,32,32);
+  } else if (gamec<1) {
     mn_carousel_indicators_blit(tmp,16,8,widget,0,0,32,32);
     mn_carousel_indicators_blit(tmp,16,40,widget,96,0,32,16);
   } else {
-    int gamec=pagec*DB_SERVICE_SEARCH_LIMIT; // not necessarily the actual count of games (on the right edge, this will usually be too high). but a fair guess.
     mn_carousel_indicators_blit(tmp,16,0,widget,32+arrowindex*32,0,32,32);
+    mn_carousel_indicators_blit(tmp,16,48,widget,96,16,32,16);
+  }
+  if (gamec>0) {
     if (gamec>=10000) gamec=9999; // room for 4 digits only
     if (gamec>=1000) {
       mn_carousel_indicators_blit(tmp,0,32,widget,(gamec/1000)*16,32,16,16);
@@ -419,9 +435,8 @@ static void mn_carousel_draw_indicator(struct gui_widget *widget,struct gui_text
       mn_carousel_indicators_blit(tmp,16,32,widget,((gamec/10)%10)*16,32,16,16);
       mn_carousel_indicators_blit(tmp,32,32,widget,(gamec%10)*16,32,16,16);
     } else {
-      mn_carousel_indicators_blit(tmp,56,32,widget,(gamec%10)*16,32,16,16);
+      mn_carousel_indicators_blit(tmp,24,32,widget,(gamec%10)*16,32,16,16);
     }
-    mn_carousel_indicators_blit(tmp,16,48,widget,96,16,32,16);
   }
   
   gui_texture_upload_rgba(texture,64,64,tmp);
@@ -437,16 +452,73 @@ static int mn_carousel_refresh_page_indicators(struct gui_widget *widget) {
     WIDGET->prev_page_texture=gui_texture_new();
   }
   if (WIDGET->prev_page_texture) {
-    mn_carousel_draw_indicator(widget,WIDGET->prev_page_texture,0,mn.dbs.page-1);
+    if (mn.dbs.page>1) mn_carousel_draw_indicator(widget,WIDGET->prev_page_texture,0,(mn.dbs.page-1)*DB_SERVICE_SEARCH_LIMIT);
+    else mn_carousel_draw_indicator(widget,WIDGET->prev_page_texture,-1,mn.dbs.totalc);
   }
   
   if (!WIDGET->next_page_texture) {
     WIDGET->next_page_texture=gui_texture_new();
   }
   if (WIDGET->next_page_texture) {
-    mn_carousel_draw_indicator(widget,WIDGET->next_page_texture,1,mn.dbs.pagec-mn.dbs.page);
+    int pagec=mn.dbs.pagec-mn.dbs.page;
+    int rightc=0;
+    if (pagec) rightc=(pagec-1)*DB_SERVICE_SEARCH_LIMIT+mn.dbs.totalc%DB_SERVICE_SEARCH_LIMIT;
+    mn_carousel_draw_indicator(widget,WIDGET->next_page_texture,1,rightc);
   }
   return 0;
+}
+
+/* Having confirmed that a selected list is empty, now let's passively ask the user if she wants to delete it.
+ */
+ 
+static void carousel_propose_list_deletion(struct gui_widget *widget,int listid) {
+  char msg[256];
+  int msgc=snprintf(msg,sizeof(msg),"List %d is empty. If you'd like to delete it, press B.",listid);
+  if ((msgc<0)||(msgc>=sizeof(msg))) return;
+  struct gui_texture *tex=gui_texture_from_text(widget->gui,0,msg,msgc,0xffc0c0);
+  if (!tex) return;
+  gui_texture_del(WIDGET->list_deletion_texture);
+  WIDGET->list_deletion_texture=tex;
+  WIDGET->list_deletion_listid=listid;
+}
+
+/* Request a list from the backend.
+ * If it's empty, propose to delete it.
+ */
+ 
+static void mn_carousel_cb_list(struct eh_http_response *rsp,void *userdata) {
+  struct gui_widget *widget=userdata;
+  if (WIDGET->entryc) return; // got some other results since we started this, shouldn't happen but whatever, forget it
+  struct sr_decoder decoder={.v=rsp->body,.c=rsp->bodyc};
+  if (sr_decode_json_object_start(&decoder)<0) return;
+  const char *k;
+  int kc;
+  int id=0,empty=0;
+  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+    if ((kc==5)&&!memcmp(k,"games",5)) {
+      const char *v;
+      int vc=sr_decode_json_expression(&v,&decoder);
+      if ((vc==2)&&!memcmp(v,"[]",2)) {
+        empty=1;
+      }
+    } else if ((kc==6)&&!memcmp(k,"listid",6)) {
+      if (sr_decode_json_int(&id,&decoder)<0) return;
+    } else {
+      if (sr_decode_json_skip(&decoder)<0) return;
+    }
+  }
+  if (empty&&id) carousel_propose_list_deletion(widget,id);
+}
+ 
+static void carousel_check_for_empty_list(struct gui_widget *widget) {
+  char path[256];
+  memcpy(path,"/api/list?listid=",17);
+  int pathc=17;
+  int err=sr_url_encode(path+pathc,sizeof(path)-pathc,mn.dbs.list,mn.dbs.listc);
+  if ((err<0)||(pathc>=sizeof(path)-err)) return;
+  pathc+=err;
+  path[pathc]=0;
+  int corrid=dbs_request_http(&mn.dbs,"GET",path,mn_carousel_cb_list,widget);
 }
 
 /* Replace game list from JSON.
@@ -521,6 +593,15 @@ static int mn_carousel_replace_list(struct gui_widget *widget,const char *src,in
     if (mn_carousel_decode_game_to_list(widget,&decoder)<0) return -1;
   }
   if (sr_decode_json_end(&decoder,0)<0) return -1;
+  
+  gui_texture_del(WIDGET->list_deletion_texture);
+  WIDGET->list_deletion_texture=0;
+  WIDGET->list_deletion_listid=0;
+  if (!WIDGET->entryc&&!mn.dbs.totalc) {
+    if (mn.dbs.listc&&(mn.dbs.last_search_interaction==DB_SERVICE_INTERACTION_list)) {
+      carousel_check_for_empty_list(widget);
+    }
+  }
   
   if (WIDGET->entryc>0) {
     if (WIDGET->autoselect_direction<0) WIDGET->entryp=0;
@@ -635,6 +716,19 @@ static void mn_carousel_activate(struct gui_widget *widget) {
  */
  
 static void mn_carousel_edit(struct gui_widget *widget) {
+
+  if (!WIDGET->entryc&&WIDGET->list_deletion_texture&&WIDGET->list_deletion_listid) {
+    char path[256];
+    snprintf(path,sizeof(path),"/api/list?listid=%d",WIDGET->list_deletion_listid);
+    dbs_request_http(&mn.dbs,"DELETE",path,0,0);
+    gui_texture_del(WIDGET->list_deletion_texture);
+    WIDGET->list_deletion_texture=0;
+    WIDGET->list_deletion_listid=0;
+    dbs_refresh_lists(&mn.dbs);
+    dbs_search_set_list(&mn.dbs,"",0);
+    return;
+  }
+
   if (WIDGET->entryp<0) return;
   if (WIDGET->entryp>=WIDGET->entryc) return;
   int gameid=WIDGET->entryv[WIDGET->entryp].gameid;

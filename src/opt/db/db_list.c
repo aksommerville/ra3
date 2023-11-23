@@ -34,10 +34,12 @@ struct db_list *db_list_get_by_string(const struct db *db,const char *src,int sr
   if (!src) return 0;
   if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
   
-  // If it's an integer, assume it's the ID.
-  // Don't give your lists integers for names, that's asking for trouble anyway.
+  // If it's an integer, try as ID.
   int id;
-  if (sr_int_eval(&id,src,srcc)>=2) return db_list_get_by_id(db,id);
+  if (sr_int_eval(&id,src,srcc)>=2) {
+    struct db_list *list=db_list_get_by_id(db,id);
+    if (list) return list;
+  }
   
   // Exact name matches only. So if the string isn't already interned, we know there's no match.
   uint32_t stringid=db_string_lookup(db,src,srcc);

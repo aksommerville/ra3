@@ -22,6 +22,7 @@ struct db_query {
   int limit;
   int pagep; // 1-based
   int pagec;
+  int totalc;
 };
 
 /* Delete.
@@ -106,7 +107,10 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *_quer
   if ((kc==4)&&!memcmp(k,"list",4)) {
     if (!vc) return 0; // Empty arguments are fine, pretend we didn't see them.
     struct db_list *list=db_list_get_by_string(query->db,v,vc);
-    if (!list) { query->empty=1; return 1; }
+    if (!list) {
+      query->empty=1;
+      return 1;
+    }
     if (query->input) {
       struct db_list *combined=db_query_list_and(query->db,query->input,list);
       if (!combined) return -1;
@@ -232,6 +236,12 @@ static int db_query_needs_header_search(const struct db_query *query) {
  
 int db_query_finish(struct sr_encoder *dst,struct db_query *query) {
   // Not sure why anyone would, but if they call finish twice, regurgitate the same results.
+  if (!query->results&&query->empty) {
+    if (!(query->results=db_list_copy_nonresident(0))) return -1;
+    query->totalc=0;
+    query->pagec=1;
+    return dst?sr_encode_raw(dst,"[]",2):0;
+  }
   if (!query->results) {
   
     // Header search first if applicable; it's cheaper. List searches are performed implicitly already.
@@ -264,6 +274,7 @@ int db_query_finish(struct sr_encoder *dst,struct db_query *query) {
     if (db_list_sort_auto(query->db,query->results,query->sort,query->descend)<0) return -1;
     
     // Paginate.
+    query->totalc=query->results->gameidc;
     query->pagec=db_list_paginate(query->results,query->limit,query->pagep-1);
   }
   return dst?db_list_encode_array(dst,query->db,query->results,DB_FORMAT_json,query->detail):0;
@@ -274,6 +285,10 @@ int db_query_finish(struct sr_encoder *dst,struct db_query *query) {
 
 int db_query_get_page_count(const struct db_query *query) {
   return query->pagec;
+}
+
+int db_query_get_total_count(const struct db_query *query) {
+  return query->totalc;
 }
 
 struct db_list *db_query_get_results(const struct db_query *query) {

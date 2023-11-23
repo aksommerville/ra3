@@ -520,6 +520,7 @@ struct db_query *db_query_new(struct db *db);
 int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *query);
 int db_query_finish(struct sr_encoder *dst,struct db_query *query); // Null (dst) if you don't need it encoded.
 int db_query_get_page_count(const struct db_query *query); // => 0 if pagination not requested
+int db_query_get_total_count(const struct db_query *query);
 struct db_list *db_query_get_results(const struct db_query *query); // Finish first.
 
 /* Select among (gameidv), one game we can randomly recommend to the player.

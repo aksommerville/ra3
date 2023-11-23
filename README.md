@@ -27,7 +27,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] Edit details for focussed game.
 - - - [x] Press B. Don't allow focus of the details widget.
 - - [ ] Random launch (Press R). Will need "dry-run" from the backend so we can capture the gameid and page index.
-- - [ ] Show total results count at left bookend. Must add to /api/query headers.
+- - [x] Show total results count at left bookend. Must add to /api/query headers.
 - - [ ] gui_widget_keyboard: Wrap at edges
 - - [x] Clear details when results go empty, I've seen them linger.
 - - [ ] Admin menu.
@@ -37,7 +37,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] gui render helpers, must rewrite with GL 2
 - - [ ] Remove hard-coded data paths.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
-- - [ ] When they select an empty list, propose to delete it (there's no other way to do that)
+- - [x] When they select an empty list, propose to delete it (there's no other way to do that)
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.

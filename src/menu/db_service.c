@@ -200,7 +200,7 @@ static int dbs_set_game_list_json(struct db_service *dbs,const char *src,int src
 
 static int dbs_receive_game_list_headers(struct db_service *dbs,const char *src,int srcc) {
   if (!src) srcc=0; else if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
-  // Only thing we're interested in is "X-Page-Count". If we don't find it, default to 1.
+  dbs->totalc=0;
   dbs->pagec=1;
   struct sr_decoder decoder={.v=src,.c=srcc};
   if (sr_decode_json_object_start(&decoder)>=0) {
@@ -210,7 +210,9 @@ static int dbs_receive_game_list_headers(struct db_service *dbs,const char *src,
       if ((kc==12)&&!memcmp(k,"X-Page-Count",12)) {
         int v=0;
         if (sr_decode_json_int(&v,&decoder)>=0) dbs->pagec=v;
-        break;
+      } else if ((kc==13)&&!memcmp(k,"X-Total-Count",13)) {
+        int v=0;
+        if (sr_decode_json_int(&v,&decoder)>=0) dbs->totalc=v;
       } else {
         if (sr_decode_json_skip(&decoder)<0) break;
       }
@@ -279,6 +281,17 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
     if (response.x_correlation_id==dbs->daterange_correlation_id) {
       dbs->daterange_correlation_id=0;
       dbs_set_daterange_json(dbs,response.body,response.bodyc);
+      return;
+    }
+    
+    int i=dbs->listenerc;
+    while (i-->0) {
+      struct dbs_listener *listener=dbs->listenerv+i;
+      if (listener->corrid!=response.x_correlation_id) continue;
+      struct dbs_listener swap=*listener;
+      dbs->listenerc--;
+      memmove(listener,listener+1,sizeof(struct dbs_listener)*(dbs->listenerc-i));
+      if (swap.cb) swap.cb(&response,swap.userdata);
       return;
     }
   }
@@ -397,6 +410,7 @@ void dbs_refresh_search(struct db_service *dbs) {
     fprintf(stderr,"%s: Failed to send search request.\n",__func__);
   } else {
     //fprintf(stderr,"%s: Searching...\n",__func__);
+    dbs_state_write(dbs);
   }
 }
 
@@ -632,6 +646,73 @@ int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *listid,in
   return err;
 }
 
+/* General request with callback.
+ */
+ 
+int dbs_request_http(
+  struct db_service *dbs,
+  const char *method,const char *path,
+  void (*cb)(struct eh_http_response *rsp,void *userdata),
+  void *userdata
+) {
+  struct fakews *fakews=eh_get_fakews();
+  if (!fakews) return -1;
+  if (!fakews_is_connected(fakews)) {
+    if (fakews_connect_now(fakews)<0) {
+      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
+      return -1;
+    }
+  }
+  
+  if (dbs->listenerc>=dbs->listenera) {
+    int na=dbs->listenera+16;
+    if (na>INT_MAX/sizeof(struct dbs_listener)) return -1;
+    void *nv=realloc(dbs->listenerv,sizeof(struct dbs_listener)*na);
+    if (!nv) return -1;
+    dbs->listenerv=nv;
+    dbs->listenera=na;
+  }
+  struct dbs_listener *listener=dbs->listenerv+dbs->listenerc++;
+  memset(listener,0,sizeof(struct dbs_listener));
+  if (dbs->next_correlation_id<1) dbs->next_correlation_id=1;
+  listener->corrid=dbs->next_correlation_id++;
+  listener->cb=cb;
+  listener->userdata=userdata;
+  
+  struct sr_encoder encoder={0};
+  sr_encode_json_object_start(&encoder,0,0);
+  sr_encode_json_string(&encoder,"id",2,"http",4);
+  sr_encode_json_string(&encoder,"method",6,method,-1);
+  sr_encode_json_string(&encoder,"path",4,path,-1);
+  int hdrctx=sr_encode_json_object_start(&encoder,"headers",7);
+  sr_encode_json_int(&encoder,"X-Correlation-Id",16,listener->corrid);
+  sr_encode_json_object_end(&encoder,hdrctx);
+  if (sr_encode_json_object_end(&encoder,0)<0) {
+    sr_encoder_cleanup(&encoder);
+    dbs->listenerc--;
+    return -1;
+  }
+  
+  int err=fakews_send(fakews,1,encoder.v,encoder.c);
+  sr_encoder_cleanup(&encoder);
+  if (err<0) {
+    dbs->listenerc--;
+    return err;
+  }
+  
+  return listener->corrid;
+}
+
+void dbs_cancel_request(struct db_service *dbs,int corrid) {
+  int i=dbs->listenerc;
+  while (i-->0) {
+    struct dbs_listener *listener=dbs->listenerv+i;
+    if (listener->corrid!=corrid) continue;
+    dbs->listenerc--;
+    memmove(listener,listener+1,sizeof(struct dbs_listener)*(dbs->listenerc-i));
+  }
+}
+
 /* Launch game by id.
  */
  
@@ -729,15 +810,37 @@ static int dbs_set_string(char **v,int *c,struct db_service *dbs,const char *src
   return 0;
 }
  
-int dbs_search_set_list(struct db_service *dbs,const char *v,int c) { return dbs_set_string(&dbs->list,&dbs->listc,dbs,v,c); }
-int dbs_search_set_text(struct db_service *dbs,const char *v,int c) { return dbs_set_string(&dbs->text,&dbs->textc,dbs,v,c); }
-int dbs_search_set_flags(struct db_service *dbs,const char *v,int c) { return dbs_set_string(&dbs->flags,&dbs->flagsc,dbs,v,c); }
-int dbs_search_set_author(struct db_service *dbs,const char *v,int c) { return dbs_set_string(&dbs->author,&dbs->authorc,dbs,v,c); }
-int dbs_search_set_genre(struct db_service *dbs,const char *v,int c) { return dbs_set_string(&dbs->genre,&dbs->genrec,dbs,v,c); }
-int dbs_search_set_platform(struct db_service *dbs,const char *v,int c) { return dbs_set_string(&dbs->platform,&dbs->platformc,dbs,v,c); }
-int dbs_search_set_sort(struct db_service *dbs,const char *v,int c) { return dbs_set_string(&dbs->sort,&dbs->sortc,dbs,v,c); }
+int dbs_search_set_list(struct db_service *dbs,const char *v,int c) {
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_list;
+  return dbs_set_string(&dbs->list,&dbs->listc,dbs,v,c);
+}
+int dbs_search_set_text(struct db_service *dbs,const char *v,int c) { 
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
+  return dbs_set_string(&dbs->text,&dbs->textc,dbs,v,c);
+}
+int dbs_search_set_flags(struct db_service *dbs,const char *v,int c) { 
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
+  return dbs_set_string(&dbs->flags,&dbs->flagsc,dbs,v,c);
+}
+int dbs_search_set_author(struct db_service *dbs,const char *v,int c) { 
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
+  return dbs_set_string(&dbs->author,&dbs->authorc,dbs,v,c);
+}
+int dbs_search_set_genre(struct db_service *dbs,const char *v,int c) { 
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
+  return dbs_set_string(&dbs->genre,&dbs->genrec,dbs,v,c);
+}
+int dbs_search_set_platform(struct db_service *dbs,const char *v,int c) { 
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
+  return dbs_set_string(&dbs->platform,&dbs->platformc,dbs,v,c);
+}
+int dbs_search_set_sort(struct db_service *dbs,const char *v,int c) {
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
+  return dbs_set_string(&dbs->sort,&dbs->sortc,dbs,v,c);
+}
 
 int dbs_search_set_pubtime(struct db_service *dbs,int lo,int hi) {
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
   dbs->pubtimelo=lo;
   dbs->pubtimehi=hi;
   dbs->page=1;
@@ -746,6 +849,7 @@ int dbs_search_set_pubtime(struct db_service *dbs,int lo,int hi) {
 }
 
 int dbs_search_set_rating(struct db_service *dbs,int lo,int hi) {
+  dbs->last_search_interaction=DB_SERVICE_INTERACTION_other;
   dbs->ratinglo=lo;
   dbs->ratinghi=hi;
   dbs->page=1;

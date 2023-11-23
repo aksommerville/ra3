@@ -118,7 +118,14 @@ static void _lists_draw(struct gui_widget *widget,int x,int y) {
 static void lists_cb_new_ready(struct gui_widget *entry,const char *name,int namec,void *userdata) {
   struct gui_widget *widget=userdata;
   if (namec) {
-    if (WIDGET->cb) WIDGET->cb(widget,-1,name,namec,WIDGET->userdata);
+    struct gui_widget *button=gui_widget_button_spawn(widget,name,namec,0xffffff,lists_cb_toggle,widget);
+    if (button) {
+      gui_widget_insert_child(widget,WIDGET->inc,button);
+      if (WIDGET->focusp>=WIDGET->inc) WIDGET->focusp++;
+      WIDGET->inc++;
+      gui_widget_pack(widget);
+      if (WIDGET->cb) WIDGET->cb(widget,-1,name,namec,WIDGET->userdata);
+    }
   }
   gui_dismiss_modal(widget->gui,entry);
 }

@@ -241,7 +241,7 @@ Sort is one of:
 - fullness
 And may be prefixed with "-" to reverse.
 
-The HTTP response will include a header `X-Page-Count` when paginated.
+The HTTP response will include headers `X-Page-Count` and `X-Total-Count` when paginated.
 
 ## /api/histograms
 

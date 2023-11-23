@@ -559,6 +559,79 @@ int dbs_replace_game_field_int(struct db_service *dbs,int gameid,const char *k,i
   return 0;
 }
 
+/* Create list.
+ */
+ 
+static int dbs_create_list_inner(struct sr_encoder *encoder,struct db_service *dbs,const char *name,int namec) {
+  struct fakews *fakews=eh_get_fakews();
+  if (!fakews) return -1;
+  if (!fakews_is_connected(fakews)) {
+    if (fakews_connect_now(fakews)<0) {
+      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
+      return -1;
+    }
+  }
+  if (sr_encode_json_object_start(encoder,0,0)!=0) return -1;
+  if (sr_encode_json_string(encoder,"id",2,"http",4)<0) return -1;
+  if (sr_encode_json_string(encoder,"method",6,"PUT",3)<0) return -1;
+  if (sr_encode_json_string(encoder,"path",4,"/api/list",-1)<0) return -1;
+  int bctx=sr_encode_json_object_start(encoder,"body",4);
+  if (bctx<0) return -1;
+  if (sr_encode_json_string(encoder,"name",4,name,namec)<0) return -1;
+  if (sr_encode_json_object_end(encoder,bctx)<0) return -1;
+  if (sr_encode_json_object_end(encoder,0)<0) return -1;
+  return fakews_send(fakews,1,encoder->v,encoder->c);
+}
+ 
+int dbs_create_list(struct db_service *dbs,const char *name,int namec) {
+  struct sr_encoder encoder={0};
+  int err=dbs_create_list_inner(&encoder,dbs,name,namec);
+  sr_encoder_cleanup(&encoder);
+  if (err>=0) dbs_refresh_lists(dbs);
+  return err;
+}
+
+/* Add/remove game to/from list.
+ */
+ 
+static int dbs_modify_list(struct sr_encoder *encoder,struct db_service *dbs,const char *path,int gameid,const char *listid,int listidc) {
+  struct fakews *fakews=eh_get_fakews();
+  if (!fakews) return -1;
+  if (!fakews_is_connected(fakews)) {
+    if (fakews_connect_now(fakews)<0) {
+      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
+      return -1;
+    }
+  }
+  if (sr_encode_json_object_start(encoder,0,0)!=0) return -1;
+  if (sr_encode_json_string(encoder,"id",2,"http",4)<0) return -1;
+  if (sr_encode_json_string(encoder,"method",6,"POST",4)<0) return -1;
+  if (sr_encode_json_string(encoder,"path",4,path,-1)<0) return -1;
+  int qctx=sr_encode_json_object_start(encoder,"query",5);
+  if (qctx<0) return -1;
+  if (sr_encode_json_int(encoder,"gameid",6,gameid)<0) return -1;
+  if (sr_encode_json_string(encoder,"listid",6,listid,listidc)<0) return -1;
+  if (sr_encode_json_object_end(encoder,qctx)<0) return -1;
+  if (sr_encode_json_object_end(encoder,0)<0) return -1;
+  return fakews_send(fakews,1,encoder->v,encoder->c);
+}
+ 
+int dbs_add_to_list(struct db_service *dbs,int gameid,const char *listid,int listidc) {
+  struct sr_encoder encoder={0};
+  int err=dbs_modify_list(&encoder,dbs,"/api/list/add",gameid,listid,listidc);
+  sr_encoder_cleanup(&encoder);
+  if (err>=0) dbs_refresh_search(dbs);
+  return err;
+}
+
+int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *listid,int listidc) {
+  struct sr_encoder encoder={0};
+  int err=dbs_modify_list(&encoder,dbs,"/api/list/remove",gameid,listid,listidc);
+  sr_encoder_cleanup(&encoder);
+  if (err>=0) dbs_refresh_search(dbs);
+  return err;
+}
+
 /* Launch game by id.
  */
  

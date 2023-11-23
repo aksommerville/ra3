@@ -199,17 +199,23 @@ int gui_widget_entry_setup(
 
 void gui_widget_keyboard_set_callback(struct gui_widget *widget,void (*cb)(struct gui_widget *keyboard,int codepoint,void *userdata),void *userdata);
 
-struct gui_widget *gui_widget_form_add_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
-struct gui_widget *gui_widget_form_add_int(struct gui_widget *widget,const char *k,int kc,int v);
+/* (custom) nonzero to get a callback with (v==0) and (vc==-1) on actuation.
+ * Otherwise the form presents it own entry modal and only notifies you when committed.
+ * There are "_json" versions as a convenience, if the incoming value is an encoded JSON string. Doesn't affect reporting.
+ */
+struct gui_widget *gui_widget_form_add_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,int custom);
+struct gui_widget *gui_widget_form_add_int(struct gui_widget *widget,const char *k,int kc,int v,int custom);
 struct gui_widget *gui_widget_form_add_readonly_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
 struct gui_widget *gui_widget_form_add_readonly_int(struct gui_widget *widget,const char *k,int kc,int v);
-struct gui_widget *gui_widget_form_add_string_json(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
+struct gui_widget *gui_widget_form_add_string_json(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,int custom);
 struct gui_widget *gui_widget_form_add_readonly_string_json(struct gui_widget *widget,const char *k,int kc,const char *v,int vc);
-void gui_widget_form_set_callback( // For fields with no explicit handler.
+struct gui_widget *gui_widget_form_add_custom(struct gui_widget *widget,const char *k,int kc,const struct gui_widget_type *type);
+void gui_widget_form_set_callback(
   struct gui_widget *widget,
   void (*cb)(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,void *userdata),
   void *userdata
 );
+struct gui_widget *gui_widget_form_get_button_by_key(struct gui_widget *widget,const char *k,int kc);
 
 /* Text support.
  ********************************************************/

@@ -1,3 +1,4 @@
+#define _GNU_SOURCE 1 /* for qsort_r */
 #include "db_internal.h"
 #include "opt/serial/serial.h"
 
@@ -569,6 +570,39 @@ int db_histogram_add(struct db_histogram *hist,uint32_t stringid,int addc) {
     else entry->count+=addc;
   }
   return 0;
+}
+
+/* Sort histogram.
+ */
+ 
+static int db_histogram_cmp_alpha(const struct db_histogram_entry *a,const struct db_histogram_entry *b,const struct db *db) {
+  const char *av,*bv;
+  int ac=db_string_get(&av,db,a->stringid); if (ac<0) ac=0;
+  int bc=db_string_get(&bv,db,b->stringid); if (bc<0) bc=0;
+  int cmpc=(ac<bc)?ac:bc;
+  int cmp=memcmp(av,bv,cmpc);
+  if (cmp) return cmp;
+  return (ac<bc)?-1:(ac>bc)?1:0;
+}
+
+static int db_histogram_cmp_c_desc(const struct db_histogram_entry *a,const struct db_histogram_entry *b,const struct db *db) {
+  return b->count-a->count;
+}
+ 
+static void db_histogram_sort(
+  struct db_histogram *hist,
+  int (*cb)(const struct db_histogram_entry *a,const struct db_histogram_entry *b,const struct db *db),
+  const struct db *db
+) {
+  qsort_r(hist->v,hist->c,sizeof(struct db_histogram_entry),(void*)cb,(void*)db);
+}
+ 
+void db_histogram_sort_alpha(struct db_histogram *hist,const struct db *db) {
+  db_histogram_sort(hist,db_histogram_cmp_alpha,db);
+}
+
+void db_histogram_sort_c_desc(struct db_histogram *hist,const struct db *db) {
+  db_histogram_sort(hist,db_histogram_cmp_c_desc,db);
 }
 
 /* Generate histograms.

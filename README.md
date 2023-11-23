@@ -24,7 +24,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
-- - [ ] Edit details for focussed game.
+- - [x] Edit details for focussed game.
 - - - [x] Press B. Don't allow focus of the details widget.
 - - [ ] Random launch (Press R). Will need "dry-run" from the backend so we can capture the gameid and page index.
 - - [ ] Show total results count at left bookend. Must add to /api/query headers.
@@ -35,6 +35,9 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Sound effects.
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.
 - - [ ] gui render helpers, must rewrite with GL 2
+- - [ ] Remove hard-coded data paths.
+- - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
+- - [ ] When they select an empty list, propose to delete it (there's no other way to do that)
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.

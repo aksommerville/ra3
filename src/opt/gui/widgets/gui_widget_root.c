@@ -62,11 +62,11 @@ static void root_position_modal_by_anchor(struct gui_widget *widget,struct gui_w
   int chw=0,chh=0;
   gui_widget_measure(&chw,&chh,modal,widget->w,widget->h+1);
   
-  // Most preferred placement is centered (then horz clamp) below anchor. Take that if it fits.
+  // Most preferred placement is match left (then horz clamp) below anchor. Take that if it fits.
   int available=widget->h-ah-ay;
   if (chh<=available) {
     modal->y=ah+ay;
-    modal->x=ax+(aw>>1)-(chw>>1);
+    modal->x=ax;
     if (modal->x<0) modal->x=0;
     else if (modal->x+chw>widget->w) modal->x=widget->w-chw;
     modal->w=chw;
@@ -77,7 +77,7 @@ static void root_position_modal_by_anchor(struct gui_widget *widget,struct gui_w
   // If it fits similarly above, take that.
   if (chh<=ay) {
     modal->y=ay-chh;
-    modal->x=ax+(aw>>1)-(chw>>1);
+    modal->x=ax;
     if (modal->x<0) modal->x=0;
     else if (modal->x+chw>widget->w) modal->x=widget->w-chw;
     modal->w=chw;
@@ -107,7 +107,7 @@ static void root_position_modal_by_anchor(struct gui_widget *widget,struct gui_w
     }
   }
   
-  // Put above or below, whichever is larger, truncate vertically, and center horizontally.
+  // Put above or below, whichever is larger, truncate vertically, and match left.
   available=widget->h-ah-ay;
   if (ay>available) { // above
     modal->y=0;
@@ -116,7 +116,7 @@ static void root_position_modal_by_anchor(struct gui_widget *widget,struct gui_w
     modal->y=ay+ah;
     modal->h=widget->h-ah-ay;
   }
-  modal->x=ax+(aw>>1)-(chw>>1);
+  modal->x=ax;
   if (modal->x<0) modal->x=0;
   else if (modal->x+chw>widget->w) modal->x=widget->w-chw;
   modal->w=chw;

@@ -16,6 +16,7 @@ struct mn_widget_daterange {
   struct gui_font *font; // WEAK
   struct gui_texture *lotex,*hitex;
   int margin;
+  int single; // Nonzero to use the same mechanics but just one row.
 };
 
 #define WIDGET ((struct mn_widget_daterange*)widget)
@@ -44,7 +45,7 @@ static int _daterange_init(struct gui_widget *widget) {
  
 static void _daterange_measure(int *w,int *h,struct gui_widget *widget,int wlimit,int hlimit) {
   *w=(WIDGET->margin<<1)+(WIDGET->font->charw<<2);
-  *h=(WIDGET->margin<<1)+(WIDGET->font->lineh<<1);
+  *h=(WIDGET->margin<<1)+(WIDGET->font->lineh*(WIDGET->single?1:2));
 }
 
 /* Pack.
@@ -67,7 +68,7 @@ static void _daterange_draw(struct gui_widget *widget,int x,int y) {
     gui_draw_texture(widget->gui,x+WIDGET->margin,py,WIDGET->lotex);
     py+=th;
   }
-  if (WIDGET->hitex) {
+  if (WIDGET->hitex&&!WIDGET->single) {
     int tw,th;
     gui_texture_get_size(&tw,&th,WIDGET->hitex);
     if (WIDGET->row) gui_draw_rect(widget->gui,x+WIDGET->margin,py,tw,th,hilite);
@@ -85,7 +86,7 @@ static void daterange_redraw_labels(struct gui_widget *widget) {
     WIDGET->lotex=gui_texture_from_text(widget->gui,WIDGET->font,v,4,0xffffff);
     WIDGET->lodrawn=WIDGET->lovalue;
   }
-  if (WIDGET->hivalue!=WIDGET->hidrawn) {
+  if ((WIDGET->hivalue!=WIDGET->hidrawn)&&!WIDGET->single) {
     gui_texture_del(WIDGET->hitex);
     char v[4]={'0'+WIDGET->hivalue/1000,'0'+(WIDGET->hivalue/100)%10,'0'+(WIDGET->hivalue/10)%10,'0'+WIDGET->hivalue%10};
     WIDGET->hitex=gui_texture_from_text(widget->gui,WIDGET->font,v,4,0xffffff);
@@ -97,6 +98,10 @@ static void daterange_redraw_labels(struct gui_widget *widget) {
  */
  
 static void _daterange_motion(struct gui_widget *widget,int dx,int dy) {
+  if (dy&&WIDGET->single) {
+    dx=dy*10;
+    dy=0;
+  }
   if (dy) {
     WIDGET->row=WIDGET->row?0:1; // there's only two rows
   } else if (dx) {
@@ -116,7 +121,7 @@ static void _daterange_motion(struct gui_widget *widget,int dx,int dy) {
  */
  
 static void daterange_submit(struct gui_widget *widget) {
-  if (WIDGET->cb) WIDGET->cb(widget,WIDGET->userdata,WIDGET->lovalue,WIDGET->hivalue);
+  if (WIDGET->cb) WIDGET->cb(widget,WIDGET->userdata,WIDGET->lovalue,WIDGET->single?WIDGET->lovalue:WIDGET->hivalue);
 }
 
 /* Signal.
@@ -163,6 +168,25 @@ int mn_widget_daterange_setup(
   WIDGET->hivalue=hivalue;
   WIDGET->lolimit=lolimit;
   WIDGET->hilimit=hilimit;
+  WIDGET->single=0;
+  daterange_redraw_labels(widget);
+  return 0;
+}
+
+int mn_widget_daterange_setup_single(
+  struct gui_widget *widget,
+  void (*cb)(struct gui_widget *daterange,void *userdata,int lovalue,int hivalue),
+  void *userdata,
+  int value
+) {
+  if (!widget||(widget->type!=&mn_widget_type_daterange)) return -1;
+  WIDGET->cb=cb;
+  WIDGET->userdata=userdata;
+  WIDGET->lovalue=value;
+  WIDGET->hivalue=value;
+  WIDGET->lolimit=1970;
+  WIDGET->hilimit=9999;
+  WIDGET->single=1;
   daterange_redraw_labels(widget);
   return 0;
 }

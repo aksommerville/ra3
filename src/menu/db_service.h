@@ -101,6 +101,10 @@ int dbs_game_decode(struct dbs_game *game,const char *src,int srcc);
 int dbs_replace_game_field_string(struct db_service *dbs,int gameid,const char *k,int kc,const char *v,int vc);
 int dbs_replace_game_field_int(struct db_service *dbs,int gameid,const char *k,int kc,int v);
 
+int dbs_create_list(struct db_service *dbs,const char *name,int namec);
+int dbs_add_to_list(struct db_service *dbs,int gameid,const char *listid,int listidc);
+int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *list,int listidc);
+
 /* On a success, we may assume that the backend is going to terminate us.
  */
 int dbs_launch(struct db_service *dbs,int gameid);

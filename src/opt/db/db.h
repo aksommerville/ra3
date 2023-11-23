@@ -639,6 +639,12 @@ int db_histogram_search(const struct db_histogram *hist,uint32_t stringid);
 struct db_histogram_entry *db_histogram_insert(struct db_histogram *hist,int p,uint32_t stringid);
 int db_histogram_add(struct db_histogram *hist,uint32_t stringid,int addc); // zero is ok, to assert the entry exists but no count
 
+/* Histograms sort by stringid, by default, and that's not an order you'd ever want.
+ * If order matters at all to the caller, sort before encoding, only after you've fully populated the histogram.
+ */
+void db_histogram_sort_alpha(struct db_histogram *hist,const struct db *db);
+void db_histogram_sort_c_desc(struct db_histogram *hist,const struct db *db);
+
 /* List all known values of a given game field, and the count of occurrences.
  * You must clean up the histogram when done.
  * (platform) may include zero-count entries from launchers too.

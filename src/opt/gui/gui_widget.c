@@ -191,6 +191,7 @@ static int gui_widget_childv_require(struct gui_widget *widget) {
 }
 
 static void gui_widget_childv_shuffle(struct gui_widget *parent,int top,int fromp) {
+  if (top>fromp) top--;
   if (top==fromp) return;
   if ((top<0)||(top>=parent->childc)) return;
   if ((fromp<0)||(fromp>=parent->childc)) return;

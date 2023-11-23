@@ -17,6 +17,7 @@ struct gui_widget_form {
     struct gui_texture *ktex;
     int kx,ky;
     struct gui_widget *v; // WEAK; must be in childv too
+    int custom;
   } *rowv;
   int rowc,rowa;
   int margin; // left, right, and center
@@ -134,26 +135,20 @@ static void _form_draw(struct gui_widget *widget,int x,int y) {
 /* Events to child.
  */
  
-static void form_blur(struct gui_widget *widget) {
+static void form_signal_child(struct gui_widget *widget,int sigid) {
   if ((WIDGET->focusp<0)||(WIDGET->focusp>=WIDGET->rowc)) return;
   struct gui_form_row *row=WIDGET->rowv+WIDGET->focusp;
-  if (!row->v||!gui_widget_button_get_enable(row->v)) return;
-  if (row->v->type->signal) row->v->type->signal(row->v,GUI_SIGID_BLUR);
+  if (!row->v) return;
+  if (!row->v->type->signal) return;
+  if (row->v->type==&gui_widget_type_button) {
+    if (!gui_widget_button_get_enable(row->v)) return;
+  }
+  row->v->type->signal(row->v,sigid);
 }
  
-static void form_focus(struct gui_widget *widget) {
-  if ((WIDGET->focusp<0)||(WIDGET->focusp>=WIDGET->rowc)) return;
-  struct gui_form_row *row=WIDGET->rowv+WIDGET->focusp;
-  if (!row->v||!gui_widget_button_get_enable(row->v)) return;
-  if (row->v->type->signal) row->v->type->signal(row->v,GUI_SIGID_FOCUS);
-}
- 
-static void form_activate(struct gui_widget *widget) {
-  if ((WIDGET->focusp<0)||(WIDGET->focusp>=WIDGET->rowc)) return;
-  struct gui_form_row *row=WIDGET->rowv+WIDGET->focusp;
-  if (!row->v||!gui_widget_button_get_enable(row->v)) return;
-  if (row->v->type->signal) row->v->type->signal(row->v,GUI_SIGID_ACTIVATE);
-}
+static void form_blur(struct gui_widget *widget) { form_signal_child(widget,GUI_SIGID_BLUR); }
+static void form_focus(struct gui_widget *widget) { form_signal_child(widget,GUI_SIGID_FOCUS); }
+static void form_activate(struct gui_widget *widget) { form_signal_child(widget,GUI_SIGID_ACTIVATE); }
 
 /* Motion.
  */
@@ -167,13 +162,25 @@ static void _form_motion(struct gui_widget *widget,int dx,int dy) {
       np+=dy;
       if (np<0) np=WIDGET->rowc-1;
       else if (np>=WIDGET->rowc) np=0;
-      if (gui_widget_button_get_enable(WIDGET->rowv[np].v)) break;
+      struct gui_widget *child=WIDGET->rowv[np].v;
+      if (!child) continue;
+      if (child->type==&gui_widget_type_button) {
+        if (gui_widget_button_get_enable(WIDGET->rowv[np].v)) break;
+      } else if (child->type->signal) {
+        break; // assume that anything we can signal, can accept focus
+      }
     }
     if (np==WIDGET->focusp) return;
     form_blur(widget);
     WIDGET->focusp=np;
     form_focus(widget);
     return;
+  }
+  if (dx) {
+    if ((WIDGET->focusp>=0)&&(WIDGET->focusp<WIDGET->rowc)) {
+      struct gui_widget *child=WIDGET->rowv[WIDGET->focusp].v;
+      if (child&&child->type->motion) child->type->motion(child,dx,0);
+    }
   }
 }
 
@@ -212,12 +219,16 @@ static void form_cb_button(struct gui_widget *button,void *userdata) {
   int i=WIDGET->rowc;
   for (;i-->0;row++) {
     if (row->v==button) {
-      //TODO let our parent intervene somehow. Important for things that aren't plain text! Which will hopefully be *most* things.
-      struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
-      if (!modal) return;
-      const char *text=0;
-      int textc=gui_widget_button_get_text(&text,row->v);
-      gui_widget_entry_setup(modal,text,textc,form_cb_edited,widget);
+      if (row->custom) {
+        if (WIDGET->cb) WIDGET->cb(widget,row->k,row->kc,0,-1,WIDGET->userdata);
+      } else {
+        struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
+        if (!modal) return;
+        const char *text=0;
+        int textc=gui_widget_button_get_text(&text,row->v);
+        gui_widget_entry_setup(modal,text,textc,form_cb_edited,widget);
+        gui_modal_place_near(modal,button);
+      }
       return;
     }
   }
@@ -264,9 +275,10 @@ static struct gui_form_row *gui_widget_form_add_row(struct gui_widget *widget,co
 /* Add row, public conveniences.
  */
  
-struct gui_widget *gui_widget_form_add_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc) {
+struct gui_widget *gui_widget_form_add_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,int custom) {
   struct gui_form_row *row=gui_widget_form_add_row(widget,k,kc);
   if (!row) return 0;
+  row->custom=custom;
   if (!(row->v=gui_widget_button_spawn(widget,v,vc,FORM_VALUE_COLOR_ENABLE,form_cb_button,widget))) return 0;
   if (WIDGET->focusp<0) {
     WIDGET->focusp=WIDGET->rowc-1;
@@ -275,9 +287,10 @@ struct gui_widget *gui_widget_form_add_string(struct gui_widget *widget,const ch
   return row->v;
 }
 
-struct gui_widget *gui_widget_form_add_int(struct gui_widget *widget,const char *k,int kc,int v) {
+struct gui_widget *gui_widget_form_add_int(struct gui_widget *widget,const char *k,int kc,int v,int custom) {
   struct gui_form_row *row=gui_widget_form_add_row(widget,k,kc);
   if (!row) return 0;
+  row->custom=custom;
   char tmp[16];
   int tmpc=snprintf(tmp,sizeof(tmp),"%d",v);
   if ((tmpc<1)||(tmpc>=sizeof(tmp))) return 0;
@@ -308,7 +321,7 @@ struct gui_widget *gui_widget_form_add_readonly_int(struct gui_widget *widget,co
   return row->v;
 }
  
-struct gui_widget *gui_widget_form_add_string_json(struct gui_widget *widget,const char *k,int kc,const char *v,int vc) {
+struct gui_widget *gui_widget_form_add_string_json(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,int custom) {
   char tmp[256];
   int tmpc=sr_string_eval(tmp,sizeof(tmp),v,vc);
   if ((tmpc>=0)&&(tmpc<=sizeof(tmp))) {
@@ -317,6 +330,7 @@ struct gui_widget *gui_widget_form_add_string_json(struct gui_widget *widget,con
   }
   struct gui_form_row *row=gui_widget_form_add_row(widget,k,kc);
   if (!row) return 0;
+  row->custom=custom;
   if (!(row->v=gui_widget_button_spawn(widget,v,vc,FORM_VALUE_COLOR_ENABLE,form_cb_button,widget))) return 0;
   if (WIDGET->focusp<0) {
     WIDGET->focusp=WIDGET->rowc-1;
@@ -339,6 +353,15 @@ struct gui_widget *gui_widget_form_add_readonly_string_json(struct gui_widget *w
   return row->v;
 }
 
+struct gui_widget *gui_widget_form_add_custom(struct gui_widget *widget,const char *k,int kc,const struct gui_widget_type *type) {
+  struct gui_form_row *row=gui_widget_form_add_row(widget,k,kc);
+  if (!row) return 0;
+  struct gui_widget *child=gui_widget_spawn(widget,type);
+  if (!child) return 0;
+  row->v=child;
+  return child;
+}
+
 /* Trivial accessors.
  */
 
@@ -350,4 +373,18 @@ void gui_widget_form_set_callback(
   if (!widget||(widget->type!=&gui_widget_type_form)) return;
   WIDGET->cb=cb;
   WIDGET->userdata=userdata;
+}
+
+struct gui_widget *gui_widget_form_get_button_by_key(struct gui_widget *widget,const char *k,int kc) {
+  if (!widget||(widget->type!=&gui_widget_type_form)) return 0;
+  if (!k) kc=0; else if (kc<0) { kc=0; while (k[kc]) kc++; }
+  if (kc>GUI_FORM_K_LIMIT) kc=GUI_FORM_K_LIMIT;
+  struct gui_form_row *row=WIDGET->rowv;
+  int i=WIDGET->rowc;
+  for (;i-->0;row++) {
+    if (row->kc!=kc) continue;
+    if (memcmp(row->k,k,kc)) continue;
+    return row->v;
+  }
+  return 0;
 }

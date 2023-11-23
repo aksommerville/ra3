@@ -1,4 +1,5 @@
 #include "../gui_internal.h"
+#include "lib/emuhost.h"
 
 static void pickone_set_scroll_target(struct gui_widget *widget);
 
@@ -13,6 +14,7 @@ struct gui_widget_pickone {
   int focusp;
   int scroll,scroll_limit;
   int scroll_target;
+  int pvh; // our height, at the last pack or init. So we can determine whether to suppress animation.
 };
 
 #define WIDGET ((struct gui_widget_pickone*)widget)
@@ -55,6 +57,8 @@ static void _pickone_measure(int *w,int *h,struct gui_widget *widget,int wlimit,
  */
  
 static void _pickone_pack(struct gui_widget *widget) {
+  int from_zero_height=!WIDGET->pvh;
+  WIDGET->pvh=widget->h;
   int i=0,y=WIDGET->padding;
   int wall=widget->w-(WIDGET->padding<<1);
   if (wall<0) wall=0;
@@ -77,6 +81,9 @@ static void _pickone_pack(struct gui_widget *widget) {
     if (WIDGET->scroll>WIDGET->scroll_limit) WIDGET->scroll=WIDGET->scroll_limit;
   }
   pickone_set_scroll_target(widget);
+  if (from_zero_height) {
+    WIDGET->scroll=WIDGET->scroll_target;
+  }
 }
 
 /* Draw.
@@ -128,6 +135,9 @@ static void pickone_set_scroll_target(struct gui_widget *widget) {
     else if (target>WIDGET->scroll_limit) target=WIDGET->scroll_limit;
   }
   WIDGET->scroll_target=target;
+  if (!widget->h) { // a strong clue that we haven't been packed yet -- don't animate
+    WIDGET->scroll=WIDGET->scroll_target;
+  }
 }
 
 /* Activate.
@@ -161,6 +171,7 @@ static void pickone_focus(struct gui_widget *widget) {
 static void _pickone_motion(struct gui_widget *widget,int dx,int dy) {
   if (!dy) return;
   if (widget->childc<1) return;
+  if (widget->gui->pvinput&EH_BTN_EAST) dy*=10; // hold EAST for high speed
   int np=WIDGET->focusp+dy;
   if (np<0) np=widget->childc-1;
   else if (np>=widget->childc) np=0;

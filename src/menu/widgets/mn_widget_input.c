@@ -39,6 +39,7 @@ static void _input_pack(struct gui_widget *widget) {
  */
  
 static void _input_draw(struct gui_widget *widget,int x,int y) {
+  gui_draw_rect(widget->gui,x,y,widget->w,widget->h,0x0000ffff);
 }
 
 /* Motion.

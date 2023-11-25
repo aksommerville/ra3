@@ -1,7 +1,7 @@
 #include "../gui_internal.h"
 #include "opt/serial/serial.h"
 
-#define GUI_FORM_K_LIMIT 16
+#define GUI_FORM_K_LIMIT 32
 #define FORM_KEY_COLOR 0xa0a0a0
 #define FORM_VALUE_COLOR_ENABLE 0xffffff
 #define FORM_VALUE_COLOR_DISABLE 0xa0a0a0

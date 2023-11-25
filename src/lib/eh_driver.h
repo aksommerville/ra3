@@ -1,6 +1,6 @@
 /* eh_driver.h
  * Generic driver implementations for audio, video, and input.
- * These are not exposed to the client, but I guess could be if we ever want to.
+ * Clients in general shouldn't care about this API. But it's available, eg the menu app has driver config UI.
  */
  
 #ifndef EH_DRIVER_H
@@ -76,6 +76,8 @@ struct eh_video_driver *eh_video_driver_new(
   const struct eh_video_setup *setup
 );
 
+struct eh_video_driver *eh_get_video_driver();
+
 /* Audio.
  ************************************************************************************/
  
@@ -97,6 +99,7 @@ struct eh_audio_driver {
   int chanc;
   int format;
   int playing;
+  //TODO device name
 };
 
 struct eh_audio_type {
@@ -121,6 +124,8 @@ struct eh_audio_driver *eh_audio_driver_new(
   const struct eh_audio_delegate *delegate,
   const struct eh_audio_setup *setup
 );
+
+struct eh_audio_driver *eh_get_audio_driver();
 
 /* Input.
  ***************************************************************************/
@@ -162,6 +167,8 @@ struct eh_input_driver *eh_input_driver_new(
   const struct eh_input_type *type,
   const struct eh_input_delegate *delegate
 );
+
+struct eh_input_driver *eh_get_input_driver_by_index(int p);
 
 /* Global registries.
  **************************************************************************/

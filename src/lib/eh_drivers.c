@@ -351,4 +351,18 @@ struct fakews *eh_get_fakews() {
   return eh.fakews;
 }
 
+struct eh_video_driver *eh_get_video_driver() {
+  return eh.video;
+}
+
+struct eh_audio_driver *eh_get_audio_driver() {
+  return eh.audio;
+}
+
+struct eh_input_driver *eh_get_input_driver_by_index(int p) {
+  if (p<0) return 0;
+  if (p>=eh.inputc) return 0;
+  return eh.inputv[p];
+}
+
 // The public video API is at lib/render/eh_render_obj.c

@@ -1,3 +1,8 @@
+/* mn_widget_video.c
+ * Video settings.
+ * 2023-11-25T09:10: Declining to implement this. The only sensible thing to edit is the scaler, and meh why bother?
+ */
+
 #include "../mn_internal.h"
 
 /* Object definition.
@@ -39,6 +44,7 @@ static void _video_pack(struct gui_widget *widget) {
  */
  
 static void _video_draw(struct gui_widget *widget,int x,int y) {
+  gui_draw_rect(widget->gui,x,y,widget->w,widget->h,0xff0000ff);
 }
 
 /* Motion.

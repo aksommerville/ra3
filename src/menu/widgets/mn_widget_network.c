@@ -39,6 +39,7 @@ static void _network_pack(struct gui_widget *widget) {
  */
  
 static void _network_draw(struct gui_widget *widget,int x,int y) {
+  gui_draw_rect(widget->gui,x,y,widget->w,widget->h,0xffff00ff);
 }
 
 /* Motion.

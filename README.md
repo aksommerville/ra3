@@ -28,12 +28,14 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Random launch (Press R2). Will need "dry-run" from the backend so we can capture the gameid and page index.
 - - - Don't actually launch. Just use the random-launch logic, and jump to that game in UI.
 - - [ ] Admin menu.
-- - - [ ] Video
-- - - [ ] Audio
+- - - [x] Video -- Remove. There's basically nothing to configure.
+- - - [ ] Audio: UI ready-ish. Needs emuhost support.
 - - - [ ] Input
 - - - [ ] Network
-- - - [ ] Interface: show_invalid, ...anything else?
+- - - [x] Interface: show_invalid, ...anything else?
 - - - [x] Shutdown
+- - [ ] Editing year, new value didn't populate in the year modal
+- - [ ] entry: Submit on AUX1
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.
@@ -57,7 +59,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
-- - [ ] Selections for each user.
-- - [ ] "Andy's Top Picks".
+- - [x] Selections for each user.
+- - [x] "Andy's Top Picks".
+- - [ ] Genre underused: Flyswatter, Trivia, Strategy.
 - - [ ] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.
 - [ ] Would it be crazy to bake the menu into the backend app? It's not urgent but think this over some time.

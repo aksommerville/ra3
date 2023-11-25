@@ -203,7 +203,7 @@ int gui_widget_entry_setup(
 void gui_widget_keyboard_set_callback(struct gui_widget *widget,void (*cb)(struct gui_widget *keyboard,int codepoint,void *userdata),void *userdata);
 
 /* (custom) nonzero to get a callback with (v==0) and (vc==-1) on actuation.
- * Otherwise the form presents it own entry modal and only notifies you when committed.
+ * Otherwise the form presents its own entry modal and only notifies you when committed.
  * There are "_json" versions as a convenience, if the incoming value is an encoded JSON string. Doesn't affect reporting.
  */
 struct gui_widget *gui_widget_form_add_string(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,int custom);

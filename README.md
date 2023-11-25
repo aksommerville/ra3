@@ -16,6 +16,9 @@ Old emulators are of course still compatible generically, as long we don't serve
 
 - [ ] Emuhost
 - - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
+- - [x] akfceu screencap didn't save, when taken with no web client running. What gives?
+- - - [x] Looks like ra, not emuhost: A MENU client stayed open after its process terminated.
+- - [ ] Sometimes it launches in a window when I've asked for fullscreen.
 - [ ] Backend
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
@@ -27,9 +30,12 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] Edit details for focussed game.
 - - - [x] Press B. Don't allow focus of the details widget.
 - - [ ] Random launch (Press R). Will need "dry-run" from the backend so we can capture the gameid and page index.
+- - [ ] Carousel: L/R to step by page.
 - - [x] Show total results count at left bookend. Must add to /api/query headers.
 - - [x] gui_widget_keyboard: Wrap at edges
 - - [x] Clear details when results go empty, I've seen them linger.
+- - [ ] gui_widget_keyboard: Hold L for shift?
+- - [ ] New list: Start with empty name, and reject empty at submit. (empty+OK=Cancel)
 - - [ ] Admin menu.
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
@@ -38,15 +44,20 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Remove hard-coded data paths.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - [x] When they select an empty list, propose to delete it (there's no other way to do that)
+- - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
+- - [ ] Add `notflags=obscene,hardware,faulty` to all searches, and maybe something in the Settings to turn it off?
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.
 - - [ ] Search results: Screencaps aren't maintaining aspect ratio.
 - - [ ] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
+- - [ ] Uncaught (in promise) ReferenceError: game is not defined   at GameDetailsModal.js:190:35 (deleting a game)
 - [ ] Integrate emulators
 - - [ ] Pico-8. No integration, but do get it running on the Pi with DRM.
 - - [ ] Solarus, try again.
 - - [ ] Validate 4 player in all emulators
+- - [ ] akz26: Review inputs. I think I'm missing some of the console switches.
+- - [ ] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
 - [ ] Prepare collection
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
@@ -54,4 +65,6 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".
+- - [x] web: Add list badges to the search results cards, to facilitate review.
+- - [ ] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.
 - [ ] Would it be crazy to bake the menu into the backend app? It's not urgent but think this over some time.

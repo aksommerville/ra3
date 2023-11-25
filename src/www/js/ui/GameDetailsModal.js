@@ -187,7 +187,7 @@ export class GameDetailsModal {
     if (!this.game) return;
     const modal = this.dom.spawnModal(ChoiceModal);
     modal.setup("Really delete this game record and all associated records? The ROM file will not be deleted.", ["Delete"]).then(() => {
-      this.dbService.deleteRecord(game, this.game).then(() => {
+      this.dbService.deleteRecord("game", this.game).then(() => {
         this.dom.dismissModalByController(this);
       });
     });

@@ -46,7 +46,15 @@ export class SearchResultCard {
   }
   
   populate() {
-    this.element.querySelector(".name").innerText = this.game?.name || "";
+  
+    // Add badges for lists. It's not OK generally for this code to know the set of lists, it's a (hopefully temporary) cudgel while I refine my collection.
+    const header = this.element.querySelector(".name");
+    header.innerHTML = "";
+    this.dom.spawn(header, "SPAN", ["text"], this.game?.name || "");
+    for (const { name } of this.game?.lists || []) {
+      this.dom.spawn(header, "IMG", { src: this.iconUrlForListName(name), title: name });
+    }
+    
     this.element.querySelector(".thumbnail").src = this.composeThumbnailUrl();
     this.element.querySelector(".rating").innerText = this.game?.rating || "0";
     this.element.querySelector(".ratingRow .banner").style.backgroundColor = this.composeRatingColor(+this.game?.rating || 0);
@@ -54,6 +62,19 @@ export class SearchResultCard {
     this.element.querySelector(".author").innerText = this.game?.author || "";
     this.element.querySelector(".pubtime").innerText = this.game?.pubtime || "";
     this.element.querySelector(".desc").innerText = this.composeDesc();
+  }
+  
+  iconUrlForListName(name) {
+    switch (name) {
+      case "Andy's Picks": return "/img/list-andy.png";
+      case "Childhood": return "/img/list-child.png";
+      case "Backseat Driver": return "/img/list-backseat.png";
+      case "Karen": return "/img/list-karen.png";
+      case "Ken": return "/img/list-ken.png";
+      case "Ken & Karen": return "/img/list-knk.png";
+      case "Famous": return "/img/list-famous.png";
+      default: return "/img/list-other.png";
+    }
   }
   
   composeThumbnailUrl() {

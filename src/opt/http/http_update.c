@@ -11,6 +11,13 @@ static int http_update_fd_error(struct http_context *context,int fd) {
   }
   struct http_socket *socket=http_context_get_socket_by_fd(context,fd);
   if (socket) {
+    if (socket->cb_disconnect) {
+      socket->cb_disconnect(socket,socket->userdata);
+    } else if ((socket->protocol==HTTP_PROTOCOL_WEBSOCKET)||(socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET)) {
+      if (socket->listener&&socket->listener->cb_disconnect) {
+        socket->listener->cb_disconnect(socket,socket->listener->userdata);
+      }
+    }
     http_context_remove_socket(context,socket);
     return 0;
   }
@@ -37,12 +44,12 @@ static int http_update_fd_read(struct http_context *context,int fd) {
   if (socket) {
     if (http_socket_read(socket)<0) {
       if (http_socket_ok_to_close(socket)) {
-        //fprintf(stderr,"Lost socket on fd %d and it seems ok.\n",fd);
-        if (
-          ((socket->protocol==HTTP_PROTOCOL_WEBSOCKET)||(socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET))&&
-          socket->listener&&socket->listener->cb_disconnect
-        ) {
-          socket->listener->cb_disconnect(socket,socket->listener->userdata);
+        if (socket->cb_disconnect) {
+          socket->cb_disconnect(socket,socket->userdata);
+        } else if ((socket->protocol==HTTP_PROTOCOL_WEBSOCKET)||(socket->protocol==HTTP_PROTOCOL_FAKEWEBSOCKET)) {
+          if (socket->listener&&socket->listener->cb_disconnect) {
+            socket->listener->cb_disconnect(socket,socket->listener->userdata);
+          }
         }
         http_context_remove_socket(context,socket);
         return 0;

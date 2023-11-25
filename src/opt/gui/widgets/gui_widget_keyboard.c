@@ -1,4 +1,5 @@
 #include "../gui_internal.h"
+#include "lib/emuhost.h"
 
 /* Object definition.
  */
@@ -354,6 +355,23 @@ static void _keyboard_signal(struct gui_widget *widget,int sigid) {
   }
 }
 
+/* Update.
+ */
+ 
+static void _keyboard_update(struct gui_widget *widget) {
+  if (widget->gui->pvinput&EH_BTN_L1) {
+    if (!WIDGET->shifted) {
+      WIDGET->shifted=1;
+      keyboard_refresh_capstex(widget);
+    }
+  } else {
+    if (WIDGET->shifted) {
+      WIDGET->shifted=0;
+      keyboard_refresh_capstex(widget);
+    }
+  }
+}
+
 /* Type definition.
  */
  
@@ -367,6 +385,7 @@ const struct gui_widget_type gui_widget_type_keyboard={
   .draw=_keyboard_draw,
   .motion=_keyboard_motion,
   .signal=_keyboard_signal,
+  .update=_keyboard_update,
 };
 
 /* Public accessors.

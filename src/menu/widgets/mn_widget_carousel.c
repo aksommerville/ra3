@@ -113,11 +113,10 @@ static int _carousel_init(struct gui_widget *widget) {
   WIDGET->loc_dstsize=gui_program_get_uniform(WIDGET->program,"dstsize");
   WIDGET->loc_alpha=gui_program_get_uniform(WIDGET->program,"alpha");
   
-  //XXX be less strict about this, and also don't require working directory!
   if (!(WIDGET->texture_noscreencap=gui_texture_new())) return -1;
   gui_texture_set_filter(WIDGET->texture_noscreencap,1);
   void *serial=0;
-  int serialc=file_read(&serial,"src/menu/data/noscreencap.png");
+  int serialc=file_read(&serial,mn_data_path("noscreencap.png"));
   if (serialc<0) return -1;
   struct png_image *image=png_decode(serial,serialc);
   free(serial);
@@ -126,7 +125,7 @@ static int _carousel_init(struct gui_widget *widget) {
   gui_texture_upload_rgba(WIDGET->texture_noscreencap,image->w,image->h,image->pixels);
   png_image_del(image);
   
-  if ((serialc=file_read(&serial,"src/menu/data/carousel-edges.png"))>=0) {
+  if ((serialc=file_read(&serial,mn_data_path("carousel-edges.png")))>=0) {
     WIDGET->indicators_image=png_decode(serial,serialc);
     free(serial);
     if (WIDGET->indicators_image&&(
@@ -665,6 +664,31 @@ static void _carousel_update(struct gui_widget *widget) {
   }
 }
 
+/* Motion bits.
+ */
+ 
+static void mn_carousel_entryp_changed(struct gui_widget *widget) {
+  mn_carousel_animate_entry_positions(widget);
+  dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
+  mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+}
+
+static void mn_carousel_change_page(struct gui_widget *widget,int d) {
+  if (d<0) {
+    if (mn.dbs.page<=1) return;
+    mn.dbs.page--;
+    WIDGET->autoselect_direction=1;
+    dbs_refresh_search(&mn.dbs);
+    mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+  } else if (d>0) {
+    if (mn.dbs.page>=mn.dbs.pagec) return;
+    mn.dbs.page++;
+    WIDGET->autoselect_direction=-1;
+    dbs_refresh_search(&mn.dbs);
+    mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+  }
+}
+
 /* Motion.
  */
  
@@ -672,30 +696,49 @@ static void _carousel_motion(struct gui_widget *widget,int dx,int dy) {
   if (dx<0) {
     if (WIDGET->entryp>0) {
       WIDGET->entryp--;
-      mn_carousel_animate_entry_positions(widget);
-      dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
-      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+      mn_carousel_entryp_changed(widget);
     } else if (mn.dbs.page<=1) {
       mn_cb_sound_effect(GUI_SFXID_REJECT,0);
     } else {
-      mn.dbs.page--;
-      WIDGET->autoselect_direction=1;
-      dbs_refresh_search(&mn.dbs);
-      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+      mn_carousel_change_page(widget,-1);
     }
   } else if (dx>0) {
     if (WIDGET->entryp<WIDGET->entryc-1) {
       WIDGET->entryp++;
-      mn_carousel_animate_entry_positions(widget);
-      dbs_select_game(&mn.dbs,WIDGET->entryv[WIDGET->entryp].gameid);
-      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+      mn_carousel_entryp_changed(widget);
     } else if (mn.dbs.page>=mn.dbs.pagec) {
       mn_cb_sound_effect(GUI_SFXID_REJECT,0);
     } else {
-      mn.dbs.page++;
-      WIDGET->autoselect_direction=-1;
-      dbs_refresh_search(&mn.dbs);
-      mn_cb_sound_effect(GUI_SFXID_MOTION,0);
+      mn_carousel_change_page(widget,1);
+    }
+  }
+}
+
+/* Motion by pages (L1,R1)
+ */
+ 
+static void mn_carousel_step_page(struct gui_widget *widget,int d) {
+  if (d<0) {
+    if (mn.dbs.page<=1) {
+      if (WIDGET->entryp<=0) {
+        mn_cb_sound_effect(GUI_SFXID_REJECT,0);
+      } else {
+        WIDGET->entryp=0;
+        mn_carousel_entryp_changed(widget);
+      }
+    } else {
+      mn_carousel_change_page(widget,-1);
+    }
+  } else if (d>0) {
+    if (mn.dbs.page>=mn.dbs.pagec) {
+      if (WIDGET->entryp>=WIDGET->entryc-1) {
+        mn_cb_sound_effect(GUI_SFXID_REJECT,0);
+      } else {
+        WIDGET->entryp=WIDGET->entryc-1;
+        mn_carousel_entryp_changed(widget);
+      }
+    } else {
+      mn_carousel_change_page(widget,1);
     }
   }
 }
@@ -746,6 +789,8 @@ static void _carousel_signal(struct gui_widget *widget,int sigid) {
     case GUI_SIGID_CANCEL: mn_carousel_edit(widget); break;
     case GUI_SIGID_FOCUS: WIDGET->alpha_target=1.0f; break;
     case GUI_SIGID_BLUR: WIDGET->alpha_target=0.100f; break;
+    case GUI_SIGID_PAGELEFT: mn_carousel_step_page(widget,-1); break;
+    case GUI_SIGID_PAGERIGHT: mn_carousel_step_page(widget,1); break;
   }
 }
 

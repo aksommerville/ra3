@@ -10,9 +10,20 @@
 #include <limits.h>
 
 extern struct mn {
+
+  const char *exename;
+  int show_invalid; // By default, we ask to strip obscene, faulty, and hardware from all searches. Nonzero to search exactly what's asked for.
+  char *data_path;
+  int data_pathc;
+
   struct gui *gui;
   struct db_service dbs;
 } mn;
+
+/* Convenience: Returns (mn.data_path) prepended to (basename) with the appropriate separator.
+ * Uses a shared static buffer. Each call invalidates all prior results.
+ */
+const char *mn_data_path(const char *basename);
 
 extern const struct gui_widget_type mn_widget_type_home;
 extern const struct gui_widget_type mn_widget_type_menubar;

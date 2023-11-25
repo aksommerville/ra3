@@ -55,7 +55,7 @@ static int _gamedetails_init(struct gui_widget *widget) {
 
   // Load flag icons.
   void *serial=0;
-  int serialc=file_read(&serial,"src/menu/data/flags.png");//TODO don't require working directory
+  int serialc=file_read(&serial,mn_data_path("flags.png"));
   if (serialc>=0) {
     struct png_image *image=png_decode(serial,serialc);
     free(serial);

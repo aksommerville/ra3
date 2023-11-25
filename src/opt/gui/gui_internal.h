@@ -24,6 +24,8 @@ struct gui {
   struct gui_font **fontv;
   int fontc,fonta;
   struct gui_font *font; // WEAK
+  char *data_path;
+  int data_pathc;
 };
 
 struct gui_program {

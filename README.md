@@ -30,22 +30,22 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] Edit details for focussed game.
 - - - [x] Press B. Don't allow focus of the details widget.
 - - [ ] Random launch (Press R). Will need "dry-run" from the backend so we can capture the gameid and page index.
-- - [ ] Carousel: L/R to step by page.
+- - [x] Carousel: L/R to step by page.
 - - [x] Show total results count at left bookend. Must add to /api/query headers.
 - - [x] gui_widget_keyboard: Wrap at edges
 - - [x] Clear details when results go empty, I've seen them linger.
-- - [ ] gui_widget_keyboard: Hold L for shift?
-- - [ ] New list: Start with empty name, and reject empty at submit. (empty+OK=Cancel)
+- - [x] gui_widget_keyboard: Hold L for shift?
+- - [x] New list: Start with empty name, and reject empty at submit. (empty+OK=Cancel)
 - - [ ] Admin menu.
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.
 - - [ ] gui render helpers, must rewrite with GL 2
-- - [ ] Remove hard-coded data paths.
+- - [x] Remove hard-coded data paths.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - [x] When they select an empty list, propose to delete it (there's no other way to do that)
 - - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
-- - [ ] Add `notflags=obscene,hardware,faulty` to all searches, and maybe something in the Settings to turn it off?
+- - [x] Add `notflags=obscene,hardware,faulty` to all searches, and maybe something in the Settings to turn it off?
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.

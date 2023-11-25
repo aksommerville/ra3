@@ -33,6 +33,8 @@ struct gui_widget_type;
 #define GUI_SIGID_AUX 4
 #define GUI_SIGID_FOCUS 5
 #define GUI_SIGID_BLUR 6
+#define GUI_SIGID_PAGELEFT 7 /* L1 */
+#define GUI_SIGID_PAGERIGHT 8 /* R1 */
 
 /* Global context.
  **********************************************************************/
@@ -43,7 +45,7 @@ struct gui_delegate {
 };
 
 void gui_del(struct gui *gui);
-struct gui *gui_new(const struct gui_delegate *delegate);
+struct gui *gui_new(const struct gui_delegate *delegate,const char *data_path,int data_pathc);
 
 /* The root widget is just a container for the one "page" widget and multiple "modal" widgets.
  */

@@ -68,7 +68,8 @@ static int gui_text_cb_file(const char *path,const char *base,char type,void *us
  */
  
 int gui_text_init(struct gui *gui) {
-  if (dir_read("src/menu/data",gui_text_cb_file,gui)<0) return -1;//TODO don't hard-code path and don't require working directory!
+  if (!gui->data_pathc) return 0;
+  if (dir_read(gui->data_path,gui_text_cb_file,gui)<0) return -1;
   return 0;
 }
 

@@ -7,15 +7,30 @@ void gui_del(struct gui *gui) {
   if (!gui) return;
   gui_widget_del(gui->root);
   gui_text_quit(gui);
+  if (gui->data_path) free(gui->data_path);
   free(gui);
 }
 
 /* New.
  */
  
-struct gui *gui_new(const struct gui_delegate *delegate) {
+struct gui *gui_new(const struct gui_delegate *delegate,const char *data_path,int data_pathc) {
   struct gui *gui=calloc(1,sizeof(struct gui));
   if (delegate) gui->delegate=*delegate;
+  
+  if (data_path) {
+    if (data_pathc<0) { data_pathc=0; while (data_path[data_pathc]) data_pathc++; }
+    if (data_pathc) {
+      if (!(gui->data_path=malloc(data_pathc+1))) {
+        gui_del(gui);
+        return 0;
+      }
+      memcpy(gui->data_path,data_path,data_pathc);
+      gui->data_path[data_pathc]=0;
+      gui->data_pathc=data_pathc;
+    }
+  }
+  
   if (gui_text_init(gui)<0) {
     gui_del(gui);
     return 0;

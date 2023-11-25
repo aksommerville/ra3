@@ -40,11 +40,59 @@ static void mn_generate_pcm(void *v,int c) {
   memset(v,0,c<<1);//TODO
 }
 
+/* Get data path.
+ */
+ 
+static char mn_data_path_tmp[1024];
+
+const char *mn_data_path(const char *basename) {
+  if (!mn.data_path||!basename) return 0;
+  int bc=0;
+  while (basename[bc]) bc++;
+  if (mn.data_pathc+1+bc>=sizeof(mn_data_path_tmp)) return 0;
+  memcpy(mn_data_path_tmp,mn.data_path,mn.data_pathc);
+  mn_data_path_tmp[mn.data_pathc]='/';
+  memcpy(mn_data_path_tmp+mn.data_pathc+1,basename,bc+1);
+  return mn_data_path_tmp;
+}
+
+/* Set (mn.data_path).
+ */
+ 
+static int mn_choose_data_path() {
+  
+  /* (mn.exename) should contain "/ra3/" somewhere, and if so, we want thru that.
+   * If not, roll the dice on the working directory.
+   */
+  int okc=0;
+  const char *p=mn.exename;
+  for (;*p;p++) {
+    if (!memcmp(p,"/ra3/",5)) {
+      okc=p-mn.exename+5;
+      break;
+    }
+  }
+  if (okc) {
+    mn.data_pathc=okc+13;
+    if (!(mn.data_path=malloc(mn.data_pathc+1))) return -1;
+    memcpy(mn.data_path,mn.exename,okc);
+    memcpy(mn.data_path+okc,"src/menu/data",14);
+  } else {
+    mn.data_pathc=13;
+    if (!(mn.data_path=strdup("src/menu/data"))) return -1;
+  }
+  
+  return 0;
+}
+
 /* Initialize.
  */
  
 static int mn_load_none() {
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);//2023-11-23T16:03 leave this in place for the next startup segfault, it's happening randomly and rarely
+  
+  //mn.show_invalid=1;
+  if (mn_choose_data_path()<0) return -1;
   
   dbs_init(&mn.dbs);
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
@@ -57,7 +105,7 @@ static int mn_load_none() {
     .userdata=0,
     .cb_sound_effect=mn_cb_sound_effect,
   };
-  if (!(mn.gui=gui_new(&delegate))) return -1;
+  if (!(mn.gui=gui_new(&delegate,mn.data_path,mn.data_pathc))) return -1;
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   struct gui_widget *home=gui_replace_page(mn.gui,&mn_widget_type_home);
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
@@ -105,5 +153,7 @@ int main(int argc,char **argv) {
     .use_menu_role=1,
     .http_response=mn_http_response,
   };
+  mn.exename=(argc>=0)?argv[0]:0;
+  if (!mn.exename||!mn.exename[0]) mn.exename=delegate.name;
   return eh_main(argc,argv,&delegate);
 }

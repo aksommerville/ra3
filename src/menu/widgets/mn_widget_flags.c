@@ -37,7 +37,7 @@ static int _flags_init(struct gui_widget *widget) {
   
   if (!mn_flags_image) {
     void *serial=0;
-    int serialc=file_read(&serial,"src/menu/data/realflags.png");
+    int serialc=file_read(&serial,mn_data_path("realflags.png"));
     if (serialc<0) return -1;
     mn_flags_image=png_decode(serial,serialc);
     free(serial);

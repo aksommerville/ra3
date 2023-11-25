@@ -218,8 +218,26 @@ static void _root_input_changed(struct gui_widget *widget,uint16_t input) {
   if (ON(SOUTH)) _root_signal(widget,GUI_SIGID_ACTIVATE);
   if (ON(WEST)) _root_signal(widget,GUI_SIGID_CANCEL);
   if (ON(EAST)) _root_signal(widget,GUI_SIGID_AUX);
+  if (ON(L1)) _root_signal(widget,GUI_SIGID_PAGELEFT);
+  if (ON(R1)) _root_signal(widget,GUI_SIGID_PAGERIGHT);
   #undef ON
   WIDGET->pvinput=input;
+}
+
+/* Update a descendant.
+ * If it implements the update hook, use that only.
+ * Otherwise, recur into its children.
+ */
+ 
+static void root_update_child(struct gui_widget *child) {
+  if (child->type->update) {
+    child->type->update(child);
+  } else {
+    int i=0;
+    for (;i<child->childc;i++) {
+      root_update_child(child->childv[i]);
+    }
+  }
 }
 
 /* Update.
@@ -247,10 +265,7 @@ static void _root_update(struct gui_widget *widget) {
   
   /* Update the topmost child only.
    */
-  if (widget->childc>0) {
-    struct gui_widget *child=widget->childv[widget->childc-1];
-    if (child->type->update) child->type->update(child);
-  }
+  if (widget->childc>0) root_update_child(widget->childv[widget->childc-1]);
 }
 
 /* Type definition.

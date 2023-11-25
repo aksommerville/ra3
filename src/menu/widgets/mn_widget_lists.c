@@ -134,7 +134,7 @@ static void lists_cb_new(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
   if (!modal) return;
-  gui_widget_entry_setup(modal,"Untitled",-1,lists_cb_new_ready,widget);
+  gui_widget_entry_setup(modal,"",0,lists_cb_new_ready,widget);
 }
 
 /* Move this list from in to out or vice-versa.

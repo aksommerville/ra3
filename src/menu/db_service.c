@@ -354,6 +354,12 @@ static int dbs_encode_search_query(struct sr_encoder *dst,struct db_service *dbs
       if (sr_encode_json_string(dst,"rating",6,v,vc)<0) return -1;
     }
   }
+  
+  // We add these "notflags" to all searches, so invalid games are never visible.
+  // Luckily, there's no user-accessible use of "notflags" so we don't have to merge anything.
+  if (!mn.show_invalid) {
+    if (sr_encode_json_string(dst,"notflags",8,"obscene,faulty,hardware",23)<0) return -1;
+  }
 
   return 0;
 }

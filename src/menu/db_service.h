@@ -119,6 +119,8 @@ int dbs_create_list(struct db_service *dbs,const char *name,int namec);
 int dbs_add_to_list(struct db_service *dbs,int gameid,const char *listid,int listidc);
 int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *list,int listidc);
 
+void dbs_request_shutdown(struct db_service *dbs);
+
 /* Instead of adding bespoke plumbing for every API call, for things without request bodies, use this.
  * Requesting returns 'corrid', which you can use to cancel it later.
  */

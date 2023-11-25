@@ -652,6 +652,28 @@ int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *listid,in
   return err;
 }
 
+/* Request shutdown.
+ */
+ 
+void dbs_request_shutdown(struct db_service *dbs) {
+  struct fakews *fakews=eh_get_fakews();
+  if (!fakews) return;
+  if (!fakews_is_connected(fakews)) {
+    if (fakews_connect_now(fakews)<0) {
+      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
+      return;
+    }
+  }
+  #define JSONIZE(...) #__VA_ARGS__,sizeof(#__VA_ARGS__)-1
+  fakews_send(fakews,1,JSONIZE({
+    "id":"http",
+    "method":"POST",
+    "path":"/api/shutdown",
+    "headers":{"X-I-Know-What-Im-Doing":true}
+  }));
+  #undef JSONIZE
+}
+
 /* General request with callback.
  */
  

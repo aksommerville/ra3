@@ -173,6 +173,7 @@ extern const struct gui_widget_type gui_widget_type_pickone; // modal controller
 extern const struct gui_widget_type gui_widget_type_entry; // single-line text suitable for a modal, contains its own keyboard
 extern const struct gui_widget_type gui_widget_type_keyboard; // joystick-accessible keyboard
 extern const struct gui_widget_type gui_widget_type_form; // plain key=value form
+extern const struct gui_widget_type gui_widget_type_confirm; // modal controller with a few buttons, typically "OK" and "Cancel"
 
 void gui_root_place_modal_near(struct gui_widget *widget,struct gui_widget *modal,struct gui_widget *anchor);
 
@@ -218,6 +219,15 @@ void gui_widget_form_set_callback(
   void *userdata
 );
 struct gui_widget *gui_widget_form_get_button_by_key(struct gui_widget *widget,const char *k,int kc);
+
+int gui_widget_confirm_setup_(
+  struct gui_widget *widget,
+  const char *prompt,
+  void (*cb)(struct gui_widget *confirm,int p,void *userdata),
+  void *userdata,
+  ... // Button labels, nul-terminated strings.
+);
+#define gui_widget_confirm_setup(widget,prompt,cb,userdata,...) gui_widget_confirm_setup_(widget,prompt,cb,userdata,##__VA_ARGS__,(void*)0)
 
 /* Text support.
  ********************************************************/

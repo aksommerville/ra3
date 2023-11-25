@@ -15,6 +15,7 @@ static void ra_print_usage(const char *topic,int topicc) {
     "  --menu=PATH         Executable for front end.\n"
     "  --port=2600         TCP port for HTTP server.\n"
     "  --terminable=1      Relaunch the menu if it quits, don't let the user quit.\n"
+    "  --poweroff=0        Nonzero to call `poweroff` at POST /api/shutdown. Otherwise just quit.\n"
     "\n"
   );
 }
@@ -52,7 +53,9 @@ static int ra_configure_kv(const char *k,int kc,const char *v,int vc) {
   #define INTOPT(opt,fld,lo,hi) { \
     if ((kc==sizeof(opt)-1)&&!memcmp(k,opt,kc)) { \
       int n; \
-      if ((sr_int_eval(&n,v,vc)<1)||(n<lo)||(n>hi)) { \
+      if ((vc==4)&&!memcmp(v,"true",4)) n=1; \
+      else if ((vc==5)&&!memcmp(v,"false",5)) n=0; \
+      else if ((sr_int_eval(&n,v,vc)<1)||(n<lo)||(n>hi)) { \
         fprintf(stderr,"%s: Expected integer in %d..%d for '%s', found '%.*s'.\n",ra.exename,lo,hi,opt,vc,v); \
         return -2; \
       } \
@@ -66,6 +69,7 @@ static int ra_configure_kv(const char *k,int kc,const char *v,int vc) {
   STROPT("menu",menu)
   INTOPT("port",http_port,1,65535)
   INTOPT("terminable",terminable,0,1)
+  INTOPT("poweroff",allow_poweroff,0,1)
   
   #undef STROPT
   #undef INTOPT

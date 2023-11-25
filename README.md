@@ -16,8 +16,6 @@ Old emulators are of course still compatible generically, as long we don't serve
 
 - [ ] Emuhost
 - - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
-- - [x] akfceu screencap didn't save, when taken with no web client running. What gives?
-- - - [x] Looks like ra, not emuhost: A MENU client stayed open after its process terminated.
 - - [ ] Sometimes it launches in a window when I've asked for fullscreen.
 - [ ] Backend
 - - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
@@ -27,25 +25,21 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
-- - [x] Edit details for focussed game.
-- - - [x] Press B. Don't allow focus of the details widget.
-- - [ ] Random launch (Press R). Will need "dry-run" from the backend so we can capture the gameid and page index.
-- - [x] Carousel: L/R to step by page.
-- - [x] Show total results count at left bookend. Must add to /api/query headers.
-- - [x] gui_widget_keyboard: Wrap at edges
-- - [x] Clear details when results go empty, I've seen them linger.
-- - [x] gui_widget_keyboard: Hold L for shift?
-- - [x] New list: Start with empty name, and reject empty at submit. (empty+OK=Cancel)
+- - [ ] Random launch (Press R2). Will need "dry-run" from the backend so we can capture the gameid and page index.
+- - - Don't actually launch. Just use the random-launch logic, and jump to that game in UI.
 - - [ ] Admin menu.
+- - - [ ] Video
+- - - [ ] Audio
+- - - [ ] Input
+- - - [ ] Network
+- - - [ ] Interface: show_invalid, ...anything else?
+- - - [x] Shutdown
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.
 - - [ ] gui render helpers, must rewrite with GL 2
-- - [x] Remove hard-coded data paths.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
-- - [x] When they select an empty list, propose to delete it (there's no other way to do that)
 - - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
-- - [x] Add `notflags=obscene,hardware,faulty` to all searches, and maybe something in the Settings to turn it off?
 - [ ] Web
 - - [ ] Admin: What is this for?
 - - [ ] Now Playing: Flesh out with WebSocket.
@@ -65,6 +59,5 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - [ ] Selections for each user.
 - - [ ] "Andy's Top Picks".
-- - [x] web: Add list badges to the search results cards, to facilitate review.
 - - [ ] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.
 - [ ] Would it be crazy to bake the menu into the backend app? It's not urgent but think this over some time.

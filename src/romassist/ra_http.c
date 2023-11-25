@@ -974,6 +974,29 @@ static int ra_http_terminate(struct http_xfer *req,struct http_xfer *rsp) {
   return 0;
 }
 
+/* POST /api/shutdown
+ */
+ 
+static int ra_http_shutdown(struct http_xfer *req,struct http_xfer *rsp) {
+  const char *confirm=0;
+  int confirmc=http_xfer_get_header(&confirm,req,"X-I-Know-What-Im-Doing",22);
+  if ((confirmc!=4)||memcmp(confirm,"true",4)) {
+    return http_xfer_set_status(rsp,400,"Header 'X-I-Know-What-Im-Doing:true' required.");
+  }
+  if (ra.allow_poweroff) {
+    fprintf(stderr,"%s: Power down per HTTP request.\n",ra.exename);
+    // "sudo -n" means don't prompt for a password; only do it if password not required.
+    // Any machine running Romassist, if you want shutdown to work, you need Romassist's user to have passwordless sudo.
+    // Note that that is a serious security risk, especially considering we also have an unsecure HTTP server.
+    int result=system("sudo -n poweroff");
+    if (result) return http_xfer_set_status(rsp,500,"Shut down failed");
+  } else {
+    fprintf(stderr,"%s: Terminating per HTTP request.\n",ra.exename);
+    ra.sigc++;
+  }
+  return 0;
+}
+
 /* POST /api/autoscreencap
  */
 
@@ -1150,6 +1173,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(POST,"/api/launch",ra_http_launch)
   _(POST,"/api/random",ra_http_random)
   _(POST,"/api/terminate",ra_http_terminate)
+  _(POST,"/api/shutdown",ra_http_shutdown)
   
   _(POST,"/api/autoscreencap",ra_http_autoscreencap)
   

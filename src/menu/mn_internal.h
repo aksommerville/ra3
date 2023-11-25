@@ -34,6 +34,11 @@ extern const struct gui_widget_type mn_widget_type_rating;
 extern const struct gui_widget_type mn_widget_type_edit;
 extern const struct gui_widget_type mn_widget_type_flags;
 extern const struct gui_widget_type mn_widget_type_lists;
+extern const struct gui_widget_type mn_widget_type_video;
+extern const struct gui_widget_type mn_widget_type_audio;
+extern const struct gui_widget_type mn_widget_type_input;
+extern const struct gui_widget_type mn_widget_type_network;
+extern const struct gui_widget_type mn_widget_type_interface;
 
 int mn_widget_daterange_setup(
   struct gui_widget *widget,

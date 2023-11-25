@@ -259,6 +259,32 @@ static void menubar_cb_choose_text(struct gui_widget *entry,const char *v,int c,
   gui_dirty_pack(mn.gui);
 }
 
+static void menubar_cb_shutdown(struct gui_widget *confirm,int p,void *userdata) {
+  struct gui_widget *widget=userdata;
+  gui_dismiss_modal(mn.gui,confirm);
+  fprintf(stderr,"%s %d\n",__func__,p);
+  if (p==1) {
+    dbs_request_shutdown(&mn.dbs);
+  }
+}
+
+static void menubar_cb_choose_settings(struct gui_widget *pickone,int p,void *userdata) {
+  struct gui_widget *widget=userdata;
+  gui_dismiss_modal(mn.gui,pickone);
+  switch (p) {
+    case 0: gui_push_modal(widget->gui,&mn_widget_type_video); break;
+    case 1: gui_push_modal(widget->gui,&mn_widget_type_audio); break;
+    case 2: gui_push_modal(widget->gui,&mn_widget_type_input); break;
+    case 3: gui_push_modal(widget->gui,&mn_widget_type_network); break;
+    case 4: gui_push_modal(widget->gui,&mn_widget_type_interface); break;
+    case 5: {
+        struct gui_widget *confirm=gui_push_modal(widget->gui,&gui_widget_type_confirm);
+        if (!confirm) return;
+        gui_widget_confirm_setup(confirm,"Really shut down?",menubar_cb_shutdown,widget,"Cancel","Shut Down");
+      } break;
+  }
+}
+
 /* Button callbacks.
  * (userdata) is always the menubar widget.
  */
@@ -331,7 +357,20 @@ static void menubar_cb_text(struct gui_widget *button,void *userdata) {
  
 static void menubar_cb_settings(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
-  fprintf(stderr,"%s\n",__func__);//TODO settings modal, it's a unique thing
+  struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_pickone);
+  if (!modal) return;
+  gui_modal_place_near(modal,button);
+  gui_widget_pickone_set_callback(modal,menubar_cb_choose_settings,widget);
+  struct gui_widget *initial=0;
+  
+  initial=gui_widget_pickone_add_option(modal,"Video",5);
+  gui_widget_pickone_add_option(modal,"Audio",5);
+  gui_widget_pickone_add_option(modal,"Input",5);
+  gui_widget_pickone_add_option(modal,"Network",7);
+  gui_widget_pickone_add_option(modal,"Interface",9);
+  gui_widget_pickone_add_option(modal,"Shut Down",9);
+  
+  if (initial) gui_widget_pickone_focus(modal,initial);
 }
 
 /* Init.

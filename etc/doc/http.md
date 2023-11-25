@@ -261,13 +261,17 @@ Launches a game.
 Any game in progress will be terminated first.
 A new `play` record will be added and returned.
 
-
 `/api/random` takes the same criteria parameters as `/api/query`, but instead of returning the results,
 it picks a game at random from within them and launches it.
 I expect to expose this behavior directly on frontends wherever the user can search. "Roll dice within this query".
 
 Or `/api/terminate` to stop whatever game is in progress and return to the menu.
 The menu itself does not terminate on this, though it technically could.
+
+## /api/shutdown
+
+Quit the server or power down the machine (whichever the backend is configured to do).
+An extra header is required, to illustrate the call's gravity: X-I-Know-What-Im-Doing: true
 
 ## /api/autoscreencap
 

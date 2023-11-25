@@ -211,9 +211,12 @@ struct http_server *http_serve(struct http_context *context,int port) {
   struct http_server *server=http_context_add_new_server(context);
   if (!server) return 0;
   
+  // TODO Make hostname configurable (between localhost and 0.0.0.0).
+  const char *hostname="0.0.0.0";
+  //const char *hostname="localhost";
   if (
     (http_server_init_tcp_stream(server)<0)||
-    (http_server_bind(server,"localhost",port)<0)||
+    (http_server_bind(server,hostname,port)<0)||
     (http_server_listen(server,10)<0)
   ) {
     http_context_remove_server(context,server);

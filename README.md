@@ -31,7 +31,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [x] Video -- Remove. There's basically nothing to configure.
 - - - [ ] Audio: UI ready-ish. Needs emuhost support.
 - - - [ ] Input
-- - - [ ] Network
+- - - [x] Network. Should have a toggle for INADDR_ANY/localhost? I dunno...
 - - - [x] Interface: show_invalid, ...anything else?
 - - - [x] Shutdown
 - - [ ] Editing year, new value didn't populate in the year modal
@@ -47,7 +47,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Now Playing: Flesh out with WebSocket.
 - - [ ] Search results: Screencaps aren't maintaining aspect ratio.
 - - [ ] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
-- - [ ] Uncaught (in promise) ReferenceError: game is not defined   at GameDetailsModal.js:190:35 (deleting a game)
+- - [x] Uncaught (in promise) ReferenceError: game is not defined   at GameDetailsModal.js:190:35 (deleting a game)
+- - [ ] Make all views mobile-friendly
 - [ ] Integrate emulators
 - - [ ] Pico-8. No integration, but do get it running on the Pi with DRM.
 - - [ ] Solarus, try again.
@@ -55,6 +56,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] akz26: Review inputs. I think I'm missing some of the console switches.
 - - [ ] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
 - [ ] Prepare collection
+- - [ ] Bring in TTAQ, and look for other of my games.
+- - [ ] Review all native games. I know we have Bonnie's Bakery here, and pretty sure that won't fly on ARM.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.

@@ -122,7 +122,7 @@ int eh_cb_digested_event(void *userdata,const struct eh_inmgr_event *event) {
  */
  
 void eh_cb_inmgr_config_dirty(void *userdata) {
-  fprintf(stderr,"%s\n",__func__);
+  eh.inmgr_dirty=1;
 }
 
 /* Persistent WebSocket connection.

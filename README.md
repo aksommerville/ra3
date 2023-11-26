@@ -17,8 +17,9 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Emuhost
 - - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
 - - [ ] Sometimes it launches in a window when I've asked for fullscreen.
+- - [x] Confirm that remapping identical input devices alters the live map state too.
 - [ ] Backend
-- - [ ] Check that we set O_CLOEXEC on all long-lived files; I bet we don't.
+- - xxx Check that we set O_CLOEXEC on all long-lived files; I bet we don't. ...actually i don't care. All our child processes have limited lifetimes.
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - - [ ] Protect against immediate failure from the menu.
@@ -30,7 +31,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Admin menu.
 - - - [x] Video -- Remove. There's basically nothing to configure.
 - - - [ ] Audio: UI ready-ish. Needs emuhost support.
-- - - [ ] Input
+- - - [x] Input
 - - - [x] Network. Should have a toggle for INADDR_ANY/localhost? I dunno...
 - - - [x] Interface: show_invalid, ...anything else?
 - - - [x] Shutdown
@@ -41,6 +42,10 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.
 - - [ ] gui render helpers, must rewrite with GL 2
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
+- - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
+- - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.
+- - - - ^ That exit status might be a lie; we weren't checking WIFEXITED.
+- - - - The 6 expected HTTP calls did go out, and succeeded, same as normal cases.
 - - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
 - [ ] Web
 - - [ ] Admin: What is this for?
@@ -48,14 +53,13 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Search results: Screencaps aren't maintaining aspect ratio.
 - - [ ] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
 - - [x] Uncaught (in promise) ReferenceError: game is not defined   at GameDetailsModal.js:190:35 (deleting a game)
-- - [ ] Make all views mobile-friendly
+- - [ ] Make all views mobile-friendly, today they are very not.
 - [ ] Integrate emulators
-- - [ ] Pico-8. No integration, but do get it running on the Pi with DRM.
-- - [ ] Solarus, try again.
 - - [ ] Validate 4 player in all emulators
 - - [ ] akz26: Review inputs. I think I'm missing some of the console switches.
 - - [ ] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
 - [ ] Prepare collection
+- - [ ] Comprater
 - - [ ] Bring in TTAQ, and look for other of my games.
 - - [ ] Review all native games. I know we have Bonnie's Bakery here, and pretty sure that won't fly on ARM.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
@@ -67,3 +71,11 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Genre underused: Flyswatter, Trivia, Strategy.
 - - [ ] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.
 - [ ] Would it be crazy to bake the menu into the backend app? It's not urgent but think this over some time.
+- [ ] Prepare the Pi.
+- - [ ] Ensure keyboards behave sanely.
+- - [ ] systemd
+- - [ ] Verify poweroff
+- - [ ] Build all the uncontroversial software.
+- - [ ] Pico-8
+- - [ ] Solarus
+- - [x] Are Evercade pads distinguishable from real Xbox 360 pads? YES: Version=0105(Evercade) Version=0114(Microsoft)

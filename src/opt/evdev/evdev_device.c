@@ -49,6 +49,22 @@ int evdev_device_set_devid(struct evdev_device *device,int devid) {
 int evdev_device_get_name(char *dst,int dsta,const struct evdev_device *device) {
   if (!device) return -1;
   if (!dst||(dsta<0)) dsta=0;
+  
+  /* A silly hack, I have a few Evercade VS controllers, and love them to death,
+   * but they pretend to be Xbox 360 controllers, which I also use real ones. D'oh.
+   * My Evercades have version 0x0105 and the Microsoft has version 0x0114.
+   * One assumes that there is an MS 0x0105 somewhere out there, 
+   * and this logic will probably annoy owners of that hardware. Sorry!
+   */
+  if ((device->vid==0x045e)&&(device->pid==0x028e)&&(device->version==0x0105)) {
+    const char *src="Evercade VS";
+    int srcc=0; while (src[srcc]) srcc++;
+    if (srcc<=dsta) memcpy(dst,src,srcc);
+    if (srcc<dsta) dst[srcc]=0;
+    return srcc;
+  }
+
+  // OK back to our regularly-scheduled programming...  
   if (!dsta) {
     char scratch[256];
     return ioctl(device->fd,EVIOCGNAME(sizeof(scratch)),scratch);

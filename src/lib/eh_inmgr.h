@@ -100,6 +100,8 @@ int eh_btnid_eval(const char *src,int srcc);
 int eh_btnid_repr(char *dst,int dsta,int btnid);
 const char *eh_btnid_repr_canned(int btnid);
 const char *eh_btnid_repr_by_index(int p);
+int eh_btnid_by_index(int p);
+int eh_index_by_btnid(int btnid);
 
 /* Inmgr maintains a list of connected devid and the associated driver.
  * (this knowledge doesn't live anywhere else in Emuhost, except in the individual drivers).
@@ -120,5 +122,8 @@ int eh_inmgr_device_enumerate(
   int (*cb)(void *userdata,int btnid,int value,int lo,int hi,int hidusage),
   void *userdata
 );
+static inline int eh_inmgr_device_is_system_keyboard(const struct eh_inmgr *inmgr,int devid) {
+  return (inmgr&&(devid>0)&&!eh_inmgr_driver_for_devid(inmgr,devid));
+}
 
 #endif

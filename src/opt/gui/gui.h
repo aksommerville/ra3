@@ -279,6 +279,7 @@ void gui_texture_get_size(int *w,int *h,const struct gui_texture *texture);
 
 int gui_texture_alloc(struct gui_texture *texture,int w,int h,int alpha);
 int gui_texture_upload_rgba(struct gui_texture *texture,int w,int h,const void *src);
+int gui_texture_upload_rgba_partial(struct gui_texture *texture,int x,int y,int w,int h,const void *src);
 
 void gui_texture_use(struct gui_texture *texture);
 

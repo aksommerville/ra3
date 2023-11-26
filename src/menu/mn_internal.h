@@ -39,6 +39,7 @@ extern const struct gui_widget_type mn_widget_type_audio;
 extern const struct gui_widget_type mn_widget_type_input;
 extern const struct gui_widget_type mn_widget_type_network;
 extern const struct gui_widget_type mn_widget_type_interface;
+extern const struct gui_widget_type mn_widget_type_indev; // Input config for a single device.
 
 int mn_widget_daterange_setup(
   struct gui_widget *widget,
@@ -87,6 +88,11 @@ int mn_widget_lists_setup(
   void *userdata
 );
 int mn_widget_lists_encode(char *dst,int dsta,struct gui_widget *widget);
+
+int mn_widget_indev_setup(
+  struct gui_widget *widget,
+  int devid
+);
 
 void mn_cb_sound_effect(int sfxid,void *userdata);
 

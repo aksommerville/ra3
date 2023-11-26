@@ -92,3 +92,20 @@ const char *eh_btnid_repr_by_index(int p) {
   #undef _
   return 0;
 }
+
+int eh_btnid_by_index(int p) {
+  if (p<0) return 0;
+  #define _(tag) if (!p--) return EH_BTN_##tag;
+  EH_FOR_EACH_NAMED_BUTTON
+  #undef _
+  return 0;
+}
+
+int eh_index_by_btnid(int btnid) {
+  // I wish this could be done as a switch, maybe using __LINE__ or something? Doesn't appear to be possible.
+  int p=0;
+  #define _(tag) if (btnid==EH_BTN_##tag) return p; p++;
+  EH_FOR_EACH_NAMED_BUTTON
+  #undef _
+  return 0;
+}

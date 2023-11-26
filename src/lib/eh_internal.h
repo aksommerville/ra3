@@ -42,6 +42,7 @@ extern struct eh {
   int devid_keyboard; // nonzero if video driver provides a keyboard
   struct eh_render *render;
   struct eh_inmgr *inmgr;
+  int inmgr_dirty;
   struct eh_aucvt aucvt;
   struct fakews *fakews;
   

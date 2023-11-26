@@ -364,6 +364,23 @@ int eh_inmgr_device_ids(int *vendor,int *product,int *version,const struct eh_in
   return 0;
 }
 
+/* Enumerate capabilities.
+ */
+ 
+static int eh_inmgr_device_enumerate_keyboard(
+  int (*cb)(void *userdata,int btnid,int value,int lo,int hi,int hidusage),
+  void *userdata
+) {
+  // Window managers that supply a system keyboard are expected to use HID page 7 as btnid.
+  // It's important that we enumerate these, since sometimes there's USB keyboards delivering generically, and they should map the same way.
+  int err,i;
+  #define RANGE(first,last) for (i=first;i<=last;i++) if (err=cb(userdata,0x00070000|i,0,0,2,0x00070000|i)) return err;
+  RANGE(0x04,0x63) // letters, arrows, keypad, most of the keyboard
+  RANGE(0xe0,0xe7) // modifiers
+  #undef RANGE
+  return 0;
+}
+
 struct eh_inmgr_enumerate_adapter {
   int (*cb)(void *userdata,int btnid,int value,int lo,int hi,int hidusage);
   void *userdata;
@@ -384,7 +401,9 @@ int eh_inmgr_device_enumerate(
   int p=eh_inmgr_devicev_search(inmgr,devid);
   if (p<0) return 0;
   struct eh_input_driver *driver=inmgr->devicev[p].driver;
-  if (!driver) return 0;
+  if (!driver) {
+    return eh_inmgr_device_enumerate_keyboard(cb,userdata);
+  }
   if (!driver->type->list_buttons) return 0;
   struct eh_inmgr_enumerate_adapter ctx={ // v2 had a different shape for the enumerate callback, and inmgr is copied from v2.
     .cb=cb,

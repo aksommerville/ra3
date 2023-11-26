@@ -80,6 +80,16 @@ int gui_texture_upload_rgba(struct gui_texture *texture,int w,int h,const void *
   glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,src);
   texture->w=w;
   texture->h=h;
+  return 0;
+}
+
+int gui_texture_upload_rgba_partial(struct gui_texture *texture,int x,int y,int w,int h,const void *src) {
+  if (!texture) return -1;
+  if ((x<0)||(w<1)||(x>texture->w-w)) return -1;
+  if ((y<0)||(h<1)||(y>texture->h-h)) return -1;
+  glBindTexture(GL_TEXTURE_2D,texture->texid);
+  glTexSubImage2D(GL_TEXTURE_2D,0,x,y,w,h,GL_RGBA,GL_UNSIGNED_BYTE,src);
+  return 0;
 }
 
 /* Use.

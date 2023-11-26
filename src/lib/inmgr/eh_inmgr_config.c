@@ -173,9 +173,6 @@ static int eh_inmgr_config_cb_button(int btnid,uint32_t hidusage,int lo,int hi,i
   //fprintf(stderr,"  %s 0x%08x %d..%d usage=0x%08x\n",__func__,btnid,lo,hi,hidusage);
   
   // Ignore anything on page 7 (Keyboard). There could be tons of these, and we're not interested.
-  // To the extent we use keyboards at all, the events come from window manager or stdin, and don't enter inmgr.
-  // (TODO That policy isn't set in stone, think it over good some time).
-  // UPDATE v3 2023-11-04: Keyboards do end up here and we should provide some special knowledge about them.
   if ((hidusage&0xffff0000)==0x00070000) return 0;
   
   // Page 9 (Generic Button), assign anywhere.

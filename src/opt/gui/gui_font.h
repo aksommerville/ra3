@@ -99,7 +99,7 @@ int gui_font_break_lines(struct gui_font_line *dst,int dsta,const struct gui_fon
 /* Fill (dst) with an RGBA image of one line of text.
  * Color is the provided 24-bit RGB, and alpha is taken from the font.
  * It's advisable to initialize the image to transparent white (not transparent black!) if you're going to scale with interpolation.
- * We only visit pixels with nonzero alpha.
+ * We only visit pixels with nonzero alpha. But we do not blend, we overwrite visited pixels.
  */
 void gui_font_render_line(void *dst,int dstw,int dsth,int dststride,const struct gui_font *font,const char *src,int srcc,int rgb);
 

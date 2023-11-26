@@ -173,8 +173,8 @@ static void _pickone_motion(struct gui_widget *widget,int dx,int dy) {
   if (widget->childc<1) return;
   if (widget->gui->pvinput&EH_BTN_EAST) dy*=10; // hold EAST for high speed
   int np=WIDGET->focusp+dy;
-  if (np<0) np=widget->childc-1;
-  else if (np>=widget->childc) np=0;
+  if (np<0) np=WIDGET->focusp?0:(widget->childc-1);
+  else if (np>=widget->childc) np=(WIDGET->focusp==widget->childc-1)?0:(widget->childc-1);
   if (np==WIDGET->focusp) return;
   pickone_blur(widget);
   WIDGET->focusp=np;

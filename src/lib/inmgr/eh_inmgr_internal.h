@@ -54,12 +54,12 @@ struct eh_inmgr {
   
   struct eh_inmgr_device {
     int devid;
-    struct eh_input_driver *driver; // WEAK
+    struct eh_input_driver *driver; // WEAK. Null for system keyboard.
     struct eh_inmgr_config *config; // WEAK (all get wiped when configs change)
     int playerid;
     // Device buttons are pretty much 1:1 with config rules.
     // In particular, the compound buttons HORZ, VERT, and DPAD are a single rule and single button.
-    // Buttons not report at device enumeration are not included here.
+    // Buttons not reported at device enumeration are not included here.
     struct eh_inmgr_button {
       int srcbtnid,dstbtnid;
       int srcvalue,dstvalue;

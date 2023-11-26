@@ -9,6 +9,7 @@ struct eh eh={0};
  */
  
 static void eh_rcvsig(int sigid) {
+  fprintf(stderr,"%s:%d: Signal %d (%s)\n",__FILE__,__LINE__,sigid,strsignal(sigid));//2023-11-26: Tracing for random and rare startup errors.
   switch (sigid) {
     case SIGINT: if (++(eh.sigc)>=3) {
         fprintf(stderr,"%s: Too many unprocessed signals.\n",eh.exename);
@@ -101,6 +102,16 @@ static int eh_update() {
   if (fakews_update(eh.fakews,0)<0) {
     fprintf(stderr,"%s: Error updating network.\n",eh.exename);
     return -2;
+  }
+  if (eh.inmgr_dirty) {
+    if (eh.input_config_path) {
+      if (eh_inmgr_save_config(eh.input_config_path,eh.inmgr)>=0) {
+        fprintf(stderr,"%s: Saved input config.\n",eh.input_config_path);
+      } else {
+        fprintf(stderr,"%s: Failed to save input config.\n",eh.input_config_path);
+      }
+    }
+    eh.inmgr_dirty=0;
   }
   
   // If we're hard-paused, stop here.

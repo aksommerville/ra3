@@ -91,8 +91,14 @@ int ra_process_update(struct ra_process *process) {
     int err,wstatus=0;
     err=waitpid(process->pid,&wstatus,WNOHANG);
     if (err>0) {
-      int status=WEXITSTATUS(wstatus);
-      fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
+      if (WIFEXITED(wstatus)) {
+        int status=WEXITSTATUS(wstatus);
+        fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
+      } else {
+        int sigid=0;
+        if (WIFSIGNALED(wstatus)) sigid=WTERMSIG(wstatus);
+        fprintf(stderr,"%s: Child process %d (gameid %d) abnormal exit. Signal %d (%s).\n",ra.exename,process->pid,process->gameid,sigid,strsignal(sigid));
+      }
       if (!process->gameid&&!process->next_launch) process->menu_terminated=1;
       process->pid=0;
       if (!process->next_launch) process->gameid=0;

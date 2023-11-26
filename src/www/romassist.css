@@ -632,3 +632,74 @@ h2 {
   width: 100%;
   height: 200px;
 }
+
+/* CompraterUi
+ *************************************/
+ 
+.CompraterUi {
+  display: flex;
+  flex-direction: row;
+  align-items: end;
+}
+
+.CompraterUi .bucketColumn {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  border-right: 1px solid #000;
+}
+.CompraterUi .bucketColumn.left {
+  border-left: 1px solid #000;
+}
+
+.CompraterUi .bucketColumn .header {
+  background-color: #888;
+  color: #000;
+  text-align: center;
+  font-weight: bold;
+}
+
+.CompraterUi .nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.CompraterUi .thumbnail {
+  height: 100px;
+  border: 1px solid #000;
+  font-size: 9pt;
+  text-align: center;
+  cursor: pointer;
+}
+
+.CompraterUi .thumbnail > .name {
+  word-break: none;
+}
+
+.CompraterUi .thumbnail > img {
+  max-height: calc(100% - 2em);
+}
+
+/* CompraterQuickieModal
+ ******************************************/
+ 
+.CompraterQuickieModal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  outline: none;
+}
+ 
+.CompraterQuickieModal .name {
+  margin: 0;
+}
+
+.CompraterQuickieModal .rating {
+  font-size: 60pt;
+}
+
+.CompraterQuickieModal .rating .cursor {
+  background-color: #00ffff;
+}

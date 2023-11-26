@@ -115,7 +115,7 @@ export class CompraterUi {
     // It's easy enough to make CompraterQuickieModal export the same interface as GameDetailsModal to keep this clean:
     let clazz = CompraterQuickieModal;
     if (event.shiftKey) clazz = GameDetailsModal;
-    const modal = this.dom.spawnModal(CompraterQuickieModal);
+    const modal = this.dom.spawnModal(clazz);
     modal.setupFull(game);
     modal.onChanged = (changed) => {
       this.loadOne(game.rating);
@@ -164,3 +164,5 @@ export class CompraterUi {
     });
   }
 }
+
+CompraterUi.TAB_LABEL = "Comprater";

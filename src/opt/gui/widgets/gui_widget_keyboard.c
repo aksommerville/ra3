@@ -20,6 +20,7 @@ struct gui_widget_keyboard {
   struct gui_font *font; // WEAK
   int focusp;
   int shifted;
+  uint16_t pvinput;
 };
 
 #define WIDGET ((struct gui_widget_keyboard*)widget)
@@ -359,16 +360,22 @@ static void _keyboard_signal(struct gui_widget *widget,int sigid) {
  */
  
 static void _keyboard_update(struct gui_widget *widget) {
-  if (widget->gui->pvinput&EH_BTN_L1) {
-    if (!WIDGET->shifted) {
-      WIDGET->shifted=1;
-      keyboard_refresh_capstex(widget);
+  if (WIDGET->pvinput!=widget->gui->pvinput) {
+    if (widget->gui->pvinput&EH_BTN_L1) {
+      if (!WIDGET->shifted) {
+        WIDGET->shifted=1;
+        keyboard_refresh_capstex(widget);
+      }
+    } else {
+      if (WIDGET->shifted) {
+        WIDGET->shifted=0;
+        keyboard_refresh_capstex(widget);
+      }
     }
-  } else {
-    if (WIDGET->shifted) {
-      WIDGET->shifted=0;
-      keyboard_refresh_capstex(widget);
+    if ((widget->gui->pvinput&EH_BTN_AUX1)&&!(WIDGET->pvinput&EH_BTN_AUX1)) {
+      if (WIDGET->cb) WIDGET->cb(widget,0x0a,WIDGET->userdata);
     }
+    WIDGET->pvinput=widget->gui->pvinput;
   }
 }
 

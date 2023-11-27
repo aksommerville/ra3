@@ -32,8 +32,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - Don't actually launch. Just use the random-launch logic, and jump to that game in UI.
 - - [ ] Admin menu.
 - - - [ ] Audio: UI ready-ish. Needs emuhost support.
-- - [ ] Editing year, new value didn't populate in the year modal
-- - [ ] entry: Submit on AUX1
+- - [x] Editing year, new value didn't populate in the year modal ...must have been a fluke? can't reproduce
+- - [x] entry: Submit on AUX1
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.

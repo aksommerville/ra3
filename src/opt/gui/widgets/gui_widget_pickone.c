@@ -176,6 +176,7 @@ static void _pickone_motion(struct gui_widget *widget,int dx,int dy) {
   if (np<0) np=WIDGET->focusp?0:(widget->childc-1);
   else if (np>=widget->childc) np=(WIDGET->focusp==widget->childc-1)?0:(widget->childc-1);
   if (np==WIDGET->focusp) return;
+  GUI_SOUND(MOTION)
   pickone_blur(widget);
   WIDGET->focusp=np;
   pickone_focus(widget);
@@ -187,7 +188,7 @@ static void _pickone_motion(struct gui_widget *widget,int dx,int dy) {
  
 static void _pickone_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
-    case GUI_SIGID_CANCEL: gui_dismiss_modal(widget->gui,widget); break;
+    case GUI_SIGID_CANCEL: GUI_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); break;
     case GUI_SIGID_ACTIVATE: pickone_activate(widget); break;
   }
 }

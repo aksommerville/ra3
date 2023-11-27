@@ -239,6 +239,7 @@ static void _input_motion(struct gui_widget *widget,int dx,int dy) {
   if (np<0) np=WIDGET->rowc-1;
   else if (np>=WIDGET->rowc) np=0;
   if (np==WIDGET->rowp) return;
+  MN_SOUND(MOTION)
   WIDGET->rowp=np;
 }
 
@@ -268,11 +269,13 @@ static void input_open_indev(struct gui_widget *widget,struct input_row *row) {
       WIDGET->instructions=ntexture;
       gui_dirty_pack(widget->gui);
     }
+    MN_SOUND(REJECT)
     return;
   }
   
   struct gui_widget *indev=gui_push_modal(widget->gui,&mn_widget_type_indev);
   if (!indev) return;
+  MN_SOUND(ACTIVATE)
   mn_widget_indev_setup(indev,row->devid);
 }
 
@@ -283,7 +286,7 @@ static void input_activate(struct gui_widget *widget) {
   if ((WIDGET->rowp<0)||(WIDGET->rowp>=WIDGET->rowc)) return;
   struct input_row *row=WIDGET->rowv+WIDGET->rowp;
   switch (row->devid) {
-    case -1: gui_dismiss_modal(widget->gui,widget); return;
+    case -1: MN_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); return;
     default: if (row->devid>0) input_open_indev(widget,row);
   }
 }

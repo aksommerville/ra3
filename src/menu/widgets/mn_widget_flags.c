@@ -163,6 +163,7 @@ static void flags_activate(struct gui_widget *widget) {
  
 static void _flags_motion(struct gui_widget *widget,int dx,int dy) {
   if (mn_flags_colc<1) return;
+  MN_SOUND(MOTION)
   WIDGET->focusp+=dx;
   if (WIDGET->focusp<0) WIDGET->focusp=mn_flags_colc-1;
   else if (WIDGET->focusp>=mn_flags_colc) WIDGET->focusp=0;

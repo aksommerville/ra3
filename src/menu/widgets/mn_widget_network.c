@@ -127,6 +127,7 @@ static void _network_motion(struct gui_widget *widget,int dx,int dy) {
  
 static void _network_signal(struct gui_widget *widget,int sigid) {
   if (sigid==GUI_SIGID_CANCEL) {
+    MN_SOUND(CANCEL)
     gui_dismiss_modal(widget->gui,widget);
   } else {
     if (widget->childc!=1) return;

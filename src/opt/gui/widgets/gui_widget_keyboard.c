@@ -340,6 +340,7 @@ static void _keyboard_motion(struct gui_widget *widget,int dx,int dy) {
   else if (dy<0) next=keyboard_find_neighbor(widget,focus,focus->x,focus->w,0,WIDGET->bh,0,1,focus->y);
   else if (dy>0) next=keyboard_find_neighbor(widget,focus,focus->x,focus->w,0,WIDGET->bh,0,-1,focus->y);
   if (!next) return;
+  GUI_SOUND(MOTION)
   
   WIDGET->focusp=next-WIDGET->buttonv;
 }

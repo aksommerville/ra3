@@ -22,6 +22,7 @@ static void audio_toggle_show_invalid(struct gui_widget *widget,struct gui_widge
   mn.show_invalid=mn.show_invalid?0:1;
   struct gui_widget *button=gui_widget_form_get_button_by_key(form,"Show Invalid Games?",19);
   if (!button) return;
+  MN_SOUND(MINOR_OK)
   gui_widget_button_set_label(button,mn.show_invalid?"Show":"Hide",4,0xffffff);
   gui_dirty_pack(widget->gui);
   dbs_refresh_search(&mn.dbs);
@@ -90,6 +91,7 @@ static void _interface_motion(struct gui_widget *widget,int dx,int dy) {
  
 static void _interface_signal(struct gui_widget *widget,int sigid) {
   if (sigid==GUI_SIGID_CANCEL) {
+    MN_SOUND(CANCEL)
     gui_dismiss_modal(widget->gui,widget);
   } else {
     if (widget->childc!=1) return;

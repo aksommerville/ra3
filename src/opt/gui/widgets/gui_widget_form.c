@@ -171,6 +171,7 @@ static void _form_motion(struct gui_widget *widget,int dx,int dy) {
       }
     }
     if (np==WIDGET->focusp) return;
+    GUI_SOUND(MOTION)
     form_blur(widget);
     WIDGET->focusp=np;
     form_focus(widget);
@@ -224,6 +225,7 @@ static void form_cb_button(struct gui_widget *button,void *userdata) {
       } else {
         struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
         if (!modal) return;
+        GUI_SOUND(ACTIVATE)
         const char *text=0;
         int textc=gui_widget_button_get_text(&text,row->v);
         gui_widget_entry_setup(modal,text,textc,form_cb_edited,widget);

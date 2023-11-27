@@ -72,20 +72,24 @@ static void audio_set_driver(struct gui_widget *pickone,int p,void *userdata) {
   gui_dismiss_modal(widget->gui,pickone);
   const struct eh_audio_type *type=eh_audio_type_by_index(p);
   if (!type) return;
+  MN_SOUND(ACTIVATE)
   gui_widget_button_set_label(gui_widget_form_get_button_by_key(widget->childv[0],"Driver",6),type->name,-1,0xffffff);
   gui_dirty_pack(widget->gui);
   audio_replace_driver(widget);
 }
  
 static void audio_set_device(struct gui_widget *widget,const char *v,int vc) {
+  MN_SOUND(ACTIVATE)
   audio_replace_driver(widget);
 }
 
 static void audio_set_rate(struct gui_widget *widget,const char *v,int vc) {
+  MN_SOUND(ACTIVATE)
   audio_replace_driver(widget);
 }
 
 static void audio_set_chanc(struct gui_widget *widget,const char *v,int vc) {
+  MN_SOUND(ACTIVATE)
   audio_replace_driver(widget);
 }
 
@@ -96,6 +100,7 @@ static void audio_edit_driver(struct gui_widget *widget,struct gui_widget *form)
   struct eh_audio_driver *driver=eh_get_audio_driver();
   struct gui_widget *pickone=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!pickone) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(pickone,gui_widget_form_get_button_by_key(form,"Driver",6));
   gui_widget_pickone_set_callback(pickone,audio_set_driver,widget);
   int i=0;
@@ -180,6 +185,7 @@ static void _audio_motion(struct gui_widget *widget,int dx,int dy) {
  
 static void _audio_signal(struct gui_widget *widget,int sigid) {
   if (sigid==GUI_SIGID_CANCEL) {
+    MN_SOUND(CANCEL)
     gui_dismiss_modal(widget->gui,widget);
   } else {
     if (widget->childc!=1) return;

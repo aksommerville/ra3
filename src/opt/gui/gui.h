@@ -17,13 +17,12 @@ struct gui_widget_type;
  * We call your delegate when an effect should play.
  * IDs >=GUI_SFXID_USER will never be used by widgets owned by gui core.
  */
-#define GUI_SFXID_MOTION 1
-#define GUI_SFXID_ACTIVATE 2
-#define GUI_SFXID_CANCEL 3
-#define GUI_SFXID_REJECT 4
-#define GUI_SFXID_MODAL_UP 5
-#define GUI_SFXID_MODAL_DOWN 6
-#define GUI_SFXID_USER 100
+#define GUI_SFXID_MOTION     1 /* minorest pip, focus moved */
+#define GUI_SFXID_ACTIVATE   2 /* something happened */
+#define GUI_SFXID_CANCEL     3 /* user says no */
+#define GUI_SFXID_REJECT     4 /* system says no */
+#define GUI_SFXID_MINOR_OK   5 /* eg text entry */
+#define GUI_SFXID_USER     100
 
 /* Stateless signals we can send to a widget.
  */

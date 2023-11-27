@@ -46,6 +46,8 @@ struct gui_texture {
   int w,h;
 };
 
+#define GUI_SOUND(tag) { if (widget->gui->delegate.cb_sound_effect) widget->gui->delegate.cb_sound_effect(GUI_SFXID_##tag,widget->gui->delegate.userdata); }
+
 void gui_text_quit(struct gui *gui);
 int gui_text_init(struct gui *gui);
 

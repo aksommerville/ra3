@@ -188,6 +188,7 @@ static void menubar_cb_choose_list(struct gui_widget *pickone,int p,void *userda
   char name[64];
   int namec=menubar_json_member_by_index(name,sizeof(name),mn.dbs.lists,mn.dbs.listsc,p-1);
   if (dbs_search_set_list(&mn.dbs,name,namec)<0) return;
+  MN_SOUND(ACTIVATE)
   dbs_refresh_search(&mn.dbs);
   if (namec) menubar_set_label(widget,0,name,namec,COLOR_ACTIVE);
   else menubar_set_label(widget,0,"list",4,COLOR_NONE);
@@ -197,6 +198,7 @@ static void menubar_cb_choose_list(struct gui_widget *pickone,int p,void *userda
 
 static void menubar_cb_choose_rating(struct gui_widget *rating,int v,void *userdata) {
   struct gui_widget *widget=userdata;
+  MN_SOUND(ACTIVATE)
   if (v!=mn.dbs.ratinglo) {
     dbs_search_set_rating(&mn.dbs,v,0);
     dbs_refresh_search(&mn.dbs);
@@ -212,6 +214,7 @@ static void menubar_cb_choose_playerc(struct gui_widget *pickone,int p,void *use
   char tmp[256];
   int tmpc=menubar_rewrite_flags_with_player_index(tmp,sizeof(tmp),mn.dbs.flags,mn.dbs.flagsc,p);
   if ((tmpc>=0)&&(tmpc<=sizeof(tmp))) {
+    MN_SOUND(ACTIVATE)
     if (dbs_search_set_flags(&mn.dbs,tmp,tmpc)<0) return;
     dbs_refresh_search(&mn.dbs);
     switch (p) {
@@ -227,6 +230,7 @@ static void menubar_cb_choose_playerc(struct gui_widget *pickone,int p,void *use
 
 static void menubar_cb_choose_date(struct gui_widget *daterange,void *userdata,int lo,int hi) {
   struct gui_widget *widget=userdata;
+  MN_SOUND(ACTIVATE)
   if (hi>=9999) hi=0;
   mn.dbs.pubtimelo=lo;
   mn.dbs.pubtimehi=hi;
@@ -242,6 +246,7 @@ static void menubar_cb_choose_genre(struct gui_widget *pickone,int p,void *userd
   char name[64];
   int namec=menubar_json_member_by_index(name,sizeof(name),mn.dbs.genres,mn.dbs.genresc,p-1);
   if (dbs_search_set_genre(&mn.dbs,name,namec)<0) return;
+  MN_SOUND(ACTIVATE)
   dbs_refresh_search(&mn.dbs);
   if (namec) menubar_set_label(widget,4,name,namec,COLOR_ACTIVE);
   else menubar_set_label(widget,4,"genre",5,COLOR_NONE);
@@ -252,6 +257,7 @@ static void menubar_cb_choose_genre(struct gui_widget *pickone,int p,void *userd
 static void menubar_cb_choose_text(struct gui_widget *entry,const char *v,int c,void *userdata) {
   struct gui_widget *widget=userdata;
   if (dbs_search_set_text(&mn.dbs,v,c)<0) return;
+  MN_SOUND(ACTIVATE)
   dbs_refresh_search(&mn.dbs);
   if (c) menubar_set_label(widget,5,v,c,COLOR_ACTIVE);
   else menubar_set_label(widget,5,"text",4,COLOR_NONE);
@@ -264,12 +270,15 @@ static void menubar_cb_shutdown(struct gui_widget *confirm,int p,void *userdata)
   gui_dismiss_modal(mn.gui,confirm);
   if (p==1) {
     dbs_request_shutdown(&mn.dbs);
+  } else {
+    MN_SOUND(CANCEL)
   }
 }
 
 static void menubar_cb_choose_settings(struct gui_widget *pickone,int p,void *userdata) {
   struct gui_widget *widget=userdata;
   gui_dismiss_modal(mn.gui,pickone);
+  MN_SOUND(ACTIVATE)
   switch (p) {
     //case 0: gui_push_modal(widget->gui,&mn_widget_type_video); break;
     case 0: gui_push_modal(widget->gui,&mn_widget_type_audio); break;
@@ -292,6 +301,7 @@ static void menubar_cb_list(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,button);
   gui_widget_pickone_set_callback(modal,menubar_cb_choose_list,widget);
   struct gui_widget *option0=gui_widget_pickone_add_option(modal,"All Games",-1);
@@ -303,6 +313,7 @@ static void menubar_cb_rating(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_rating);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,button);
   mn_widget_rating_setup(modal,menubar_cb_choose_rating,widget,mn.dbs.ratinglo);
 }
@@ -311,6 +322,7 @@ static void menubar_cb_players(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,button);
   gui_widget_pickone_set_callback(modal,menubar_cb_choose_playerc,widget);
   gui_widget_pickone_add_option(modal,"Any Players",-1);
@@ -325,6 +337,7 @@ static void menubar_cb_date(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_daterange);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,button);
   int hivalue=mn.dbs.pubtimehi;
   if (!hivalue) hivalue=9999;
@@ -339,6 +352,7 @@ static void menubar_cb_genre(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,button);
   gui_widget_pickone_set_callback(modal,menubar_cb_choose_genre,widget);
   struct gui_widget *option0=gui_widget_pickone_add_option(modal,"Any Genre",-1);
@@ -350,6 +364,7 @@ static void menubar_cb_text(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,button);
   gui_widget_entry_setup(modal,mn.dbs.text,mn.dbs.textc,menubar_cb_choose_text,widget);
 }
@@ -358,6 +373,7 @@ static void menubar_cb_settings(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,button);
   gui_widget_pickone_set_callback(modal,menubar_cb_choose_settings,widget);
   struct gui_widget *initial=0;

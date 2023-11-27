@@ -104,6 +104,7 @@ static void _daterange_motion(struct gui_widget *widget,int dx,int dy) {
   }
   if (dy) {
     WIDGET->row=WIDGET->row?0:1; // there's only two rows
+    MN_SOUND(MOTION)
   } else if (dx) {
     int *v=(WIDGET->row?&WIDGET->hivalue:&WIDGET->lovalue);
     (*v)+=dx;
@@ -113,6 +114,7 @@ static void _daterange_motion(struct gui_widget *widget,int dx,int dy) {
       if (WIDGET->row) WIDGET->lovalue=WIDGET->hivalue;
       else WIDGET->hivalue=WIDGET->lovalue;
     }
+    MN_SOUND(MOTION)
     daterange_redraw_labels(widget);
   }
 }
@@ -129,7 +131,7 @@ static void daterange_submit(struct gui_widget *widget) {
  
 static void _daterange_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
-    case GUI_SIGID_CANCEL: gui_dismiss_modal(widget->gui,widget); break;
+    case GUI_SIGID_CANCEL: MN_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); break;
     case GUI_SIGID_ACTIVATE: daterange_submit(widget); break;
     case GUI_SIGID_FOCUS: WIDGET->focus=1; break;
     case GUI_SIGID_BLUR: WIDGET->focus=0; break;

@@ -769,6 +769,7 @@ static void mn_carousel_edit(struct gui_widget *widget) {
     WIDGET->list_deletion_listid=0;
     dbs_refresh_all_metadata(&mn.dbs);
     dbs_search_set_list(&mn.dbs,"",0);
+    MN_SOUND(ACTIVATE)
     return;
   }
 
@@ -777,6 +778,7 @@ static void mn_carousel_edit(struct gui_widget *widget) {
   int gameid=WIDGET->entryv[WIDGET->entryp].gameid;
   struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_edit);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   mn_widget_edit_setup(modal,gameid);
 }
 

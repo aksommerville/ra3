@@ -71,7 +71,7 @@ static void _edit_motion(struct gui_widget *widget,int dx,int dy) {
  
 static void _edit_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
-    case GUI_SIGID_CANCEL: gui_dismiss_modal(widget->gui,widget); break;
+    case GUI_SIGID_CANCEL: MN_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); break;
     default: {
         if (widget->childc<1) return;
         struct gui_widget *form=widget->childv[0];
@@ -228,6 +228,7 @@ static void edit_cb_author(struct gui_widget *pickone,int p,void *userdata) {
   gui_widget_button_set_label(gui_widget_form_get_button_by_key(widget->childv[0],"Author",6),v,vc,0xffffff);
   dbs_replace_game_field_string(&mn.dbs,WIDGET->gameid,"author",6,v,vc);
   gui_dismiss_modal(widget->gui,pickone);
+  MN_SOUND(ACTIVATE)
 }
  
 static void edit_cb_genre(struct gui_widget *pickone,int p,void *userdata) {
@@ -237,6 +238,7 @@ static void edit_cb_genre(struct gui_widget *pickone,int p,void *userdata) {
   gui_widget_button_set_label(gui_widget_form_get_button_by_key(widget->childv[0],"Genre",5),v,vc,0xffffff);
   dbs_replace_game_field_string(&mn.dbs,WIDGET->gameid,"genre",5,v,vc);
   gui_dismiss_modal(widget->gui,pickone);
+  MN_SOUND(ACTIVATE)
 }
 
 static void edit_cb_rating(struct gui_widget *rating,int v,void *userdata) {
@@ -247,6 +249,7 @@ static void edit_cb_rating(struct gui_widget *rating,int v,void *userdata) {
   gui_widget_button_set_label(gui_widget_form_get_button_by_key(widget->childv[0],"Rating",6),tmp,tmpc,0xffffff);
   dbs_replace_game_field_int(&mn.dbs,WIDGET->gameid,"rating",6,v);
   gui_dismiss_modal(widget->gui,rating);
+  MN_SOUND(ACTIVATE)
 }
 
 static void edit_cb_pubtime(struct gui_widget *daterange,void *userdata,int v,int dummy) {
@@ -257,11 +260,13 @@ static void edit_cb_pubtime(struct gui_widget *daterange,void *userdata,int v,in
   gui_widget_button_set_label(gui_widget_form_get_button_by_key(widget->childv[0],"Release Year",12),tmp,tmpc,0xffffff);
   dbs_replace_game_field_int(&mn.dbs,WIDGET->gameid,"pubtime",7,v);
   gui_dismiss_modal(widget->gui,daterange);
+  MN_SOUND(ACTIVATE)
 }
 
 static void edit_cb_flags(struct gui_widget *flags,const char *v,int c,void *userdata) {
   struct gui_widget *widget=userdata;
   dbs_replace_game_field_string(&mn.dbs,WIDGET->gameid,"flags",5,v,c);
+  MN_SOUND(ACTIVATE)
 }
 
 static void edit_cb_lists(struct gui_widget *lists,int add,const char *name,int namec,void *userdata) {
@@ -293,6 +298,7 @@ static void edit_cb_lists(struct gui_widget *lists,int add,const char *name,int 
 static void edit_begin_author(struct gui_widget *widget) {
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,gui_widget_form_get_button_by_key(widget->childv[0],"Author",6));
   gui_widget_pickone_set_callback(modal,edit_cb_author,widget);
   struct gui_widget *option0=gui_widget_pickone_add_option(modal,"",0);
@@ -308,6 +314,7 @@ static void edit_begin_author(struct gui_widget *widget) {
 static void edit_begin_genre(struct gui_widget *widget) {
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,gui_widget_form_get_button_by_key(widget->childv[0],"Genre",5));
   gui_widget_pickone_set_callback(modal,edit_cb_genre,widget);
   struct gui_widget *option0=gui_widget_pickone_add_option(modal,"",0);
@@ -323,6 +330,7 @@ static void edit_begin_genre(struct gui_widget *widget) {
 static void edit_begin_rating(struct gui_widget *widget) {
   struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_rating);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,gui_widget_form_get_button_by_key(widget->childv[0],"Rating",6));
   struct dbs_game game={0};
   dbs_game_get(&game,&mn.dbs,WIDGET->gameid);
@@ -332,6 +340,7 @@ static void edit_begin_rating(struct gui_widget *widget) {
 static void edit_begin_pubtime(struct gui_widget *widget) {
   struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_daterange);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_modal_place_near(modal,gui_widget_form_get_button_by_key(widget->childv[0],"Release Year",12));
   struct dbs_game game={0};
   dbs_game_get(&game,&mn.dbs,WIDGET->gameid);
@@ -343,6 +352,7 @@ static void edit_begin_lists(struct gui_widget *widget) {
   dbs_game_get(&game,&mn.dbs,WIDGET->gameid);
   struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_lists);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   mn_widget_lists_setup(modal,game.lists,game.listsc,mn.dbs.lists,mn.dbs.listsc,edit_cb_lists,widget);
 }
 
@@ -363,7 +373,11 @@ static void edit_cb_text(struct gui_widget *form,const char *k,int kc,const char
   }
   
   // Heh, turns out there's only one "standard" field.
-  if ((kc==4)&&!memcmp(k,"Name",4)) { dbs_replace_game_field_string(&mn.dbs,WIDGET->gameid,"name",4,v,vc); return; }
+  if ((kc==4)&&!memcmp(k,"Name",4)) {
+    MN_SOUND(ACTIVATE)
+    dbs_replace_game_field_string(&mn.dbs,WIDGET->gameid,"name",4,v,vc);
+    return;
+  }
   
   fprintf(stderr,"!!! %s: Unexpected field: '%.*s' = '%.*s'\n",__func__,kc,k,vc,v);
 }

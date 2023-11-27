@@ -34,10 +34,47 @@ static int mn_update() {
 /* Generate PCM.
  */
  
+//XXX world's cheapest synthesizer, just to ensure signals are passing as expecting.
+static int synth_phase=0;
+static int synth_halfwavelength=100;
+static int synth_level=10000;
+static int synth_ttl=0;
+ 
 static void mn_generate_pcm(void *v,int c) {
-  int rate=eh_audio_get_rate();
-  int chanc=eh_audio_get_chanc();
-  memset(v,0,c<<1);//TODO
+  int16_t *dst=v;
+  int i=c;
+  int activec=synth_ttl;
+  if (activec>c) activec=c;
+  synth_ttl-=activec;
+  while (activec>0) {
+    synth_phase++;
+    if (synth_phase>=synth_halfwavelength) {
+      synth_phase=0;
+      synth_level=-synth_level;
+    }
+    *dst=synth_level;
+    dst++;
+    i--;
+    activec--;
+  }
+  memset(dst,0,i<<1);
+}
+
+/* Begin a sound effect.
+ */
+ 
+void mn_cb_sound_effect(int sfxid,void *userdata) {
+  //fprintf(stderr,"%s %d\n",__func__,sfxid);
+  if (eh_audio_lock()<0) return;
+  switch (sfxid) {
+    case GUI_SFXID_ACTIVATE: synth_halfwavelength= 50; break;
+    case GUI_SFXID_MINOR_OK: synth_halfwavelength= 75; break;
+    case GUI_SFXID_MOTION:   synth_halfwavelength=100; break;
+    case GUI_SFXID_CANCEL:   synth_halfwavelength=150; break;
+    case GUI_SFXID_REJECT:   synth_halfwavelength=200; break;
+  }
+  synth_ttl=8000;
+  eh_audio_unlock();
 }
 
 /* Get data path.
@@ -120,13 +157,6 @@ static int mn_load_none() {
  
 static void mn_http_response(const char *src,int srcc) {
   dbs_http_response(&mn.dbs,src,srcc);
-}
-
-/* Begin a sound effect.
- */
- 
-void mn_cb_sound_effect(int sfxid,void *userdata) {
-  //fprintf(stderr,"%s %d\n",__func__,sfxid);
 }
 
 /* Main.

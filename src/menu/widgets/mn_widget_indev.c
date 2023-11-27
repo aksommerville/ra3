@@ -250,6 +250,7 @@ static void indev_cb_map(struct gui_widget *pickone,int p,void *userdata) {
     struct indev_cell *cell=WIDGET->cellv+cellp;
     int dstbtnid=eh_btnid_by_index(p);
     if (dstbtnid!=cell->dstbtnid) { // NB zero is perfectly valid for dstbtnid, but it's also the fallback
+      MN_SOUND(ACTIVATE)
       eh_inmgr_set_mapping(eh_get_inmgr(),WIDGET->devid,cell->btnid,dstbtnid);
       cell->dstbtnid=dstbtnid;
       indev_redraw_gridtex_cell(widget,WIDGET->selx,WIDGET->sely);
@@ -267,6 +268,7 @@ static void indev_edit_selected_cell(struct gui_widget *widget) {
   struct indev_cell *cell=WIDGET->cellv+selp;
   struct gui_widget *pickone=gui_push_modal(widget->gui,&gui_widget_type_pickone);
   if (!pickone) return;
+  MN_SOUND(ACTIVATE)
   gui_widget_pickone_set_callback(pickone,indev_cb_map,widget);
   int btnp=0;
   for (;;btnp++) {
@@ -302,6 +304,7 @@ static void indev_highlight(struct gui_widget *widget,int col,int row) {
  
 static void _indev_motion(struct gui_widget *widget,int dx,int dy) {
   if (WIDGET->cellc<1) return;
+  MN_SOUND(MOTION)
   WIDGET->selx+=dx;
   if (WIDGET->selx<0) WIDGET->selx=WIDGET->colc-1;
   else if (WIDGET->selx>=WIDGET->colc) WIDGET->selx=0;
@@ -316,7 +319,7 @@ static void _indev_motion(struct gui_widget *widget,int dx,int dy) {
  
 static void _indev_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
-    case GUI_SIGID_CANCEL: gui_dismiss_modal(widget->gui,widget); break;
+    case GUI_SIGID_CANCEL: MN_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); break;
     case GUI_SIGID_ACTIVATE: indev_edit_selected_cell(widget); break;
   }
 }

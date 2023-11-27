@@ -140,6 +140,7 @@ static void _confirm_motion(struct gui_widget *widget,int dx,int dy) {
     if (np<0) np=widget->childc-1;
     else if (np>=widget->childc) np=0;
     if (np==WIDGET->focusp) return;
+    GUI_SOUND(MOTION)
     confirm_signal_focus(widget,GUI_SIGID_BLUR);
     WIDGET->focusp=np;
     confirm_signal_focus(widget,GUI_SIGID_FOCUS);
@@ -152,7 +153,7 @@ static void _confirm_motion(struct gui_widget *widget,int dx,int dy) {
 static void _confirm_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
     case GUI_SIGID_ACTIVATE: confirm_signal_focus(widget,GUI_SIGID_ACTIVATE); break;
-    case GUI_SIGID_CANCEL: gui_dismiss_modal(widget->gui,widget); break;
+    case GUI_SIGID_CANCEL: GUI_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); break;
   }
 }
 

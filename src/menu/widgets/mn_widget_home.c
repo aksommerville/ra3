@@ -89,7 +89,10 @@ static void _home_update(struct gui_widget *widget) {
   // Check for nonstandard input changes.
   uint16_t input=eh_input_get(0);
   if (WIDGET->pvinput!=input) {
-    if ((input&EH_BTN_R2)&&!(WIDGET->pvinput&EH_BTN_R2)) dbs_randomize(&mn.dbs);
+    if ((input&EH_BTN_R2)&&!(WIDGET->pvinput&EH_BTN_R2)) {
+      MN_SOUND(ACTIVATE)
+      dbs_randomize(&mn.dbs);
+    }
     WIDGET->pvinput=input;
   }
 

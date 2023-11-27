@@ -100,6 +100,7 @@ static int entry_redraw_tex(struct gui_widget *widget) {
  */
  
 static void entry_append(struct gui_widget *widget,int codepoint) {
+  GUI_SOUND(MINOR_OK)
   sr_encode_utf8(&WIDGET->v,codepoint);
   entry_redraw_tex(widget);
 }
@@ -109,6 +110,7 @@ static void entry_append(struct gui_widget *widget,int codepoint) {
  
 static void entry_backspace(struct gui_widget *widget) {
   if (WIDGET->v.c<1) return;
+  GUI_SOUND(CANCEL)
   WIDGET->v.c--;
   while (WIDGET->v.c&&(WIDGET->v.v[WIDGET->v.c]&0x80)) WIDGET->v.c--;
   entry_redraw_tex(widget);
@@ -142,7 +144,7 @@ static void _entry_signal(struct gui_widget *widget,int sigid) {
 static void entry_cb_codepoint(struct gui_widget *keyboard,int codepoint,void *userdata) {
   struct gui_widget *widget=userdata;
   switch (codepoint) {
-    case 0x00: gui_dismiss_modal(widget->gui,widget); return;
+    case 0x00: GUI_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); return;
     case 0x08: entry_backspace(widget); break;
     case 0x0a: entry_submit(widget); break;
     default: entry_append(widget,codepoint); break;

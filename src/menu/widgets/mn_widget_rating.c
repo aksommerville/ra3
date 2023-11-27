@@ -79,6 +79,7 @@ static void _rating_motion(struct gui_widget *widget,int dx,int dy) {
   else WIDGET->v+=dx;
   if (WIDGET->v<0) WIDGET->v=0;
   else if (WIDGET->v>99) WIDGET->v=99;
+  MN_SOUND(MOTION)
   rating_redraw_labels(widget);
 }
 
@@ -94,7 +95,7 @@ static void rating_submit(struct gui_widget *widget) {
  
 static void _rating_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
-    case GUI_SIGID_CANCEL: gui_dismiss_modal(widget->gui,widget); break;
+    case GUI_SIGID_CANCEL: MN_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); break;
     case GUI_SIGID_ACTIVATE: rating_submit(widget); break;
     case GUI_SIGID_FOCUS: WIDGET->focus=1; break;
     case GUI_SIGID_BLUR: WIDGET->focus=0; break;

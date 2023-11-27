@@ -118,6 +118,7 @@ static void _lists_draw(struct gui_widget *widget,int x,int y) {
 static void lists_cb_new_ready(struct gui_widget *entry,const char *name,int namec,void *userdata) {
   struct gui_widget *widget=userdata;
   if (namec) {
+    MN_SOUND(ACTIVATE)
     struct gui_widget *button=gui_widget_button_spawn(widget,name,namec,0xffffff,lists_cb_toggle,widget);
     if (button) {
       gui_widget_insert_child(widget,WIDGET->inc,button);
@@ -134,6 +135,7 @@ static void lists_cb_new(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
   if (!modal) return;
+  MN_SOUND(ACTIVATE)
   gui_widget_entry_setup(modal,"",0,lists_cb_new_ready,widget);
 }
 
@@ -169,6 +171,7 @@ static void lists_cb_toggle(struct gui_widget *button,void *userdata) {
     gui_widget_pack(widget);
     if (WIDGET->cb) WIDGET->cb(widget,0,name,namec,WIDGET->userdata);
   }
+  MN_SOUND(MINOR_OK)
 }
 
 /* Events to focussed child.
@@ -192,10 +195,12 @@ static void _lists_motion(struct gui_widget *widget,int dx,int dy) {
   lists_blur(widget);
   
   if ((WIDGET->focusp<0)||(WIDGET->focusp>=widget->childc)) {
+    MN_SOUND(MOTION)
     WIDGET->focusp=0;
   
   } else if (dx) {
     // Switch to the other column, and try to preserve the vertical position.
+    MN_SOUND(MOTION)
     int np;
     if (WIDGET->focusp<WIDGET->inc) {
       np=WIDGET->focusp+WIDGET->inc;
@@ -209,6 +214,7 @@ static void _lists_motion(struct gui_widget *widget,int dx,int dy) {
   
   } else if (dy) {
     // Up and down, and wrap at the (inc) boundary -- remain in the same column.
+    MN_SOUND(MOTION)
     if (WIDGET->focusp<WIDGET->inc) { // left side
       WIDGET->focusp+=dy;
       if (WIDGET->focusp<0) WIDGET->focusp=WIDGET->inc-1;
@@ -228,7 +234,7 @@ static void _lists_motion(struct gui_widget *widget,int dx,int dy) {
  
 static void _lists_signal(struct gui_widget *widget,int sigid) {
   switch (sigid) {
-    case GUI_SIGID_CANCEL: gui_dismiss_modal(widget->gui,widget); return;
+    case GUI_SIGID_CANCEL: MN_SOUND(CANCEL) gui_dismiss_modal(widget->gui,widget); return;
     case GUI_SIGID_ACTIVATE: lists_activate(widget); break;
   }
 }

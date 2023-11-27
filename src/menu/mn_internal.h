@@ -95,5 +95,6 @@ int mn_widget_indev_setup(
 );
 
 void mn_cb_sound_effect(int sfxid,void *userdata);
+#define MN_SOUND(tag) mn_cb_sound_effect(GUI_SFXID_##tag,0);
 
 #endif

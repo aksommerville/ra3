@@ -83,5 +83,5 @@ NavBarUi.CONTROLLER_CLASSES = [
   ListsUi,
   NowPlayingUi,
   DbUi,
-  AdminUi,
+  //AdminUi, // Enable as needed.
 ];

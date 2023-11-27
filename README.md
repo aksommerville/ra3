@@ -36,7 +36,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] entry: Submit on AUX1
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
-- - [ ] Background music? Could be helpful for the user setting levels as she starts up.
+- - [x] Background music? Could be helpful for the user setting levels as she starts up. ...decline. this would get annoying no matter what
 - - [x] gui render helpers, must rewrite with GL 2
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
@@ -44,20 +44,29 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - - ^ That exit status might be a lie; we weren't checking WIFEXITED.
 - - - - The 6 expected HTTP calls did go out, and succeeded, same as normal cases.
 - - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
+- - [ ] Don't show "args" comments in gamedetails.
 - [ ] Web
-- - [ ] Admin: What is this for?
+- - [x] Admin: What is this for? ...keep for one-off admin tasks. but disable by default
 - - [ ] Now Playing: Flesh out with WebSocket.
 - - [ ] Search results: Screencaps aren't maintaining aspect ratio.
 - - [ ] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
 - - [ ] Make all views mobile-friendly, today they are very not.
+- - [ ] Don't show "args" comments in search results. While you're at it, show multiple "text" comments.
 - [ ] Integrate emulators
 - - [ ] Validate 4 player in all emulators
 - - [ ] akz26: Review inputs. I think I'm missing some of the console switches.
 - - [ ] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
 - [ ] Prepare collection
 - - [x] Comprater
-- - [ ] author "Accolate", probly meant "Accolade"
-- - [ ] Bring in TTAQ, and look for other of my games.
+- - [x] author "Accolate", probly meant "Accolade"
+- - [x] ttaq: ALSA fails to init when launched via menu (fine if no menu). !!! /dev/snd/pcmC0D0p open failed: (16) Device or resource busy
+- - - Per comments in alsapcm_list_devices.c, only the Nuc ever had this problem. Wait to see it on the Pi, maybe we can ignore.
+- - - ...actually, nevermind, I just restored the blocking open. Odds of that being a problem in the Pi case are exactly zero, and if it comes up on my Nuc, I'll be there to deal with it.
+- - [ ] ttaq: might need a 'config.mk' or similar, we want the working tree to stay clean for git
+- - [x] Bring in TTAQ, and look for other of my games.
+- - [x] Chetyorska: Add a quit key
+- - [x] Full Moon Demo
+- - [ ] See rating histogram, try to flatten out the multiple-of-5 spikes.
 - - [ ] Review all native games. I know we have Bonnie's Bakery here, and pretty sure that won't fly on ARM.
 - - - fwiw BB doesn't launch here either, is something broken?
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.

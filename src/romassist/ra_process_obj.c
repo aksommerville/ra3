@@ -1,4 +1,5 @@
 #include "ra_internal.h"
+#include "opt/serial/serial.h"
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -147,30 +148,74 @@ int ra_process_get_status(const struct ra_process *process) {
   return RA_PROCESS_STATUS_MENU;
 }
 
+/* Resolve some variable from (cmd).
+ * Variables begin with '$' and do not contain whitespace.
+ */
+ 
+static int ra_process_insert_command_variable(struct sr_encoder *dst,const char *src,int srcc,const char *path,int pathc,uint32_t gameid) {
+
+  if ((srcc==5)&&!memcmp(src,"$FILE",5)) return sr_encode_raw(dst,path,pathc);
+  
+  if ((srcc>=9)&&!memcmp(src,"$COMMENT:",9)) {
+    const char *v=0;
+    int vc=0;
+    const char *k=src+9;
+    int kc=srcc-9;
+    int katom=db_string_lookup(ra.db,k,kc);
+    if (katom>0) {
+      struct db_comment *comment;
+      int i=db_comments_get_by_gameid(&comment,ra.db,gameid);
+      for (;i-->0;comment++) {
+        if (comment->k==katom) {
+          vc=db_string_get(&v,ra.db,comment->v);
+          break;
+        }
+      }
+    }
+    // If a comment is not found, that's perfectly fine, do nothing and carry on.
+    if (vc>0) return sr_encode_raw(dst,v,vc);
+    return 0;
+  }
+      
+  
+  fprintf(stderr,"%s: Can't launch game %d! Unexpected launcher variable '%.*s'\n",ra.exename,gameid,srcc,src);
+  return -1;
+}
+
 /* Insert (path) in (cmd), to a newly allocated string.
  */
  
-static char *ra_process_combine_command(const char *cmd,int cmdc,const char *path,int pathc) {
-  int insp=0,insc=0;
-  int cmdp=cmdc-5;
-  while (cmdp>=0) {
-    if (!memcmp(cmd+cmdp,"$FILE",5)) {
-      insp=cmdp;
-      insc=5;
-      break;
+static char *ra_process_combine_command(const char *cmd,int cmdc,const char *path,int pathc,uint32_t gameid) {
+  struct sr_encoder dst={0};
+  int cmdp=0;
+  while (cmdp<cmdc) {
+    if ((unsigned char)cmd[cmdp]<=0x20) { cmdp++; continue; }
+    const char *token=cmd+cmdp;
+    int tokenc=0;
+    while ((cmdp<cmdc)&&((unsigned char)cmd[cmdp++]>0x20)) tokenc++;
+    if (dst.c) {
+      if (sr_encode_u8(&dst,' ')<0) {
+        sr_encoder_cleanup(&dst);
+        return 0;
+      }
     }
-    cmdp--;
+    if (token[0]=='$') {
+      if (ra_process_insert_command_variable(&dst,token,tokenc,path,pathc,gameid)<0) {
+        sr_encoder_cleanup(&dst);
+        return 0;
+      }
+    } else {
+      if (sr_encode_raw(&dst,token,tokenc)<0) {
+        sr_encoder_cleanup(&dst);
+        return 0;
+      }
+    }
   }
-  if (insc&&!pathc) return 0;
-  if (!insc) pathc=0;
-  int nc=cmdc-insc+pathc;
-  char *nv=malloc(nc+1);
-  if (!nv) return 0;
-  memcpy(nv,cmd,insp);
-  memcpy(nv+insp,path,pathc);
-  memcpy(nv+insp+pathc,cmd+insp+insc,cmdc-insc-insp);
-  nv[nc]=0;
-  return nv;
+  if (sr_encode_u8(&dst,0)<0) {
+    sr_encoder_cleanup(&dst);
+    return 0;
+  }
+  return dst.v;
 }
 
 /* Prepare launch.
@@ -188,7 +233,7 @@ int ra_process_prepare_launch(
   if (!cmdc) return -1;
   if (!path) pathc=0; else if (pathc<0) { pathc=0; while (path[pathc]) pathc++; }
   
-  char *nv=ra_process_combine_command(cmd,cmdc,path,pathc);
+  char *nv=ra_process_combine_command(cmd,cmdc,path,pathc,gameid);
   if (!nv) return -1;
   if (ra_process_restart_menu(process)<0) {
     free(nv);

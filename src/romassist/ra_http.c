@@ -222,20 +222,78 @@ static int ra_http_get_genre(struct http_xfer *req,struct http_xfer *rsp) {
 /* GET /api/meta/daterange
  */
  
-static int ra_http_get_daterange(struct http_xfer *req,struct http_xfer *rsp) {
-  int lo=9999,hi=0;
+static void ra_http_calculate_daterange(int *lo,int *hi) {
+  *lo=9999;
+  *hi=0;
   const struct db_game *game=db_game_get_by_index(ra.db,0);
   int i=db_game_count(ra.db);
   for (;i-->0;game++) {
     int year=DB_YEAR_FROM_TIME(game->pubtime);
     if (year<1) continue;
-    if (year<lo) lo=year;
-    if (year>hi) hi=year;
+    if (year<*lo) *lo=year;
+    if (year>*hi) *hi=year;
   }
-  if (lo>hi) { // If there's no dated games, use current year for both.
-    lo=hi=DB_YEAR_FROM_TIME(db_time_now());
+  if (*lo>*hi) { // If there's no dated games, use current year for both.
+    *lo=*hi=DB_YEAR_FROM_TIME(db_time_now());
   }
+}
+ 
+static int ra_http_get_daterange(struct http_xfer *req,struct http_xfer *rsp) {
+  int lo,hi;
+  ra_http_calculate_daterange(&lo,&hi);
   return sr_encode_fmt(http_xfer_get_body_encoder(rsp),"[%d,%d]",lo,hi);
+}
+
+/* GET /api/meta/all
+ */
+ 
+static int ra_http_get_meta_all(struct http_xfer *req,struct http_xfer *rsp) {
+  struct db_histogram hist;
+  struct sr_encoder *encoder=http_xfer_get_body_encoder(rsp);
+  if (sr_encode_json_object_start(encoder,0,0)<0) return -1;
+  
+  int subctx=sr_encode_json_array_start(encoder,"flags",5);
+  uint32_t flag=1;
+  for (;flag;flag<<=1) sr_encode_json_string(encoder,0,0,db_flag_repr(flag),-1);
+  sr_encode_json_array_end(encoder,subctx);
+  
+  #define HISTOGRAM(tag) { \
+    memset(&hist,0,sizeof(struct db_histogram)); \
+    if (db_histogram_##tag(&hist,ra.db)<0) { db_histogram_cleanup(&hist); return -1; } \
+    db_histogram_sort_alpha(&hist,ra.db); \
+    sr_encode_json_setup(encoder,#tag,sizeof(#tag)-1); \
+    db_histogram_encode(encoder,ra.db,&hist,DB_FORMAT_json,DB_DETAIL_name); \
+    db_histogram_cleanup(&hist); \
+  }
+  HISTOGRAM(platform)
+  HISTOGRAM(author)
+  HISTOGRAM(genre)
+  #undef HISTOGRAM
+  
+  int datelo,datehi;
+  ra_http_calculate_daterange(&datelo,&datehi);
+  subctx=sr_encode_json_array_start(encoder,"daterange",9);
+  sr_encode_json_int(encoder,0,0,datelo);
+  sr_encode_json_int(encoder,0,0,datehi);
+  sr_encode_json_array_end(encoder,subctx);
+  
+  subctx=sr_encode_json_array_start(encoder,"listids",7);
+  int i=0;
+  for (;;i++) {
+    struct db_list *list=db_list_get_by_index(ra.db,i);
+    if (!list) break;
+    const char *name=0;
+    int namec=db_string_get(&name,ra.db,list->name);
+    if (namec>0) {
+      if (sr_encode_json_string(encoder,0,0,name,namec)<0) return -1;
+    } else {
+      if (sr_encode_json_int(encoder,0,0,list->listid)<0) return -1;
+    }
+  }
+  sr_encode_json_array_end(encoder,subctx);
+  
+  if (sr_encode_json_object_end(encoder,0)<0) return -1;
+  return 0;
 }
   
 /* GET /api/game/count
@@ -1128,6 +1186,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(GET,"/api/meta/author",ra_http_get_author)
   _(GET,"/api/meta/genre",ra_http_get_genre)
   _(GET,"/api/meta/daterange",ra_http_get_daterange)
+  _(GET,"/api/meta/all",ra_http_get_meta_all)
   
   _(GET,"/api/game/count",ra_http_count_game)
   _(GET,"/api/game",ra_http_get_game)

@@ -767,7 +767,7 @@ static void mn_carousel_edit(struct gui_widget *widget) {
     gui_texture_del(WIDGET->list_deletion_texture);
     WIDGET->list_deletion_texture=0;
     WIDGET->list_deletion_listid=0;
-    dbs_refresh_lists(&mn.dbs);
+    dbs_refresh_all_metadata(&mn.dbs);
     dbs_search_set_list(&mn.dbs,"",0);
     return;
   }

@@ -16,6 +16,7 @@ void dbs_cleanup(struct db_service *dbs) {
   if (dbs->platform) free(dbs->platform);
   if (dbs->sort) free(dbs->sort);
   if (dbs->state_path) free(dbs->state_path);
+  if (dbs->flagnames) free(dbs->flagnames);
   if (dbs->lists) free(dbs->lists);
   if (dbs->genres) free(dbs->genres);
   if (dbs->authors) free(dbs->authors);
@@ -224,16 +225,58 @@ static int dbs_receive_game_list_headers(struct db_service *dbs,const char *src,
   return 0;
 }
 
-/* Receive daterange response.
+/* Receive daterange.
  */
  
-static int dbs_set_daterange_json(struct db_service *dbs,const char *src,int srcc) {
+static int dbs_receive_daterange(struct db_service *dbs,const char *src,int srcc) {
+  int lo,hi;
   struct sr_decoder decoder={.v=src,.c=srcc};
-  if (sr_decode_json_array_start(&decoder)<0) return -1;
-  if (sr_decode_json_next(0,&decoder)<1) return -1;
-  if (sr_decode_json_int(dbs->daterange+0,&decoder)<0) return -1;
-  if (sr_decode_json_next(0,&decoder)<1) return -1;
-  if (sr_decode_json_int(dbs->daterange+1,&decoder)<0) return -1;
+  sr_decode_json_array_start(&decoder);
+  sr_decode_json_next(0,&decoder);
+  sr_decode_json_int(&lo,&decoder);
+  sr_decode_json_next(0,&decoder);
+  sr_decode_json_int(&hi,&decoder);
+  if (sr_decode_json_end(&decoder,0)<0) return -1;
+  dbs->daterange[0]=lo;
+  dbs->daterange[1]=hi;
+  return 0;
+}
+
+/* Receive metadata.
+ */
+ 
+static int dbs_receive_meta(struct db_service *dbs,const char *src,int srcc) {
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  if (sr_decode_json_object_start(&decoder)<0) return -1;
+  const char *k;
+  int kc;
+  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+    const char *v;
+    int vc=sr_decode_json_expression(&v,&decoder);
+    if (vc<0) return -1;
+    #define VERBATIM(kstr,tag) if ((kc==sizeof(kstr)-1)&&!memcmp(k,kstr,kc)) { \
+      char *nv=malloc(vc+1); \
+      if (!nv) return -1; \
+      memcpy(nv,v,vc); \
+      nv[vc]=0; \
+      if (dbs->tag) free(dbs->tag); \
+      dbs->tag=nv; \
+      dbs->tag##c=vc; \
+      continue; \
+    }
+    #define CALLOUT(kstr,fn) if ((kc==sizeof(kstr)-1)&&!memcmp(k,kstr,kc)) { \
+      if (fn(dbs,v,vc)<0) return -1; \
+      continue; \
+    }
+    VERBATIM("flags",flagnames)
+    VERBATIM("listids",lists)
+    VERBATIM("author",authors)
+    VERBATIM("platform",platforms)
+    VERBATIM("genre",genres)
+    CALLOUT("daterange",dbs_receive_daterange)
+    #undef VERBATIM
+    #undef CALLOUT
+  }
   return 0;
 }
 
@@ -256,31 +299,10 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
       dbs_receive_game_list_headers(dbs,response.headers,response.headersc);
       return;
     }
-  
-    #define TEXTRSP(tag) { \
-      if (response.x_correlation_id==dbs->tag##_correlation_id) { \
-        dbs->tag##_correlation_id=0; \
-        char *nv=0; \
-        if (response.bodyc) { \
-          if (!(nv=malloc(response.bodyc+1))) return; \
-          memcpy(nv,response.body,response.bodyc); \
-          nv[srcc]=0; \
-        } \
-        if (dbs->tag) free(dbs->tag); \
-        dbs->tag=nv; \
-        dbs->tag##c=response.bodyc; \
-        return; \
-      } \
-    }
-    TEXTRSP(lists)
-    TEXTRSP(genres)
-    TEXTRSP(authors)
-    TEXTRSP(platforms)
-    #undef TEXTRSP
     
-    if (response.x_correlation_id==dbs->daterange_correlation_id) {
-      dbs->daterange_correlation_id=0;
-      dbs_set_daterange_json(dbs,response.body,response.bodyc);
+    if (response.x_correlation_id==dbs->meta_correlation_id) {
+      dbs->meta_correlation_id=0;
+      dbs_receive_meta(dbs,response.body,response.bodyc);
       return;
     }
     
@@ -607,7 +629,7 @@ int dbs_create_list(struct db_service *dbs,const char *name,int namec) {
   struct sr_encoder encoder={0};
   int err=dbs_create_list_inner(&encoder,dbs,name,namec);
   sr_encoder_cleanup(&encoder);
-  if (err>=0) dbs_refresh_lists(dbs);
+  if (err>=0) dbs_refresh_all_metadata(dbs);
   return err;
 }
 
@@ -754,69 +776,35 @@ int dbs_launch(struct db_service *dbs,int gameid) {
 /* Metadata calls.
  */
  
-void dbs_refresh_all_metadata(struct db_service *dbs) {
-  dbs_refresh_lists(dbs);
-  dbs_refresh_genres(dbs);
-  dbs_refresh_authors(dbs);
-  dbs_refresh_platforms(dbs);
-  dbs_refresh_daterange(dbs);
-}
-
-static int dbs_encode_metadata_request(struct sr_encoder *dst,struct db_service *dbs,const char *path,int corrid) {
+static int dbs_refresh_all_metadata_inner(struct sr_encoder *dst,struct db_service *dbs) {
+  struct fakews *fakews=eh_get_fakews();
+  if (!fakews) return -1;
+  if (!fakews_is_connected(fakews)) {
+    if (fakews_connect_now(fakews)<0) {
+      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
+      return -1;
+    }
+  }
   int topctx=sr_encode_json_object_start(dst,0,0);
   if (topctx<0) return -1;
   if (sr_encode_json_string(dst,"id",2,"http",4)<0) return -1;
   if (sr_encode_json_string(dst,"method",6,"GET",3)<0) return -1;
-  if (sr_encode_json_string(dst,"path",4,path,-1)<0) return -1;
-  if (corrid) {
-    int hdrctx=sr_encode_json_object_start(dst,"headers",7);
-    if (hdrctx<0) return -1;
-    if (sr_encode_json_int(dst,"X-Correlation-Id",16,corrid)<0) return -1;
-    if (sr_encode_json_object_end(dst,hdrctx)<0) return -1;
-  }
-  if (sr_encode_json_object_end(dst,topctx)<0) return -1;
-  return 0;
-}
-
-static void dbs_refresh_metadata_1(struct db_service *dbs,const char *path,int *corrid) {
-  struct fakews *fakews=eh_get_fakews();
-  if (!fakews) return;
-  if (!fakews_is_connected(fakews)) {
-    if (fakews_connect_now(fakews)<0) {
-      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
-      return;
-    }
-  }
+  if (sr_encode_json_string(dst,"path",4,"/api/meta/all",13)<0) return -1;
   if (dbs->next_correlation_id<1) dbs->next_correlation_id=1;
-  *corrid=dbs->next_correlation_id++;
-  struct sr_encoder packet={0};
-  if (dbs_encode_metadata_request(&packet,dbs,path,*corrid)<0) {
-    sr_encoder_cleanup(&packet);
-    return;
-  }
-  int err=fakews_send(fakews,1,packet.v,packet.c);
-  sr_encoder_cleanup(&packet);
+  dbs->meta_correlation_id=dbs->next_correlation_id++;
+  int hdrctx=sr_encode_json_object_start(dst,"headers",7);
+  if (hdrctx<0) return -1;
+  if (sr_encode_json_int(dst,"X-Correlation-Id",16,dbs->meta_correlation_id)<0) return -1;
+  if (sr_encode_json_object_end(dst,hdrctx)<0) return -1;
+  if (sr_encode_json_object_end(dst,topctx)<0) return -1;
+  return fakews_send(fakews,1,dst->v,dst->c);
 }
-
-void dbs_refresh_lists(struct db_service *dbs) {
-  dbs_refresh_metadata_1(dbs,"/api/listids",&dbs->lists_correlation_id);
-}
-
-void dbs_refresh_genres(struct db_service *dbs) {
-  dbs_refresh_metadata_1(dbs,"/api/meta/genre",&dbs->genres_correlation_id);
-}
-
-void dbs_refresh_authors(struct db_service *dbs) {
-  dbs_refresh_metadata_1(dbs,"/api/meta/author",&dbs->authors_correlation_id);
-}
-
-void dbs_refresh_platforms(struct db_service *dbs) {
-  dbs_refresh_metadata_1(dbs,"/api/meta/platform",&dbs->platforms_correlation_id);
-}
-
-void dbs_refresh_daterange(struct db_service *dbs) {
-  // Doesn't matter that the response format is unlike other /meta/ calls.
-  dbs_refresh_metadata_1(dbs,"/api/meta/daterange",&dbs->daterange_correlation_id);
+ 
+void dbs_refresh_all_metadata(struct db_service *dbs) {
+  struct sr_encoder encoder={0};
+  int err=dbs_refresh_all_metadata_inner(&encoder,dbs);
+  sr_encoder_cleanup(&encoder);
+  if (err<0) fprintf(stderr,"Failed to refresh database metadata.\n");
 }
 
 /* Set search criteria.

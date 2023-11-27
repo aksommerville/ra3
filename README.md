@@ -21,7 +21,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - - [x] Protect against immediate failure from the menu.
-- - [ ] Combine the 5 metdata calls so menu can get them all at once. /api/listids, /api/meta/{genre,author,platform,daterange}
+- - [x] Combine the 5 metdata calls so menu can get them all at once. /api/listids, /api/meta/{genre,author,platform,daterange}
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [x] db: I think play time is broken, or we're failing to finalize it. Are there any >0-minute plays in the db right now?
@@ -56,6 +56,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
 - [ ] Prepare collection
 - - [x] Comprater
+- - [ ] author "Accolate", probly meant "Accolade"
 - - [ ] Bring in TTAQ, and look for other of my games.
 - - [ ] Review all native games. I know we have Bonnie's Bakery here, and pretty sure that won't fly on ARM.
 - - - fwiw BB doesn't launch here either, is something broken?

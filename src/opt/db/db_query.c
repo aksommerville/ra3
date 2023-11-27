@@ -672,7 +672,7 @@ int db_histogram_encode(
   switch (format) {
     case 0:
     case DB_FORMAT_json: {
-        int jsonctx=sr_encode_json_array_start(dst,0,0);
+        int jsonctx=sr_encode_json_array_start_no_setup(dst);
         if (jsonctx<0) return -1;
         const struct db_histogram_entry *entry=hist->v;
         int i=hist->c;

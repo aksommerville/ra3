@@ -14,6 +14,7 @@ GET /api/meta/platform?detail => [name...] (detail="id", default) or [{v,c}...] 
 GET /api/meta/author?detail => [name...] (detail="id", default) or [{v,c}...] (detail="record")
 GET /api/meta/genre?detail => [name...] (detail="id", default) or [{v,c}...] (detail="record")
 GET /api/meta/daterange => [lo,hi] (year only, as numbers)
+GET /api/meta/all => ...
 
 GET /api/game/count => integer
 GET /api/game?index&count&detail => Game[]
@@ -95,6 +96,19 @@ Use `detail="id"` or omit for a simple array of strings, or `detail="record"` to
 
 `daterange` returns the year of the lowest and highest pubtime in the database, array of two ints, not counting zeroes.
 If no game has a date, we return the current year twice.
+
+`GET /api/meta/all` to do all these things and return them together:
+
+```
+{
+  flags: string[32]
+  platform: string[]
+  author: string[]
+  genre: string[]
+  daterange: int[2]
+  listids: (string|int)[]
+}
+```
 
 ## /api/game
 

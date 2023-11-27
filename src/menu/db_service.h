@@ -42,11 +42,7 @@ struct db_service {
   // Internal plumbing.
   int next_correlation_id;
   int search_correlation_id;
-  int lists_correlation_id;
-  int genres_correlation_id;
-  int authors_correlation_id;
-  int platforms_correlation_id;
-  int daterange_correlation_id;
+  int meta_correlation_id;
   char *state_path;
   struct dbs_listener {
     int corrid;
@@ -55,7 +51,8 @@ struct db_service {
   } *listenerv;
   int listenerc,listenera;
   
-  // Managed calls, other than search.
+  // Metadata.
+  char *flagnames; int flagnamesc;
   char *lists; int listsc;
   char *genres; int genresc;
   char *authors; int authorsc;
@@ -74,11 +71,6 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc);
 void dbs_refresh_search(struct db_service *dbs);
 
 void dbs_refresh_all_metadata(struct db_service *dbs);
-void dbs_refresh_lists(struct db_service *dbs);
-void dbs_refresh_genres(struct db_service *dbs);
-void dbs_refresh_authors(struct db_service *dbs);
-void dbs_refresh_platforms(struct db_service *dbs);
-void dbs_refresh_daterange(struct db_service *dbs);
 
 /* Don't set (dbs->gameid) directly, call this instead.
  * I might attach some logic to the changes.

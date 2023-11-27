@@ -7,6 +7,7 @@ void gui_del(struct gui *gui) {
   if (!gui) return;
   gui_widget_del(gui->root);
   gui_text_quit(gui);
+  gui_render_quit(gui);
   if (gui->data_path) free(gui->data_path);
   free(gui);
 }
@@ -29,6 +30,11 @@ struct gui *gui_new(const struct gui_delegate *delegate,const char *data_path,in
       gui->data_path[data_pathc]=0;
       gui->data_pathc=data_pathc;
     }
+  }
+  
+  if (gui_render_init(gui)<0) {
+    gui_del(gui);
+    return 0;
   }
   
   if (gui_text_init(gui)<0) {

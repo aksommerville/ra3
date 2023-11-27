@@ -26,6 +26,8 @@ struct gui {
   struct gui_font *font; // WEAK
   char *data_path;
   int data_pathc;
+  struct gui_program *program_raw;
+  struct gui_program *program_tex;
 };
 
 struct gui_program {
@@ -46,5 +48,8 @@ struct gui_texture {
 
 void gui_text_quit(struct gui *gui);
 int gui_text_init(struct gui *gui);
+
+void gui_render_quit(struct gui *gui);
+int gui_render_init(struct gui *gui);
 
 #endif

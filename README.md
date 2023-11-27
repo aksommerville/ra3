@@ -37,7 +37,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Auto-upgrade.
 - - [ ] Sound effects.
 - - [ ] Background music? Could be helpful for the user setting levels as she starts up.
-- - [ ] gui render helpers, must rewrite with GL 2
+- - [x] gui render helpers, must rewrite with GL 2
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.

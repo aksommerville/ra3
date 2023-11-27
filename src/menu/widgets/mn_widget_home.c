@@ -6,8 +6,6 @@
 #include "../mn_internal.h"
 #include "lib/emuhost.h"
 
-#define MN_HOME_BGCOLOR 0x302038ff
-
 /* Object definition.
  */
  
@@ -75,7 +73,7 @@ static void _home_pack(struct gui_widget *widget) {
  */
  
 static void _home_draw(struct gui_widget *widget,int x,int y) {
-  gui_draw_rect(widget->gui,x,y,widget->w,widget->h,MN_HOME_BGCOLOR);
+  gui_draw_gradient(widget->gui,x,y,widget->w,widget->h,0x302038ff,0x302038ff,0x200018ff,0x100030ff);
   int i=0;
   for (;i<widget->childc;i++) {
     struct gui_widget *child=widget->childv[i];

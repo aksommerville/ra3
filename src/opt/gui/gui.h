@@ -292,6 +292,7 @@ struct gui_texture *gui_texture_from_multiline_text(struct gui *gui,struct gui_f
 void gui_prepare_render(struct gui *gui);
  
 void gui_draw_rect(struct gui *gui,int x,int y,int w,int h,uint32_t rgba);
+void gui_draw_gradient(struct gui *gui,int x,int y,int w,int h,uint32_t nw,uint32_t ne,uint32_t sw,uint32_t se);
 void gui_draw_line(struct gui *gui,int ax,int ay,int bx,int by,uint32_t rgba);
 void gui_frame_rect(struct gui *gui,int x,int y,int w,int h,uint32_t rgba);
 void gui_draw_texture(struct gui *gui,int x,int y,struct gui_texture *texture);

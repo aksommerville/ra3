@@ -84,6 +84,7 @@ ifneq (,$(strip $(BUILD_MENU)))
   OFILES_MENU:=$(OFILES_LIB) $(filter \
     mid/menu/% \
     mid/opt/gui/% \
+    mid/opt/cheapsynth/% \
   ,$(OFILES))
   $(EXE_MENU):$(OFILES_MENU);$(PRECMD) $(LD) -o$@ $^ $(LDPOST)
   run:$(EXE_MENU)

@@ -3,6 +3,7 @@
 
 #include "lib/emuhost.h"
 #include "opt/gui/gui.h"
+#include "opt/cheapsynth/cheapsynth.h"
 #include "db_service.h"
 #include <stdio.h>
 #include <string.h>
@@ -17,6 +18,7 @@ extern struct mn {
   int data_pathc;
 
   struct gui *gui;
+  struct cheapsynth *cheapsynth;
   struct db_service dbs;
 } mn;
 

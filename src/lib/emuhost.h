@@ -210,8 +210,9 @@ void eh_ctab_read(void *rgb,int p,int c);
 /* Audio.
  *********************************************************************/
 
-/* If you specified via delegate, you already know these.
- * But if you provided zeroes, emuhost will pick something appropriate to the hardware during init.
+/* If you specified via delegate and did not implement (generate_pcm), you already know these.
+ * With (generate_pcm), you only supplied a preference, and the driver might override.
+ * Without (generate_pcm), if you provided zeroes, emuhost will pick something appropriate to the hardware during init.
  * After initialization, these will never change.
  */
 int eh_audio_get_rate();

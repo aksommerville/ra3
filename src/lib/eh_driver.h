@@ -90,6 +90,8 @@ struct eh_audio_setup {
   int rate;
   int chanc;
   int buffersize;
+  //TODO device name
+  //TODO format
 };
 
 struct eh_audio_driver {
@@ -99,7 +101,6 @@ struct eh_audio_driver {
   int chanc;
   int format;
   int playing;
-  //TODO device name
 };
 
 struct eh_audio_type {

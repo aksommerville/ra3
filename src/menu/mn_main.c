@@ -40,7 +40,7 @@ static int synth_halfwavelength=100;
 static int synth_level=10000;
 static int synth_ttl=0;
  
-static void mn_generate_pcm(void *v,int c) {
+static void mn_generate_pcm_BLEEEP(void *v,int c) {
   int16_t *dst=v;
   int i=c;
   int activec=synth_ttl;
@@ -63,7 +63,7 @@ static void mn_generate_pcm(void *v,int c) {
 /* Begin a sound effect.
  */
  
-void mn_cb_sound_effect(int sfxid,void *userdata) {
+void mn_cb_sound_effect_BLEEEP(int sfxid,void *userdata) {
   //fprintf(stderr,"%s %d\n",__func__,sfxid);
   if (eh_audio_lock()<0) return;
   switch (sfxid) {
@@ -74,6 +74,77 @@ void mn_cb_sound_effect(int sfxid,void *userdata) {
     case GUI_SFXID_REJECT:   synth_halfwavelength=200; break;
   }
   synth_ttl=8000;
+  eh_audio_unlock();
+}
+
+static struct cheapsynth_sound_config mn_sound_ACTIVATE={
+  .id=GUI_SFXID_ACTIVATE,
+  .master=0.250f,
+  .modrate=2.0f,
+  .modabsolute=0,
+  .level={{25,1.0f},{40,0.20f},{300,0.0f}},
+  .pitch={{0,500.0f},{370,500.0f}},
+  .mod={{0,0.0f},{35,2.0f},{300,1.0f}},
+};
+
+static struct cheapsynth_sound_config mn_sound_MINOR_OK={
+  .id=GUI_SFXID_MINOR_OK,
+  .master=0.200f,
+  .modrate=2.0f,
+  .modabsolute=0,
+  .level={{20,1.0f},{30,0.15f},{200,0.0f}},
+  .pitch={{0,800.0f},{250,1500.0f}},
+  .mod={{0,1.0f},{250,5.0f}},
+};
+
+static struct cheapsynth_sound_config mn_sound_MOTION={
+  .id=GUI_SFXID_MOTION,
+  .master=0.100f,
+  .modrate=3.0f,
+  .modabsolute=0,
+  .level={{20,1.0f},{30,0.10f},{150,0.0f}},
+  .pitch={{0,440.0f},{100,700.0f},{100,400.0f}},
+  .mod={{0,0.5f},{40,2.0f},{160,1.0f}},
+};
+
+static struct cheapsynth_sound_config mn_sound_CANCEL={
+  .id=GUI_SFXID_CANCEL,
+  .master=0.200f,
+  .modrate=0.500f,
+  .modabsolute=0,
+  .level={{20,1.0f},{40,0.30f},{200,0.0f}},
+  .pitch={{0,180.0f},{260,400.0f}},
+  .mod={{0,3.0f},{260,0.0f}},
+};
+
+static struct cheapsynth_sound_config mn_sound_REJECT={
+  .id=GUI_SFXID_REJECT,
+  .master=0.150f,
+  .modrate=1.3f,
+  .modabsolute=0,
+  .level={{30,1.0f},{40,0.40f},{200,0.0f}},
+  .pitch={{0,300.0f},{260,200.0f}},
+  .mod={{0,3.0f},{30,5.0f},{260,2.0f}},
+};
+
+static void mn_generate_pcm(void *v,int c) {
+  cheapsynth_updatei(v,c,mn.cheapsynth);
+}
+
+void mn_cb_sound_effect(int sfxid,void *userdata) {
+  struct cheapsynth_sound *sound=0;
+  switch (sfxid) {
+    #define _(tag) case GUI_SFXID_##tag: sound=cheapsynth_sound_intern(mn.cheapsynth,&mn_sound_##tag); break;
+    _(ACTIVATE)
+    _(MINOR_OK)
+    _(MOTION)
+    _(CANCEL)
+    _(REJECT)
+    #undef _
+  }
+  if (!sound) return;
+  if (eh_audio_lock()<0) return;
+  cheapsynth_sound_play(mn.cheapsynth,sound);
   eh_audio_unlock();
 }
 
@@ -147,6 +218,9 @@ static int mn_load_none() {
   struct gui_widget *home=gui_replace_page(mn.gui,&mn_widget_type_home);
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (!home) return -1;
+  
+  if (eh_audio_get_format()!=EH_AUDIO_FORMAT_S16N) return -1;
+  if (!(mn.cheapsynth=cheapsynth_new(eh_audio_get_rate(),eh_audio_get_chanc()))) return -1;
 
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   return 0;

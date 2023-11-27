@@ -26,12 +26,13 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Admin menu.
 - - - [ ] Audio: UI ready-ish. Needs emuhost support.
 - - [ ] Auto-upgrade.
-- - [ ] Sound effects.
+- - [x] Sound effects.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.
 - - - - ^ That exit status might be a lie; we weren't checking WIFEXITED.
 - - - - The 6 expected HTTP calls did go out, and succeeded, same as normal cases.
+- - - 2023-11-27T16:10: double free or corruption (out) ; not during startup. twice within 10 or so launches. probably audio related ...fixed a cheapsynth allocation thing, and it seems ok now.
 - - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
 - - [ ] Don't show "args" comments in gamedetails.
 - [ ] Web

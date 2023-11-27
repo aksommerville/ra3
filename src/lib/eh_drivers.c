@@ -6,7 +6,10 @@
  */
  
 void eh_drivers_quit() {
-  if (eh.audio) eh.audio->type->play(eh.audio,0);
+  if (eh.audio) {
+    eh.audio->type->play(eh.audio,0);
+    eh_audio_lock();
+  }
   eh_render_del(eh.render);
   eh_audio_driver_del(eh.audio);
   eh_video_driver_del(eh.video);
@@ -272,16 +275,19 @@ int eh_drivers_init() {
  */
  
 int eh_audio_get_rate() {
+  if (eh.delegate.generate_pcm) return eh.audio->rate;
   if (eh.delegate.audio_rate) return eh.delegate.audio_rate;
   return eh.audio->rate;
 }
 
 int eh_audio_get_chanc() {
+  if (eh.delegate.generate_pcm) return eh.audio->chanc;
   if (eh.delegate.audio_chanc) return eh.delegate.audio_chanc;
   return eh.audio->chanc;
 }
 
 int eh_audio_get_format() {
+  if (eh.delegate.generate_pcm) return eh.audio->format;
   if (eh.delegate.audio_format) return eh.delegate.audio_format;
   return eh.audio->format;
 }

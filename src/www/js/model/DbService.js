@@ -322,4 +322,5 @@ DbService.FLAG_NAMES = [
   "review",
   "obscene",
   "favorite",
+  "seeother",
 ];

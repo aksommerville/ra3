@@ -99,6 +99,7 @@ int ra_process_update(struct ra_process *process) {
         if (WIFSIGNALED(wstatus)) sigid=WTERMSIG(wstatus);
         fprintf(stderr,"%s: Child process %d (gameid %d) abnormal exit. Signal %d (%s).\n",ra.exename,process->pid,process->gameid,sigid,strsignal(sigid));
       }
+      if (process->gameid) db_play_finish(ra.db,process->gameid);
       if (!process->gameid&&!process->next_launch) process->menu_terminated=1;
       process->pid=0;
       if (!process->next_launch) process->gameid=0;

@@ -116,6 +116,7 @@ static uint32_t flags_eval(const char *src,int srcc) {
     else if ((tokenc==6)&&!memcmp(token,"review",6)) flags|=0x0200;
     else if ((tokenc==7)&&!memcmp(token,"obscene",7)) flags|=0x0400;
     else if ((tokenc==8)&&!memcmp(token,"favorite",8)) flags|=0x0800;
+    else if ((tokenc==8)&&!memcmp(token,"seeother",8)) flags|=0x1000;
   }
   return flags;
 }
@@ -124,7 +125,7 @@ static int flags_repr(char *dst,int dsta,uint32_t flags) {
   int dstc=0;
   const char *names[32]={
     "player1","player2","player3","player4","playermore","faulty","foreign","hack","hardware","review","obscene","favorite",
-    "12","13","14","15","16","17","18","19",
+    "seeother","13","14","15","16","17","18","19",
     "20","21","22","23","24","25","26","27","28","29",
     "30","31",
   };

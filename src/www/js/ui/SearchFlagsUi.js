@@ -75,6 +75,7 @@ export class SearchFlagsUi {
     this.spawnToggle( "9", "?"); // review
     this.spawnToggle("10", "\u2623"); // obscene (biohazard)
     this.spawnToggle("11", "\u2605"); // favorite (star)
+    this.spawnToggle("12", "\u21a9"); // seeother (bending arrow)
   }
   
   spawnToggle(bitix, display) {

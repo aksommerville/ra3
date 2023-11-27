@@ -23,6 +23,9 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Protect against immediate failure from the menu.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
+- [x] db: I think play time is broken, or we're failing to finalize it. Are there any >0-minute plays in the db right now?
+- - 2023-11-26T19:47: Confirmed: 712 records and all have dur_m=0, which is definitely not right.
+- - Was finishing on client-triggered terminations but not game-triggered ones, oops.
 - [ ] Menu
 - - [ ] Random launch (Press R2). Will need "dry-run" from the backend so we can capture the gameid and page index.
 - - - Don't actually launch. Just use the random-launch logic, and jump to that game in UI.

@@ -31,34 +31,10 @@ static int ra_init_db() {
   /* Opportunity for one-off DB actions that I don't feel like exposing the right way.
    */
   if (0) {
-    // eg, delete all games for certain platforms, after verifying they have no metadata
-    uint32_t str_c64=db_string_lookup(ra.db,"c64",3);
-    uint32_t str_genesis=db_string_lookup(ra.db,"genesis",7);
-    uint32_t str_n64=db_string_lookup(ra.db,"n64",3);
-    uint32_t str_atari5200=db_string_lookup(ra.db,"atari5200",9);
-    uint32_t str_scv=db_string_lookup(ra.db,"scv",3);
-    int rmc=0;
-    int totalc=db_game_count(ra.db);
-    const struct db_game *game=db_game_get_by_index(ra.db,totalc-1);
-    int i=db_game_count(ra.db);
-    for (;i-->0;game--) {
-      if (
-        (game->platform==str_c64)||
-        (game->platform==str_genesis)||
-        (game->platform==str_n64)||
-        (game->platform==str_atari5200)||
-        (game->platform==str_scv)
-      ) {
-        rmc++;
-        if (game->rating||game->pubtime||game->genre||game->author) {
-          fprintf(stderr,"!!! game %d '%s' has some nonzero fields\n",game->gameid,game->name);
-        }
-        db_game_delete(ra.db,game->gameid);
-      }
-    }
-    db_save(ra.db);
-    fprintf(stderr,"Deleted %d of %d games.\n",rmc,totalc);
-    fprintf(stderr,"db action complete. reporting failure to abort process.\n");
+    struct db_play *play=db_play_get_by_index(ra.db,0);
+    int i=db_play_count(ra.db);
+    while (i-->0) fprintf(stderr,"%10d\n",play->dur_m);
+    fprintf(stderr,"db action complete. reporting failure to abort process. playc=%d\n",db_play_count(ra.db));
     return -1;
   }
   

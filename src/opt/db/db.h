@@ -146,6 +146,7 @@ int db_flags_eval(uint32_t *dst,const char *src,int srcc);
 #define DB_FLAG_review       0x00000200
 #define DB_FLAG_obscene      0x00000400
 #define DB_FLAG_favorite     0x00000800
+#define DB_FLAG_seeother     0x00001000
 #define DB_FLAG_FOR_EACH /* only the ones named here */ \
   _(player1) \
   _(player2) \
@@ -158,7 +159,8 @@ int db_flags_eval(uint32_t *dst,const char *src,int srcc);
   _(hardware) \
   _(review) \
   _(obscene) \
-  _(favorite)
+  _(favorite) \
+  _(seeother)
 
 /* Game table.
  * Stored as fixed-length records in one file.

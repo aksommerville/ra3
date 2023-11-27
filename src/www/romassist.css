@@ -397,7 +397,7 @@ h2 {
 }
 
 .GameHeaderForm {
-  min-width: 400px; /* Just wide enough to put flags all in one row (not that that really matters) */
+  min-width: 430px; /* Just wide enough to put flags all in one row (not that that really matters) */
 }
 
 .GameHeaderForm td.value > input {

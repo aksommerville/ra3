@@ -9,7 +9,6 @@ const char *db_flag_repr(uint32_t flag_1bit) {
     #define _(tag) case DB_FLAG_##tag: return #tag;
     DB_FLAG_FOR_EACH
     #undef _
-    case 0x00001000: return "flag12";
     case 0x00002000: return "flag13";
     case 0x00004000: return "flag14";
     case 0x00008000: return "flag15";

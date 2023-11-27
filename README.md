@@ -20,7 +20,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
-- - [ ] Protect against immediate failure from the menu.
+- - [x] Protect against immediate failure from the menu.
+- - [ ] Combine the 5 metdata calls so menu can get them all at once. /api/listids, /api/meta/{genre,author,platform,daterange}
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [x] db: I think play time is broken, or we're failing to finalize it. Are there any >0-minute plays in the db right now?
@@ -57,12 +58,15 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] Comprater
 - - [ ] Bring in TTAQ, and look for other of my games.
 - - [ ] Review all native games. I know we have Bonnie's Bakery here, and pretty sure that won't fly on ARM.
+- - - fwiw BB doesn't launch here either, is something broken?
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
+- - - 2023-11-26: 1676 remaining
 - - [x] Genre underused: Flyswatter, Trivia, Strategy.
-- [ ] Would it be crazy to bake the menu into the backend app? It's not urgent but think this over some time.
+- [x] Would it be crazy to bake the menu into the backend app? It's not urgent but think this over some time.
+- - On balance I think no. Too much risk of like memory leaks in the front end. But the idea is not crazy.
 - [ ] Prepare the Pi.
 - - [ ] Ensure keyboards behave sanely.
 - - [ ] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.

@@ -17,6 +17,12 @@
 #define RA_WEBSOCKET_ROLE_MENU 1
 #define RA_WEBSOCKET_ROLE_GAME 2
 
+/* So many consecutive terminations of the menu with the same db timestamp (ie 1 minute),
+ * if no game launched in between, we abort hard.
+ * Protects against errors in the menu, where we would otherwise get stuck in a loop starting it up again.
+ */
+#define RA_MENU_TERM_LIMIT 5
+
 extern struct ra {
 
   // Populated at configure.
@@ -32,6 +38,8 @@ extern struct ra {
   struct db *db;
   struct http_context *http;
   struct ra_process process;
+  uint32_t menu_termv[RA_MENU_TERM_LIMIT]; // timestamps of menu terminations since the last game launch.
+  int menu_termc;
   
   struct ra_websocket_extra {
     int role;

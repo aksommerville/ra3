@@ -60,6 +60,46 @@ static int ra_init_http() {
   return 0;
 }
 
+/* Look for termination cases from the menu.
+ * Returns <0 to fail hard -- looks like a failure loop.
+ * 0 to terminate normally -- we're configured to terminate when user quits the menu.
+ * >0 to proceed, we restore a sane state.
+ */
+ 
+static int ra_main_check_termination() {
+  if (ra.process.gameid&&!ra.process.next_launch) {
+    // Game is running, reset the menu-failure-termination counter.
+    ra.menu_termc=0;
+  }
+  if (ra.process.menu_terminated) {
+    ra.process.menu_terminated=0;
+    if (ra.terminable) {
+      fprintf(stderr,"%s: Menu terminated without a game queued. Terminating. (--no-terminable to reopen)\n",ra.exename);
+      return 0;
+    }
+    if (ra.menu_termc>=RA_MENU_TERM_LIMIT) {
+      memmove(ra.menu_termv,ra.menu_termv+1,sizeof(ra.menu_termv)-sizeof(ra.menu_termv[0]));
+      ra.menu_termv[RA_MENU_TERM_LIMIT]=db_time_now();
+    } else {
+      ra.menu_termv[ra.menu_termc++]=db_time_now();
+    }
+    if (ra.menu_termc>=RA_MENU_TERM_LIMIT) {
+      int i=RA_MENU_TERM_LIMIT,allsame=1;
+      while (i-->1) if (ra.menu_termv[i]!=ra.menu_termv[0]) {
+        allsame=0;
+        break;
+      }
+      if (allsame) {
+        fprintf(stderr,"%s: %d consecutive menu terminations within one minute. Aborting.\n",ra.exename,RA_MENU_TERM_LIMIT);
+        return -1;
+      }
+    }
+    fprintf(stderr,"%s: Will re-launch terminated menu.\n",ra.exename);
+    return 1;
+  }
+  return 1;
+}
+
 /* Main.
  */
  
@@ -89,14 +129,9 @@ int main(int argc,char **argv) {
       status=1;
       break;
     }
-    if (ra.process.menu_terminated) {
-      ra.process.menu_terminated=0;
-      if (ra.terminable) {
-        fprintf(stderr,"%s: Menu terminated without a game queued. Terminating. (--no-terminable to reopen)\n",ra.exename);
-        break;
-      } else {
-        fprintf(stderr,"%s: Will re-launch terminated menu.\n",ra.exename);
-      }
+    switch (ra_main_check_termination()) {
+      case -1: status=1; goto _done_;
+      case 0: status=0; goto _done_;
     }
   }
   

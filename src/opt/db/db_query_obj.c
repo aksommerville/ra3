@@ -280,6 +280,32 @@ int db_query_finish(struct sr_encoder *dst,struct db_query *query) {
   return dst?db_list_encode_array(dst,query->db,query->results,DB_FORMAT_json,query->detail):0;
 }
 
+/* Paginate after the search.
+ */
+ 
+int db_query_paginate(struct sr_encoder *dst,struct db_query *query,int limit,uint32_t gameid) {
+  if (!query) return -1;
+  if (!query->results) return -1;
+  
+  int resultp=-1,i=query->results->gameidc;
+  const uint32_t *q=query->results->gameidv;
+  for (;i-->0;q++) if (*q==gameid) { resultp=q-query->results->gameidv; break; }
+  if (resultp<0) return -1;
+  
+  if (limit>0) {
+    query->limit=limit;
+    query->pagep=resultp/query->limit+1;
+    query->totalc=query->results->gameidc;
+    query->pagec=db_list_paginate(query->results,query->limit,query->pagep-1);
+  }
+  
+  if (dst) {
+    if (db_list_encode_array(dst,query->db,query->results,DB_FORMAT_json,query->detail)<0) return -1;
+  }
+  
+  return 0;
+}
+
 /* Trivial accessors.
  */
 
@@ -293,4 +319,12 @@ int db_query_get_total_count(const struct db_query *query) {
 
 struct db_list *db_query_get_results(const struct db_query *query) {
   return query->results;
+}
+
+int db_query_get_limit(const struct db_query *query) {
+  return query->limit;
+}
+
+int db_query_get_page(const struct db_query *query) {
+  return query->pagep;
 }

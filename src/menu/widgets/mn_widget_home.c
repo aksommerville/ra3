@@ -4,6 +4,7 @@
  */
 
 #include "../mn_internal.h"
+#include "lib/emuhost.h"
 
 #define MN_HOME_BGCOLOR 0x302038ff
 
@@ -13,6 +14,7 @@
 struct mn_widget_home {
   struct gui_widget hdr;
   int focusp; // index in childv: 0=menubar, 1=carousel, 2=gamedetails
+  uint16_t pvinput;
 };
 
 #define WIDGET ((struct mn_widget_home*)widget)
@@ -85,6 +87,14 @@ static void _home_draw(struct gui_widget *widget,int x,int y) {
  */
  
 static void _home_update(struct gui_widget *widget) {
+
+  // Check for nonstandard input changes.
+  uint16_t input=eh_input_get(0);
+  if (WIDGET->pvinput!=input) {
+    if ((input&EH_BTN_R2)&&!(WIDGET->pvinput&EH_BTN_R2)) dbs_randomize(&mn.dbs);
+    WIDGET->pvinput=input;
+  }
+
   int i=widget->childc;
   while (i-->0) {
     struct gui_widget *child=widget->childv[i];

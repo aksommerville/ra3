@@ -883,17 +883,9 @@ static int ra_http_query(struct http_xfer *req,struct http_xfer *rsp) {
     return -1;
   }
   int pagec=db_query_get_page_count(query);
-  if (pagec) {
-    char text[16];
-    int textc=sr_decsint_repr(text,sizeof(text),pagec);
-    if ((textc>0)&&(textc<=sizeof(text))) http_xfer_set_header(rsp,"X-Page-Count",12,text,textc);
-  }
+  if (pagec) http_xfer_set_header_int(rsp,"X-Page-Count",12,pagec);
   int totalc=db_query_get_total_count(query);
-  if (totalc) {
-    char text[16];
-    int textc=sr_decsint_repr(text,sizeof(text),totalc);
-    if ((textc>0)&&(textc<=sizeof(text))) http_xfer_set_header(rsp,"X-Total-Count",13,text,textc);
-  }
+  if (totalc) http_xfer_set_header_int(rsp,"X-Total-Count",13,totalc);
   db_query_del(query);
   return 0;
 }
@@ -979,7 +971,10 @@ static int ra_http_random(struct http_xfer *req,struct http_xfer *rsp) {
     db_query_del(query);
     return -1;
   }
-  db_query_add_parameter("limit",5,"999999",6,query); // Don't paginate.
+  
+  // Cache the requested limit, then force it high so we initially get all the results.
+  int real_limit=db_query_get_limit(query);
+  db_query_add_parameter("limit",5,"999999",6,query);
   struct db_list *results=0;
   if (
     (db_query_finish(0,query)<0)||
@@ -988,10 +983,29 @@ static int ra_http_random(struct http_xfer *req,struct http_xfer *rsp) {
     db_query_del(query);
     return -1;
   }
+  
+  // The main event.
   uint32_t gameid=db_query_choose_random(ra.db,results->gameidv,results->gameidc);
+  
+  // With "dry-run=1", restore the limit, paginate, and return results like POST /api/query does.
+  int dryrun=0;
+  http_xfer_get_query_int(&dryrun,req,"dry-run",7);
+  if (dryrun) {
+    if (db_query_paginate(http_xfer_get_body_encoder(rsp),query,real_limit,gameid)<0) {
+      db_query_del(query);
+      return -1;
+    }
+    int v;
+    if (v=db_query_get_page_count(query)) http_xfer_set_header_int(rsp,"X-Page-Count",12,v);
+    if (v=db_query_get_total_count(query)) http_xfer_set_header_int(rsp,"X-Total-Count",13,v);
+    http_xfer_set_header_int(rsp,"X-Page-Index",12,db_query_get_page(query));
+    http_xfer_set_header_int(rsp,"X-Game-Id",9,gameid);
+    db_query_del(query);
+    return 0;
+  }
   db_query_del(query);
   
-  // Then do about what POST /api/launch does.
+  // Not dry-running, this is the wet run: Do about what POST /api/launch does.
   const struct db_game *game=db_game_get_by_id(ra.db,gameid);
   if (!game) return http_xfer_set_status(rsp,404,"Not found");
   const struct db_launcher *launcher=db_launcher_for_gameid(ra.db,gameid);

@@ -228,6 +228,13 @@ int http_xfer_set_header(struct http_xfer *xfer,const char *k,int kc,const char 
   return http_dict_set(&xfer->headers,k,kc,v,vc);
 }
 
+int http_xfer_set_header_int(struct http_xfer *xfer,const char *k,int kc,int v) {
+  char str[16];
+  int strc=snprintf(str,sizeof(str),"%d",v);
+  if ((strc<1)||(strc>=sizeof(str))) return -1;
+  return http_dict_set(&xfer->headers,k,kc,str,strc);
+}
+
 /* Access to body.
  */
  

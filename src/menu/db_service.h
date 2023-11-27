@@ -70,6 +70,9 @@ int dbs_state_write(struct db_service *dbs);
 void dbs_http_response(struct db_service *dbs,const char *src,int srcc);
 void dbs_refresh_search(struct db_service *dbs);
 
+// Repeats the search and changes gameid.
+void dbs_randomize(struct db_service *dbs);
+
 void dbs_refresh_all_metadata(struct db_service *dbs);
 
 /* Don't set (dbs->gameid) directly, call this instead.

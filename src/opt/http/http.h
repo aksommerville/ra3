@@ -128,6 +128,7 @@ int http_xfer_get_query_int(int *dst,const struct http_xfer *xfer,const char *k,
  */
 int http_xfer_set_status(struct http_xfer *xfer,int code,const char *fmt,...);
 int http_xfer_set_header(struct http_xfer *xfer,const char *k,int kc,const char *v,int vc);
+int http_xfer_set_header_int(struct http_xfer *xfer,const char *k,int kc,int v);
 int http_xfer_append_body(struct http_xfer *xfer,const void *src,int srcc);
 int http_xfer_append_bodyf(struct http_xfer *xfer,const char *fmt,...);
 struct sr_encoder *http_xfer_get_body_encoder(struct http_xfer *xfer);

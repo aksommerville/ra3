@@ -208,12 +208,23 @@ static int dbs_receive_game_list_headers(struct db_service *dbs,const char *src,
     const char *k;
     int kc;
     while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+    
       if ((kc==12)&&!memcmp(k,"X-Page-Count",12)) {
         int v=0;
         if (sr_decode_json_int(&v,&decoder)>=0) dbs->pagec=v;
+        
       } else if ((kc==13)&&!memcmp(k,"X-Total-Count",13)) {
         int v=0;
         if (sr_decode_json_int(&v,&decoder)>=0) dbs->totalc=v;
+        
+      } else if ((kc==9)&&!memcmp(k,"X-Game-Id",9)) { // /api/random only
+        int v=0;
+        if (sr_decode_json_int(&v,&decoder)>=0) dbs_select_game(dbs,v);
+        
+      } else if ((kc==12)&&!memcmp(k,"X-Page-Index",12)) { // /api/random only
+        int v=0;
+        if (sr_decode_json_int(&v,&decoder)>=0) dbs->page=v;
+        
       } else {
         if (sr_decode_json_skip(&decoder)<0) break;
       }
@@ -326,7 +337,7 @@ void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
  */
  
 // Just the interesting part, inside the "query" object.
-static int dbs_encode_search_query(struct sr_encoder *dst,struct db_service *dbs) {
+static int dbs_encode_search_query(struct sr_encoder *dst,struct db_service *dbs,int randomize) {
 
   if (dbs->listc) {
     if (sr_encode_json_string(dst,"list",4,dbs->list,dbs->listc)<0) return -1;
@@ -350,8 +361,15 @@ static int dbs_encode_search_query(struct sr_encoder *dst,struct db_service *dbs
   if (dbs->sortc) {
     if (sr_encode_json_string(dst,"sort",4,dbs->sort,dbs->sortc)<0) return -1;
   }
-  if (dbs->page<1) dbs->page=1;
-  if (sr_encode_json_int(dst,"page",4,dbs->page)<0) return -1;
+  
+  // When randomizing, backend will choose the page for us.
+  if (randomize) {
+    if (sr_encode_json_int(dst,"dry-run",7,1)<0) return -1;
+  } else {
+    if (dbs->page<1) dbs->page=1;
+    if (sr_encode_json_int(dst,"page",4,dbs->page)<0) return -1;
+  }
+  
   if (sr_encode_json_int(dst,"limit",5,DB_SERVICE_SEARCH_LIMIT)<0) return -1;
   if (sr_encode_json_string(dst,"detail",6,"blobs",5)<0) return -1;
   
@@ -387,12 +405,16 @@ static int dbs_encode_search_query(struct sr_encoder *dst,struct db_service *dbs
 }
 
 // Outer framing. 
-static int dbs_encode_search_request(struct sr_encoder *dst,struct db_service *dbs) {
+static int dbs_encode_search_request(struct sr_encoder *dst,struct db_service *dbs,int randomize) {
   int topctx=sr_encode_json_object_start(dst,0,0);
   if (topctx<0) return -1;
   if (sr_encode_json_string(dst,"id",2,"http",4)<0) return -1;
   if (sr_encode_json_string(dst,"method",6,"POST",4)<0) return -1;
-  if (sr_encode_json_string(dst,"path",4,"/api/query",10)<0) return -1;
+  if (randomize) {
+    if (sr_encode_json_string(dst,"path",4,"/api/random",11)<0) return -1;
+  } else {
+    if (sr_encode_json_string(dst,"path",4,"/api/query",10)<0) return -1;
+  }
   
   int hdrctx=sr_encode_json_object_start(dst,"headers",7);
   if (hdrctx<0) return -1;
@@ -403,7 +425,7 @@ static int dbs_encode_search_request(struct sr_encoder *dst,struct db_service *d
   
   int qctx=sr_encode_json_object_start(dst,"query",5);
   if (qctx<0) return -1;
-  if (dbs_encode_search_query(dst,dbs)<0) return -1;
+  if (dbs_encode_search_query(dst,dbs,randomize)<0) return -1;
   if (sr_encode_json_object_end(dst,qctx)<0) return -1;
   
   if (sr_encode_json_object_end(dst,topctx)<0) return -1;
@@ -425,7 +447,7 @@ void dbs_refresh_search(struct db_service *dbs) {
   }
   
   struct sr_encoder packet={0};
-  if (dbs_encode_search_request(&packet,dbs)<0) {
+  if (dbs_encode_search_request(&packet,dbs,0)<0) {
     sr_encoder_cleanup(&packet);
     fprintf(stderr,"%s: Failed to assemble search request.\n",__func__);
     return;
@@ -439,6 +461,34 @@ void dbs_refresh_search(struct db_service *dbs) {
   } else {
     //fprintf(stderr,"%s: Searching...\n",__func__);
     dbs_state_write(dbs);
+  }
+}
+
+/* Random selection within full search results -- backend does the work.
+ * It's essentially the same call as search.
+ */
+ 
+void dbs_randomize(struct db_service *dbs) {
+  struct fakews *fakews=eh_get_fakews();
+  if (!fakews) return;
+  if (!fakews_is_connected(fakews)) {
+    if (fakews_connect_now(fakews)<0) {
+      fprintf(stderr,"%s: Failed to connect to Romassist.\n",__func__);
+      return;
+    }
+  }
+  
+  struct sr_encoder packet={0};
+  if (dbs_encode_search_request(&packet,dbs,1)<0) {
+    sr_encoder_cleanup(&packet);
+    fprintf(stderr,"%s: Failed to assemble search request.\n",__func__);
+    return;
+  }
+  
+  int err=fakews_send(fakews,1,packet.v,packet.c);
+  sr_encoder_cleanup(&packet);
+  if (err<0) {
+    fprintf(stderr,"%s: Failed to send search request.\n",__func__);
   }
 }
 

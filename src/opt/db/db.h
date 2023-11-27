@@ -523,7 +523,15 @@ int db_query_add_parameter(const char *k,int kc,const char *v,int vc,void *query
 int db_query_finish(struct sr_encoder *dst,struct db_query *query); // Null (dst) if you don't need it encoded.
 int db_query_get_page_count(const struct db_query *query); // => 0 if pagination not requested
 int db_query_get_total_count(const struct db_query *query);
+int db_query_get_limit(const struct db_query *query);
+int db_query_get_page(const struct db_query *query);
 struct db_list *db_query_get_results(const struct db_query *query); // Finish first.
+
+/* Assuming you finished with a high or unset limit, now re-paginate against those results.
+ * For random dry-run.
+ * Optionally encodes the response.
+ */
+int db_query_paginate(struct sr_encoder *dst,struct db_query *query,int limit,uint32_t gameid);
 
 /* Select among (gameidv), one game we can randomly recommend to the player.
  *  - Eliminate any with (launcher=never). (NB we search for the string "never", unlike the smarter db_launcher_for_gameid).

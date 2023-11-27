@@ -28,7 +28,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - 2023-11-26T19:47: Confirmed: 712 records and all have dur_m=0, which is definitely not right.
 - - Was finishing on client-triggered terminations but not game-triggered ones, oops.
 - [ ] Menu
-- - [ ] Random launch (Press R2). Will need "dry-run" from the backend so we can capture the gameid and page index.
+- - [x] Random launch (Press R2). Will need "dry-run" from the backend so we can capture the gameid and page index.
 - - - Don't actually launch. Just use the random-launch logic, and jump to that game in UI.
 - - [ ] Admin menu.
 - - - [ ] Audio: UI ready-ish. Needs emuhost support.

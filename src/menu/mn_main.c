@@ -1,4 +1,5 @@
 #include "mn_internal.h"
+#include "opt/serial/serial.h"
 
 struct mn mn={0};
 
@@ -31,51 +32,8 @@ static int mn_update() {
   return 0;
 }
 
-/* Generate PCM.
+/* Audio.
  */
- 
-//XXX world's cheapest synthesizer, just to ensure signals are passing as expecting.
-static int synth_phase=0;
-static int synth_halfwavelength=100;
-static int synth_level=10000;
-static int synth_ttl=0;
- 
-static void mn_generate_pcm_BLEEEP(void *v,int c) {
-  int16_t *dst=v;
-  int i=c;
-  int activec=synth_ttl;
-  if (activec>c) activec=c;
-  synth_ttl-=activec;
-  while (activec>0) {
-    synth_phase++;
-    if (synth_phase>=synth_halfwavelength) {
-      synth_phase=0;
-      synth_level=-synth_level;
-    }
-    *dst=synth_level;
-    dst++;
-    i--;
-    activec--;
-  }
-  memset(dst,0,i<<1);
-}
-
-/* Begin a sound effect.
- */
- 
-void mn_cb_sound_effect_BLEEEP(int sfxid,void *userdata) {
-  //fprintf(stderr,"%s %d\n",__func__,sfxid);
-  if (eh_audio_lock()<0) return;
-  switch (sfxid) {
-    case GUI_SFXID_ACTIVATE: synth_halfwavelength= 50; break;
-    case GUI_SFXID_MINOR_OK: synth_halfwavelength= 75; break;
-    case GUI_SFXID_MOTION:   synth_halfwavelength=100; break;
-    case GUI_SFXID_CANCEL:   synth_halfwavelength=150; break;
-    case GUI_SFXID_REJECT:   synth_halfwavelength=200; break;
-  }
-  synth_ttl=8000;
-  eh_audio_unlock();
-}
 
 static struct cheapsynth_sound_config mn_sound_ACTIVATE={
   .id=GUI_SFXID_ACTIVATE,
@@ -233,6 +191,80 @@ static void mn_http_response(const char *src,int srcc) {
   dbs_http_response(&mn.dbs,src,srcc);
 }
 
+static void mn_websocket_incoming(const char *id,int idc,const char *src,int srcc) {
+  //fprintf(stderr,"%s: %.*s\n",__func__,srcc,src);
+  
+  if ((idc==7)&&!memcmp(id,"upgrade",7)) {
+    char text[256];
+    int textc=0;
+    char running[32];
+    int runningc=0;
+    int pendingc=0;
+    int status=INT_MIN;
+    int finished=1;
+    struct sr_decoder decoder={.v=src,.c=srcc};
+    const char *k;
+    int kc;
+    sr_decode_json_object_start(&decoder);
+    while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+      if ((kc!=2)||memcmp(k,"id",2)) finished=0;
+    
+      if ((kc==7)&&!memcmp(k,"pending",7)) {
+        int pendingctx=sr_decode_json_array_start(&decoder);
+        if (pendingctx<0) return;
+        pendingc=0;
+        while (sr_decode_json_next(0,&decoder)>0) {
+          if (sr_decode_json_skip(&decoder)<0) break;
+          pendingc++;
+        }
+        if (sr_decode_json_end(&decoder,pendingctx)<0) return;
+        
+      } else if ((kc==7)&&!memcmp(k,"running",7)) {
+        running[0]='?';
+        runningc=1;
+        int runctx=sr_decode_json_object_start(&decoder);
+        if (runctx<0) return;
+        const char *runk;
+        int runkc;
+        while ((runkc=sr_decode_json_next(&runk,&decoder))>0) {
+          if ((runkc==11)&&!memcmp(runk,"displayName",11)) {
+            runningc=sr_decode_json_string(running,sizeof(running),&decoder);
+            if ((runningc<0)||(runningc>sizeof(running))) {
+              if (sr_decode_json_skip(&decoder)<0) return;
+              running[0]='?';
+              runningc=1;
+            }
+          } else {
+            if (sr_decode_json_skip(&decoder)<0) return;
+          }
+        }
+        if (sr_decode_json_end(&decoder,runctx)<0) return;
+        
+      } else if ((kc==4)&&!memcmp(k,"text",4)) {
+        textc=sr_decode_json_string(text,sizeof(text),&decoder);
+        if ((textc<0)||(textc>sizeof(text))) {
+          if (sr_decode_json_skip(&decoder)<0) return;
+          text[0]='?';
+          textc=1;
+        } else if (!textc) {
+          text[0]='?';
+          textc=1;
+        }
+        
+      } else if ((kc==6)&&!memcmp(k,"status",6)) {
+        if (sr_decode_json_int(&status,&decoder)<0) return;
+        
+      } else {
+        if (sr_decode_json_skip(&decoder)<0) return;
+      }
+    }
+    //fprintf(stderr,"websocket:upgrade: finished=%d pendingc=%d running='%.*s' status=%d text='%.*s'\n",finished,pendingc,runningc,running,status,textc,text);
+    //TODO How much of this data do we want to display, and how?
+    mn.upgrade_in_progress=finished?0:1;
+    if ((status>INT_MIN)&&(status!=0)) mn.upgrade_status=status;
+  }
+}
+
 /* Main.
  */
  
@@ -256,6 +288,7 @@ int main(int argc,char **argv) {
     .reset=0, // no need
     .use_menu_role=1,
     .http_response=mn_http_response,
+    .websocket_incoming=mn_websocket_incoming,
   };
   mn.exename=(argc>=0)?argv[0]:0;
   if (!mn.exename||!mn.exename[0]) mn.exename=delegate.name;

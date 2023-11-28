@@ -32,7 +32,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - - [x] Cascade to dependent upgrades.
 - - - [x] backend: Identify noop git+make builds
 - - - [x] backend: Perform upgrades automatically. At startup, and every 24 hours if long running.
-- - - [ ] menu: Review upgrade status and trigger manually
+- - - [x] menu: Review upgrade status and trigger manually. For now just a 1-button, no-feedback kind of deal.
 - - - [x] Cascade game and launcher deletions.
 - - - [ ] Upgrade method for db content.
 - - - [x] WebSocket packets for status of running upgrades?

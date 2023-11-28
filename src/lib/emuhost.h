@@ -165,10 +165,13 @@ struct eh_delegate {
   
   /* Triggered for any "httpresponse" packets we get from the server.
    * You can send HTTP requests over our fakews instance. (TODO: Provide simpler API for this)
-   * There is no mechanism for correlating requests and responses; I don't think it should be necessary.
    * You receive the entire JSON text of what came over the wire. {id,status,message,headers,body}
    */
   void (*http_response)(const char *src,int srcc);
+  
+  /* Anything from the fake websocket connection that we don't recognize, we'll dump it here as a last resort.
+   */
+  void (*websocket_incoming)(const char *id,int idc,const char *src,int srcc);
 };
 
 /* Call from your main, typically the only thing your main should do.

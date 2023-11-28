@@ -20,6 +20,8 @@ extern struct mn {
   struct gui *gui;
   struct cheapsynth *cheapsynth;
   struct db_service dbs;
+  int upgrade_in_progress;
+  int upgrade_status;
 } mn;
 
 /* Convenience: Returns (mn.data_path) prepended to (basename) with the appropriate separator.

@@ -165,6 +165,8 @@ void eh_cb_ws_message(int opcode,const void *v,int c,void *userdata) {
           if ((idc==4)&&!memcmp(id,"step",4)) { eh_trigger_action(EH_BTN_STEP); return; }
           if ((idc==12)&&!memcmp(id,"httpresponse",12)) { if (eh.delegate.http_response) eh.delegate.http_response(v,c); return; }
         
+          if (eh.delegate.websocket_incoming) eh.delegate.websocket_incoming(id,idc,v,c);
+          return;
         }
         break;
       } else {

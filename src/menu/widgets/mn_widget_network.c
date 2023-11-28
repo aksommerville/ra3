@@ -9,6 +9,7 @@
  
 struct mn_widget_network {
   struct gui_widget hdr;
+  int upgrade_in_progress;
 };
 
 #define WIDGET ((struct mn_widget_network*)widget)
@@ -24,7 +25,11 @@ static void _network_del(struct gui_widget *widget) {
  
 static void network_cb_form(struct gui_widget *form,const char *k,int kc,const char *v,int vc,void *userdata) {
   struct gui_widget *widget=userdata;
-  fprintf(stderr,"%s '%.*s' = '%.*s'\n",__func__,kc,k,vc,v);
+  
+  if ((kc==7)&&!memcmp(k,"Upgrade",7)) {
+    dbs_request_http(&mn.dbs,"POST","/api/upgrade",0,0);
+    return;
+  }
 }
 
 /* Get this host's IP address as a string.
@@ -89,6 +94,8 @@ static int _network_init(struct gui_widget *widget) {
   urlc+=5;
   gui_widget_form_add_readonly_string(form,"URL",3,url,urlc);
   
+  gui_widget_form_add_string(form,"Upgrade",7,"Begin",5,1);
+  
   return 0;
 }
 
@@ -136,6 +143,27 @@ static void _network_signal(struct gui_widget *widget,int sigid) {
   }
 }
 
+/* Update.
+ */
+ 
+static void _network_update(struct gui_widget *widget) {
+  if (mn.upgrade_in_progress!=WIDGET->upgrade_in_progress) {
+    WIDGET->upgrade_in_progress=mn.upgrade_in_progress;
+    if (widget->childc>=1) {
+      struct gui_widget *button=gui_widget_form_get_button_by_key(widget->childv[0],"Upgrade",7);
+      if (button) {
+        if (WIDGET->upgrade_in_progress) {
+          gui_widget_button_enable(button,0);
+          gui_widget_button_set_label(button,"Running...",10,0x808080);
+        } else {
+          gui_widget_button_enable(button,1);
+          gui_widget_button_set_label(button,"Begin",5,0xffffff);
+        }
+      }
+    }
+  }
+}
+
 /* Type definition.
  */
  
@@ -149,4 +177,5 @@ const struct gui_widget_type mn_widget_type_network={
   .draw=_network_draw,
   .motion=_network_motion,
   .signal=_network_signal,
+  .update=_network_update,
 };

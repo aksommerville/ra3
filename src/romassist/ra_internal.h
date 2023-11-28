@@ -34,6 +34,7 @@ extern struct ra {
   int http_port;
   int terminable;
   int allow_poweroff; // If nonzero, POST /api/shutdown calls `poweroff`. Zero, only this process terminates.
+  int update_enable;
   
   volatile int sigc;
   struct db *db;

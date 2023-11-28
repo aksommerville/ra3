@@ -15,6 +15,7 @@ struct ra_upgrade {
   struct db_upgrade *waitingv; // STRONG, nonresident
   int waitingc,waitinga;
   int noop; // Nonzero until we notice something in the output indicating that some action was taken. It's fuzzy at best.
+  uint32_t last_update_time;
 };
 
 int ra_upgrade_startup();

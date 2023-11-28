@@ -31,12 +31,13 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [x] backend: Perform upgrades on demand (HTTP)
 - - - - [x] Cascade to dependent upgrades.
 - - - [x] backend: Identify noop git+make builds
-- - - [ ] backend: Perform upgrades automatically. At startup, and every 24 hours if long running.
+- - - [x] backend: Perform upgrades automatically. At startup, and every 24 hours if long running.
 - - - [ ] menu: Review upgrade status and trigger manually
 - - - [x] Cascade game and launcher deletions.
 - - - [ ] Upgrade method for db content.
 - - - [x] WebSocket packets for status of running upgrades?
 - - - [ ] Wrapper script to relaunch backend on specific exit statuses, for when it updates itself?
+- - - [ ] Ensure that emulators detect changes to libemuhost.a
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.

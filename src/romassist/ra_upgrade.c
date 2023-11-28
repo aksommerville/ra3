@@ -344,6 +344,25 @@ static void ra_upgrade_report_output(const char *src,int srcc) {
  */
  
 int ra_upgrade_update() {
+
+  /* When nothing is happening, check current time against our recorded timestamp.
+   * Greater than 24 hours, trigger a full check.
+   * Since the recorded timestamp is initially zero, this is the startup check too.
+   */
+  if (ra.update_enable&&!ra.upgrade.inflight&&!ra.upgrade.waitingc) {
+    uint32_t now=db_time_now();
+    const int MINUTES_PER_DAY=60*24;
+    if (db_time_diff_m(ra.upgrade.last_update_time,now)>=MINUTES_PER_DAY) {
+      ra.upgrade.last_update_time=now;
+      struct db_upgrade *list=0;
+      int listc=ra_upgrade_list(&list,0,0xffffffff);
+      if (listc>0) {
+        ra_upgrade_begin(list,listc);
+        free(list);
+      }
+    }
+  }
+
   if (ra.upgrade.fd>=0) {
     struct pollfd pollfd={.fd=ra.upgrade.fd,.events=POLLIN|POLLERR|POLLHUP};
     if (poll(&pollfd,1,0)>0) {

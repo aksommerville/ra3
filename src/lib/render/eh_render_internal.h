@@ -45,6 +45,7 @@ struct eh_render {
   int rshift,gshift,bshift;
   int fb_gl_format,fb_gl_type;
   const void *srcfb;
+  uint8_t *cropbuf;
   
   GLuint programid;
   

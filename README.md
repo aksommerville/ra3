@@ -14,8 +14,6 @@ Old emulators are of course still compatible generically, as long we don't serve
 
 ## TODO
 
-- [ ] Emuhost
-- - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
@@ -27,17 +25,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.
 - - - ^ That exit status might be a lie; we weren't checking WIFEXITED.
 - - - The 6 expected HTTP calls did go out, and succeeded, same as normal cases.
-- - 2023-11-27T16:10: double free or corruption (out) ; not during startup. twice within 10 or so launches. probably audio related ...fixed a cheapsynth allocation thing, and it seems ok now.
-- - 2023-11-28T16:25: Another segfault submitting search entry. I bet it happens during processing of the incoming search results.
-- - - Spamming the search box can reproduce it, apparently, but it might take a hundred tries.
-- - - ...grr 400 tries and nothing
-- - - With more extensive logging, somehow it's happening a lot more! Only takes like 5 tries each time now.
-- - - Not during gamedetails update or carousel update. We receive the response, tick the gui, then... unknown
-- - - Definitely during gui_update. First root update after AUX1 went true.
-- - - gui_widget_keyboard was modifying internal state after its callback, and the callback deletes it. easy fix. but that can't be the same bug as the startup segfaults.
-- - - I expect we're still exposed to that class of problem elsewhere. Widget fires a callback that destroys it.
 - - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
-- - [ ] Don't show "args" comments in gamedetails.
+- - [x] Don't show "args" comments in gamedetails.
 - [ ] Web
 - - [ ] Now Playing: Flesh out with WebSocket.
 - - [ ] Search results: Screencaps aren't maintaining aspect ratio.

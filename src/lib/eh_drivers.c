@@ -37,8 +37,8 @@ static int eh_drivers_init_video_type(const struct eh_video_type *type) {
     .cb_text=eh_cb_text,
   };
   struct eh_video_setup setup={
-    .w=eh.delegate.video_width,
-    .h=eh.delegate.video_height,
+    .w=eh.fbcrop.w,
+    .h=eh.fbcrop.h,
     .rate=eh.delegate.video_rate,
     .fullscreen=eh.fullscreen,
     .title=eh.delegate.name,

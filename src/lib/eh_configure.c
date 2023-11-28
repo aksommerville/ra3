@@ -37,6 +37,7 @@ static void eh_print_help(const char *topic,int topicc) {
     "  --glsl-version=INT\n"
     "  --input-config=PATH\n"
     "  --screen=any             (left,right,top,bottom) Try to land window on the given monitor.\n"
+    "  --crop=x,y,w,h\n"
     "  --romassist=HOST:PORT\n"
     "\n"
   );
@@ -67,6 +68,42 @@ static const char *eh_config_screen_repr(int v) {
     case EH_SCREEN_BOTTOM: return "BOTTOM";
   }
   return "";
+}
+
+/* --crop=x,y,w,h
+ */
+ 
+static int eh_config_set_crop(const char *src,int srcc) {
+  int vv[4];
+  int vc=0,srcp=0;
+  while (srcp<srcc) {
+    if (src[srcp]==',') { srcp++; continue; }
+    const char *token=src+srcp;
+    int tokenc=0;
+    while ((srcp<srcc)&&(src[srcp++]!=',')) tokenc++;
+    if (vc>=4) {
+      fprintf(stderr,"%s: Expected 'x,y,w,h' for crop, found '%.*s'\n",eh.exename,srcc,src);
+      return -2;
+    }
+    if (sr_int_eval(vv+vc,token,tokenc)<2) {
+      fprintf(stderr,"%s: Expected 'x,y,w,h' for crop, found '%.*s'\n",eh.exename,srcc,src);
+      return -2;
+    }
+    vc++;
+  }
+  if (vc!=4) {
+    fprintf(stderr,"%s: Expected 'x,y,w,h' for crop, found '%.*s'\n",eh.exename,srcc,src);
+    return -2;
+  }
+  if ((vv[0]<0)||(vv[1]<0)||(vv[2]<1)||(vv[3]<1)||(vv[0]+vv[2]>eh.delegate.video_width)||(vv[1]+vv[3]>eh.delegate.video_height)) {
+    fprintf(stderr,"%s: Invalid crop '%.*s' for %dx%d framebuffer.\n",eh.exename,srcc,src,eh.delegate.video_width,eh.delegate.video_height);
+    return -2;
+  }
+  eh.fbcrop.x=vv[0];
+  eh.fbcrop.y=vv[1];
+  eh.fbcrop.w=vv[2];
+  eh.fbcrop.h=vv[3];
+  return 0;
 }
 
 /* --romassist=HOST:PORT
@@ -123,6 +160,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==12)&&!memcmp(k,"glsl-version",12)) { eh.glsl_version=vn; return 0; }
   if ((kc==12)&&!memcmp(k,"input-config",12)) return eh_config_set_string(&eh.input_config_path,v,vc);
   if ((kc==6)&&!memcmp(k,"screen",6)) { eh.prefer_screen=eh_config_screen_eval(v,vc); return 0; }
+  if ((kc==4)&&!memcmp(k,"crop",4)) return eh_config_set_crop(v,vc);
   
   /* "--romassist" splits into two fields.
    */
@@ -196,7 +234,6 @@ static int eh_config_encode(struct sr_encoder *dst) {
  */
  
 int eh_config_save() {
-  fprintf(stderr,"%s...\n",__func__);
   char path[1024];
   if (eh_config_get_path(path,sizeof(path))<0) return -1;
   struct sr_encoder encoder={0};
@@ -266,6 +303,10 @@ static int eh_config_from_file() {
 static void eh_configure_start() {
   eh.glsl_version=120;
   eh.romassist_port=2600;
+  eh.fbcrop.x=0;
+  eh.fbcrop.y=0;
+  eh.fbcrop.w=eh.delegate.video_width;
+  eh.fbcrop.h=eh.delegate.video_height;
 }
 
 /* Finish configuration.

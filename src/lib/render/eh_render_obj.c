@@ -8,6 +8,7 @@ void eh_render_del(struct eh_render *render) {
   if (!render) return;
   if (render->texid) glDeleteTextures(1,&render->texid);
   if (render->fbrgb) free(render->fbrgb);
+  if (render->cropbuf) free(render->cropbuf);
   free(render);
 }
 

@@ -33,6 +33,7 @@ extern struct eh {
   int prefer_screen;
   char *romassist_host;
   int romassist_port;
+  struct { int x,y,w,h; } fbcrop; // True dimensions of video output. delegate->width,height are only input from client.
   
   struct eh_clock clock;
   struct eh_video_driver *video;

@@ -6,8 +6,8 @@
 static inline void eh_require_output_bounds(struct eh_render *render) {
   if (!render->dstr_dirty) return;
   render->dstr_dirty=0;
-  int fbw=eh.delegate.video_width;
-  int fbh=eh.delegate.video_height;
+  int fbw=eh.fbcrop.w;
+  int fbh=eh.fbcrop.h;
   int winw=eh.video->w;
   int winh=eh.video->h;
   
@@ -41,6 +41,45 @@ static inline void eh_require_output_bounds(struct eh_render *render) {
  */
  
 static inline void eh_render_upload_texture(struct eh_render *render,const void *src) {
+
+  /* If the client fb and texture have different widths, there's some drama.
+   */
+  if (eh.fbcrop.w<eh.delegate.video_width) {
+    int srcstride=eh.delegate.video_width*3;
+    int dststride=(eh.fbcrop.w*3+3)&~3;
+    if (!render->cropbuf) {
+      if (!(render->cropbuf=malloc(dststride*eh.fbcrop.h))) return;
+    }
+    const uint8_t *srcrow=src;
+    srcrow+=eh.fbcrop.y*srcstride;
+    srcrow+=eh.fbcrop.x*3;
+    uint8_t *dst=render->cropbuf;
+    int cpc=dststride;
+    int yi=eh.fbcrop.h;
+    for (;yi-->0;dst+=dststride,srcrow+=srcstride) {
+      memcpy(dst,srcrow,cpc);
+    }
+    glTexImage2D(
+      GL_TEXTURE_2D,0,GL_RGB,
+      eh.fbcrop.w,eh.fbcrop.h,
+      0,render->fb_gl_format,render->fb_gl_type,
+      render->cropbuf
+    );
+    return;
+  }
+
+  /* Cropping only on y is a bit simpler.
+   */
+  if (eh.fbcrop.h<eh.delegate.video_height) {
+    glTexImage2D(
+      GL_TEXTURE_2D,0,GL_RGB,
+      eh.fbcrop.w,eh.fbcrop.h,
+      0,render->fb_gl_format,render->fb_gl_type,
+      (char*)src+eh.fbcrop.y*(eh.delegate.video_width*3)
+    );
+    return;
+  }
+
   glTexImage2D(
     GL_TEXTURE_2D,0,GL_RGB,
     eh.delegate.video_width,eh.delegate.video_height,

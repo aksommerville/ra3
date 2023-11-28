@@ -157,7 +157,6 @@ static int mn_choose_data_path() {
 static int mn_load_none() {
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);//2023-11-23T16:03 leave this in place for the next startup segfault, it's happening randomly and rarely
   
-  //mn.show_invalid=1;
   if (mn_choose_data_path()<0) return -1;
   
   dbs_init(&mn.dbs);

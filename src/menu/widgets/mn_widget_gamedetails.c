@@ -317,6 +317,7 @@ static void gamedetails_populate(struct gui_widget *widget,struct sr_decoder *de
         if (subctx<0) return;
         const char *subk;
         int subkc;
+        int comment_is_text=0;
         while ((subkc=sr_decode_json_next(&subk,decoder))>0) {
           if ((subkc==1)&&!memcmp(subk,"v",1)) {
             textc=sr_decode_json_string(text,sizeof(text),decoder);
@@ -324,12 +325,20 @@ static void gamedetails_populate(struct gui_widget *widget,struct sr_decoder *de
               textc=0;
               if (sr_decode_json_skip(decoder)<0) return;
             }
+          } else if ((subkc==1)&&!memcmp(subk,"k",1)) {
+            char cmttype[32];
+            int cmttypec=sr_decode_json_string(cmttype,sizeof(cmttype),decoder);
+            if ((cmttypec<0)||(cmttypec>sizeof(cmttype))) {
+              if (sr_decode_json_skip(decoder)<0) return;
+            } else if ((cmttypec==4)&&!memcmp(cmttype,"text",4)) {
+              comment_is_text=1;
+            }
           } else {
             if (sr_decode_json_skip(decoder)<0) return;
           }
         }
         if (sr_decode_json_end(decoder,subctx)<0) return;
-        if ((textc>0)&&(textc<=sizeof(text))) {
+        if (comment_is_text&&(textc>0)&&(textc<=sizeof(text))) {
           struct mn_gamedetails_bit *bit=gamedetails_add_multiline_bit(widget,"comment",7,text,textc,"lightv40",0xffffff);
           if (bit) {
             bit->order=order++; // preserve order of comments, and start at 100 so they come after everything else

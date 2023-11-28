@@ -17,9 +17,9 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
-- [ ] db: Add multiple files from fs by providing one path.
+- [x] db: Add multiple files from fs by providing one path. ...meh. There are migration scripts here, and I need a solid use case before writing UI for anything else.
 - [ ] Upgrade method for db content.
-- [ ] Wrapper script to relaunch backend on specific exit statuses, for when it updates itself?
+- [x] Wrapper script to relaunch backend on specific exit statuses, for when it updates itself? ...doesn't seem to be necessary? Could look again later.
 - [ ] menu: "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.
@@ -27,12 +27,12 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - The 6 expected HTTP calls did go out, and succeeded, same as normal cases.
 - - [ ] Observed empty search results at launch, when a valid 30-ish-game query was present.
 - - [x] Don't show "args" comments in gamedetails.
-- [ ] Web
-- - [ ] Now Playing: Flesh out with WebSocket.
-- - [ ] Search results: Screencaps aren't maintaining aspect ratio.
-- - [ ] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
-- - [ ] Make all views mobile-friendly, today they are very not.
-- - [ ] Don't show "args" comments in search results. While you're at it, show multiple "text" comments.
+- [x] Web
+- - [x] Now Playing: Flesh out with WebSocket. ...meh it does everything it needs to.
+- - [x] Search results: Screencaps aren't maintaining aspect ratio.
+- - [x] Search results: Can we force cards to pack at the top? When there's 6 results in 4 columns, there's a gap between the rows.
+- - [x] Make all views mobile-friendly, today they are very not.
+- - [x] Don't show "args" comments in search results. While you're at it, show multiple "text" comments.
 - [ ] Integrate emulators
 - - [ ] Validate 4 player in all emulators
 - - [ ] akz26: Review inputs. I think I'm missing some of the console switches.

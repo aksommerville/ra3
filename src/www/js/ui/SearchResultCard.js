@@ -93,8 +93,13 @@ export class SearchResultCard {
   }
   
   composeDesc() {
-    if (!this.game?.comments?.length) return "";
-    return this.game.comments[0].v || "";
+    let dst = "";
+    for (const { k, v } of this.game.comments || []) {
+      if (!v) continue;
+      if (k !== "text") continue;
+      dst += v + "\n";
+    }
+    return dst;
   }
   
   editDetails() {

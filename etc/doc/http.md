@@ -46,6 +46,13 @@ PUT /api/launcher <= Launcher => Launcher (always new)
 PATCH /api/launcher <= Launcher => Launcher (must exist)
 DELETE /api/launcher?launcherid => nothing
 
+GET /api/upgrade/count => integer
+GET /api/upgrade?index&count => Upgrade[]
+GET /api/upgrade?upgradeid|gameid|launcherid|name => Upgrade
+PUT /api/upgrade <= Upgrade => Upgrade (always new)
+PATCH /api/upgrade <= Upgrade => Upgrade (must exist)
+DELETE /api/upgrade?upgradeid => nothing
+
 GET /api/listids => (string|number)[]
 GET /api/list/count => integer
 GET /api/list?index&count&detail => List[]
@@ -191,6 +198,25 @@ launcher {
   suffixes: string; comma-delimited list of path suffixes
   cmd: string; shell command. "$FILE" replaced with game's path.
   desc: string; commentary from user
+}
+```
+
+## /api/upgrade
+
+```
+upgrade {
+  upgradeid: int
+  name: string; usually empty -- use the game or launcher's name
+  displayName: string; READONLY
+  desc: string; commentary
+  gameid: int
+  launcherid: int
+  depend: int; upgradeid
+  method: string; "git+make", and expect other in the future
+  param: string; other parameters per (method). Directory for "git+make".
+  checktime: string
+  buildtime: string
+  status: string; empty means ok, anything else is a description of the last failure
 }
 ```
 

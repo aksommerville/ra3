@@ -25,9 +25,10 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Menu
 - - [ ] Auto-upgrade.
 - - - [x] "upgrade" table in DB
-- - - [ ] HTTP endpoints
-- - - [ ] Add to web DB view
+- - - [x] HTTP endpoints
+- - - [x] Add to web DB view
 - - - [ ] backend: Perform upgrades
+- - - [ ] menu: Review upgrade status and trigger manually
 - - - [x] Cascade game and launcher deletions.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.

@@ -623,6 +623,96 @@ static int ra_http_delete_launcher(struct http_xfer *req,struct http_xfer *rsp) 
   return db_launcher_delete(ra.db,launcherid);
 }
 
+/* GET /api/upgrade/count
+ */
+
+static int ra_http_count_upgrade(struct http_xfer *req,struct http_xfer *rsp) {
+  return sr_encode_json_int(http_xfer_get_body_encoder(rsp),0,0,db_upgrade_count(ra.db));
+}
+
+/* GET /api/upgrade
+ */
+
+static int ra_http_get_upgrade(struct http_xfer *req,struct http_xfer *rsp) {
+  int err=ra_http_get_by_index(req,rsp,sizeof(struct db_upgrade),db_upgrade_count,(void*)db_upgrade_get_by_index,(void*)db_upgrade_encode);
+  if (err) return err;
+  int id;
+  
+  if (http_xfer_get_query_int(&id,req,"upgradeid",9)>=0) {
+    const struct db_upgrade *upgrade=db_upgrade_get_by_id(ra.db,id);
+    if (!upgrade) return http_xfer_set_status(rsp,404,"Not found");
+    return db_upgrade_encode(http_xfer_get_body_encoder(rsp),ra.db,upgrade,DB_FORMAT_json,DB_DETAIL_record);
+  }
+  
+  if (http_xfer_get_query_int(&id,req,"gameid",6)>=0) {
+    const struct db_upgrade *upgrade=db_upgrade_get_by_gameid(ra.db,id);
+    if (!upgrade) return http_xfer_set_status(rsp,404,"Upgrade not found for game %d",id);
+    return db_upgrade_encode(http_xfer_get_body_encoder(rsp),ra.db,upgrade,DB_FORMAT_json,DB_DETAIL_record);
+  }
+  
+  if (http_xfer_get_query_int(&id,req,"launcherid",10)>=0) {
+    const struct db_upgrade *upgrade=db_upgrade_get_by_launcherid(ra.db,id);
+    if (!upgrade) return http_xfer_set_status(rsp,404,"Upgrade not found for launcher %d",id);
+    return db_upgrade_encode(http_xfer_get_body_encoder(rsp),ra.db,upgrade,DB_FORMAT_json,DB_DETAIL_record);
+  }
+  
+  char name[64];
+  int namec=http_xfer_get_query_string(name,sizeof(name),req,"name",4);
+  if ((namec>0)&&(namec<=sizeof(name))) {
+    const struct db_upgrade *upgrade=db_upgrade_get_by_string(ra.db,name,namec);
+    if (!upgrade) return http_xfer_set_status(rsp,404,"No match for upgrade '%.*s'",namec,name);
+    return db_upgrade_encode(http_xfer_get_body_encoder(rsp),ra.db,upgrade,DB_FORMAT_json,DB_DETAIL_record);
+  }
+  
+  return http_xfer_set_status(rsp,400,"Expected 'index', 'upgradeid', 'name', 'launcherid', or 'gameid'");
+}
+  
+/* PUT /api/upgrade
+ */
+ 
+static int ra_http_put_upgrade(struct http_xfer *req,struct http_xfer *rsp) {
+  const char *src=0;
+  int srcc=http_xfer_get_body(&src,req);
+  if (srcc<0) return -1;
+  struct db_upgrade scratch={0};
+  if (db_upgrade_decode(&scratch,ra.db,DB_FORMAT_json,src,srcc)<0) return http_xfer_set_status(rsp,400,"Malformed upgrade");
+  const struct db_upgrade *upgrade=db_upgrade_insert(ra.db,&scratch);
+  if (!upgrade) {
+    if (db_upgrade_get_by_id(ra.db,scratch.upgradeid)) {
+      return http_xfer_set_status(rsp,400,"Upgradeid %d in use",scratch.upgradeid);
+    }
+    return -1;
+  }
+  return db_upgrade_encode(http_xfer_get_body_encoder(rsp),ra.db,upgrade,DB_FORMAT_json,DB_DETAIL_record);
+}
+
+/* PATCH /api/upgrade
+ */
+ 
+static int ra_http_patch_upgrade(struct http_xfer *req,struct http_xfer *rsp) {
+  const char *src=0;
+  int srcc=http_xfer_get_body(&src,req);
+  if (srcc<0) return -1;
+  uint32_t upgradeid=ra_http_extract_json_id(src,srcc,"upgradeid",9);
+  if (!upgradeid) return http_xfer_set_status(rsp,400,"upgradeid required");
+  const struct db_upgrade *prev=db_upgrade_get_by_id(ra.db,upgradeid);
+  if (!prev) return http_xfer_set_status(rsp,404,"Not found");
+  struct db_upgrade scratch=*prev;
+  if (db_upgrade_decode(&scratch,ra.db,DB_FORMAT_json,src,srcc)<0) return http_xfer_set_status(rsp,400,"Malformed upgrade");
+  const struct db_upgrade *upgrade=db_upgrade_update(ra.db,&scratch);
+  if (!upgrade) return -1;
+  return db_upgrade_encode(http_xfer_get_body_encoder(rsp),ra.db,upgrade,DB_FORMAT_json,DB_DETAIL_record);
+}
+
+/* DELETE /api/upgrade
+ */
+ 
+static int ra_http_delete_upgrade(struct http_xfer *req,struct http_xfer *rsp) {
+  int upgradeid=0;
+  if (http_xfer_get_query_int(&upgradeid,req,"upgradeid",9)<0) return http_xfer_set_status(rsp,400,"upgradeid required");
+  return db_upgrade_delete(ra.db,upgradeid);
+}
+
 /* GET /api/listids
  */
  
@@ -1226,6 +1316,12 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(PUT,"/api/launcher",ra_http_put_launcher)
   _(PATCH,"/api/launcher",ra_http_patch_launcher)
   _(DELETE,"/api/launcher",ra_http_delete_launcher)
+  
+  _(GET,"/api/upgrade/count",ra_http_count_upgrade)
+  _(GET,"/api/upgrade",ra_http_get_upgrade)
+  _(PUT,"/api/upgrade",ra_http_put_upgrade)
+  _(PATCH,"/api/upgrade",ra_http_patch_upgrade)
+  _(DELETE,"/api/upgrade",ra_http_delete_upgrade)
   
   _(GET,"/api/listids",ra_http_get_listids)
   _(GET,"/api/list/count",ra_http_count_list)

@@ -418,6 +418,23 @@ static int db_upgrade_encode_json(struct sr_encoder *dst,const struct db *db,con
   if (upgrade->buildtime) ENCODE_TIME("buildtime",9,upgrade->buildtime)
   if (upgrade->status) db_encode_json_string(dst,db,"status",6,upgrade->status);
   
+  /* Encoded upgrades have a read-only "displayName" field, to spare clients the need of looking up the game or launcher for display purposes.
+   * If displayName comes back to us we ignore it.
+   */
+  if (upgrade->name) {
+    db_encode_json_string(dst,db,"displayName",11,upgrade->name);
+  } else if (upgrade->gameid) {
+    const struct db_game *game=db_game_get_by_id(db,upgrade->gameid);
+    if (game) {
+      int namec=DB_GAME_NAME_LIMIT;
+      while (namec&&!game->name[namec-1]) namec--;
+      sr_encode_json_string(dst,"displayName",11,game->name,namec);
+    }
+  } else if (upgrade->launcherid) {
+    const struct db_launcher *launcher=db_launcher_get_by_id(db,upgrade->launcherid);
+    if (launcher) db_encode_json_string(dst,db,"displayName",11,launcher->name);
+  }
+  
   return sr_encode_json_object_end(dst,jsonctx);
 }
 

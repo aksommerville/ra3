@@ -25,7 +25,8 @@ That way the game's path can still be the actual executable path, no extra cruft
 Each `upgrade` record is a game or launcher that can be automatically updated.
 
 `method` should be `git+make`. I'll probably add other methods in the future.
-There's a field `param` to provide additional data per method; `git+make` doesn't use it.
+There's a field `param` to provide additional data per method.
+For `git+make`, `param` is the directory in which to do both `git pull` and `make`.
 
 Set `depend` to the id of an upgrade that should be run first.
 There's an upgrade record for Romassist itself, which includes Emuhost, and all emulators should depend on it.

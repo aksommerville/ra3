@@ -66,7 +66,7 @@ export class DbService {
   }
   
   getTableNames() {
-    return ["launcher", "list", "game", "comment", "play", "blob"];
+    return ["launcher", "upgrade", "list", "game", "comment", "play", "blob"];
   }
   
   /* Null if unknown, or an object where keys are the record key and values the type:
@@ -76,7 +76,7 @@ export class DbService {
    *  "boolean"
    *  "time": ISO 8601 timestamp, usually 1-minute resolution. Time zone never specified.
    *  "flags": Space-delimited list of flag names.
-   *  "gameid","launcherid","listid": Foreign key (integer).
+   *  "gameid","launcherid","listid","upgradeid": Foreign key (integer).
    *  "readonly": Primary key or otherwise immutable.
    */
   getTableSchema(tableName) {
@@ -88,6 +88,19 @@ export class DbService {
           suffixes: "string",
           cmd: "string",
           desc: "string",
+        };
+      case "upgrade": return {
+          upgradeid: "readonly",
+          name: "string",
+          desc: "string",
+          gameid: "gameid",
+          launcherid: "launcherid",
+          depend: "upgradeid",
+          method: "string",
+          param: "string",
+          checktime: "time",
+          buildtime: "time",
+          status: "string",
         };
       case "list": return {
           listid: "readonly",
@@ -153,6 +166,7 @@ export class DbService {
   listReadOnlyKeys(tableName) {
     switch (tableName) {
       case "launcher": return ["launcherid"];
+      case "upgrade": return ["upgradeid"];
       case "list": return ["listid"];
       case "game": return ["gameid"];
       case "comment": return ["gameid", "time", "k"];
@@ -164,6 +178,7 @@ export class DbService {
   reprRecordForList(tableName, record) {
     switch (tableName) {
       case "launcher": return `${record.launcherid}: ${record.name}`;
+      case "upgrade": return `${record.upgradeid}: ${record.displayName || ""}`;
       case "list": return `${record.listid}: ${record.name}`;
       case "game": return `${record.gameid}: ${record.name}`;
       case "comment": {
@@ -180,7 +195,8 @@ export class DbService {
     if (!record) return null;
     switch (tableName) {
       case "launcher": return record.launcherid ? { launcherid: record.launcherid } : null;
-      case "list": return record.lsitid ? { listid: record.listid } : null;
+      case "upgrade": return record.upgradeid ? { upgradeid: record.upgradeid } : null;
+      case "list": return record.listid ? { listid: record.listid } : null;
       case "game": return record.gameid ? { gameid: record.gameid } : null;
       case "comment": return { gameid: record.gameid, time: record.time, k: record.k };
       case "play": return { gameid: record.gameid, time: record.time };
@@ -204,7 +220,8 @@ export class DbService {
     if (tableName === "blob") {
       httpCall = this.comm.httpJson("GET", "/api/blob/all");
     } else {
-      httpCall = this.comm.httpJson("GET", `/api/${tableName}`, { index: 0, count: 999999, detail: "record" });
+      const detail = (tableName === "list") ? "id" : "record";
+      httpCall = this.comm.httpJson("GET", `/api/${tableName}`, { index: 0, count: 999999, detail });
     }
     return httpCall.then(rsp => {
       if (rsp instanceof Array) return rsp;

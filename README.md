@@ -16,13 +16,16 @@ Old emulators are of course still compatible generically, as long we don't serve
 
 - [ ] Emuhost
 - - [ ] Option to black out some portion of the framebuffer edge? I think Castlevania 2 could benefit from this.
-- - [ ] Sometimes it launches in a window when I've asked for fullscreen.
+- - [x] Sometimes it launches in a window when I've asked for fullscreen. ...not going to worry about this, i probly butt-dialed the fullscreen key or something.
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - [ ] db: Add multiple files from fs by providing one path.
-- [ ] db: Support for automatic updates. Record gittable directories?
-- [ ] db: Are we currently gc'ing at any point? We need to.
+- [x] db: Support for automatic updates. Record gittable directories?
+- [x] db: Are we currently gc'ing at any point? We need to. ...ha ha ha no we are not.
+- [x] !!! db_gc is broken, it corrupts strings. Claimed to eliminate 189 strings but stoc file size didn't change. Next load, game comments are all fucked up.
+- - The unchanged file size is not a problem; string table goes sparse.
+- - Stupid typo in db_gc. All good now. And I've added a gc before each save, it seems ok.
 - [ ] Menu
 - - [ ] Auto-upgrade.
 - - - [x] "upgrade" table in DB
@@ -37,7 +40,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [ ] Upgrade method for db content.
 - - - [x] WebSocket packets for status of running upgrades?
 - - - [ ] Wrapper script to relaunch backend on specific exit statuses, for when it updates itself?
-- - - [ ] Ensure that emulators detect changes to libemuhost.a
+- - - [x] Ensure that emulators detect changes to libemuhost.a
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.
@@ -57,7 +60,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] akz26: Review inputs. I think I'm missing some of the console switches.
 - - [ ] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
 - [ ] Prepare collection
-- - [ ] ttaq: might need a 'config.mk' or similar, we want the working tree to stay clean for git
+- - [x] ttaq: might need a 'config.mk' or similar, we want the working tree to stay clean for git
 - - [ ] See rating histogram, try to flatten out the multiple-of-5 spikes.
 - - [ ] Review all native games. I know we have Bonnie's Bakery here, and pretty sure that won't fly on ARM.
 - - - fwiw BB doesn't launch here either, is something broken?

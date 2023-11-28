@@ -99,6 +99,7 @@ void db_invalidate_blobs_for_gameid(struct db *db,uint32_t gameid) {
 int db_save(struct db *db) {
   if (!db||!db->dirty) return 0;
   if (!db->rootc) return -1;
+  db_gc(db);
   if (!file_get_type(db->root)) {
     if (dir_mkdir(db->root)<0) return -1;
   }

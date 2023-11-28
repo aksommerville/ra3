@@ -94,7 +94,7 @@ static int db_update_strings_for_removal(struct db *db,int p,int c) {
   int top=p+c;
   struct db_string_toc_entry *entry=db->strings.toc;
   int i=db->strings.tocc;
-  for (;i-->0;entry) {
+  for (;i-->0;entry++) {
     if (entry->p>=top) entry->p-=c;
     else if (entry->p>=p) return -1;
   }

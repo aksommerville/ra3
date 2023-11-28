@@ -94,6 +94,37 @@ static int eh_drivers_init_video() {
   return 0;
 }
 
+/* Reinitialize audio driver, in flight.
+ */
+ 
+struct eh_audio_driver *eh_audio_reinit(const struct eh_audio_type *type,const struct eh_audio_setup *setup) {
+  if (!type||!setup) return 0;
+  if (eh.audio) {
+    if (eh.audio->type->play) eh.audio->type->play(eh.audio,0);
+    if (eh.audio->type->lock) eh.audio->type->lock(eh.audio);
+    eh_audio_driver_del(eh.audio);
+  }
+  struct eh_audio_delegate delegate={
+    .userdata=0,
+    .cb_pcm=eh_cb_pcm,
+  };
+  struct eh_audio_setup adjsetup=*setup;
+  adjsetup.buffersize=1024;
+  if (!(eh.audio=eh_audio_driver_new(type,&delegate,&adjsetup))) {
+    fprintf(stderr,
+      "%s: !!! Failed to reinitialize audio !!! driver=%s device=%s rate=%d chanc=%d format=%d\n",
+      eh.exename,type->name,setup->device,setup->rate,setup->chanc,setup->format
+    );
+    return 0;
+  }
+  eh.audio_rate=setup->rate;
+  eh.audio_chanc=setup->chanc;
+  eh_config_set_string(&eh.audio_drivers,type->name,-1);
+  eh_config_set_string(&eh.audio_device,setup->device,-1);
+  eh_config_save();
+  return eh.audio;
+}
+
 /* Choose and init audio driver.
  */
  

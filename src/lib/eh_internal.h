@@ -54,6 +54,8 @@ extern struct eh {
 } eh;
 
 int eh_configure(int argc,char **argv);
+int eh_config_set_string(char **dst,const char *src,int srcc);
+int eh_config_save();
 
 void eh_drivers_quit();
 int eh_drivers_init();

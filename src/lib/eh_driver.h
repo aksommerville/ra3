@@ -89,9 +89,9 @@ struct eh_audio_delegate {
 struct eh_audio_setup {
   int rate;
   int chanc;
+  int format;
   int buffersize;
-  //TODO device name
-  //TODO format
+  const char *device;
 };
 
 struct eh_audio_driver {
@@ -127,6 +127,14 @@ struct eh_audio_driver *eh_audio_driver_new(
 );
 
 struct eh_audio_driver *eh_get_audio_driver();
+
+/* Not something that emulators should do, but a menu app might.
+ * Drop the current audio driver and create a new one with the given config.
+ * Returns the new driver on success -- the old one is now deleted.
+ * If this fails, audio is dead.
+ * After a success, the new driver is stopped. You should reinitialize your own stuff, then start it.
+ */
+struct eh_audio_driver *eh_audio_reinit(const struct eh_audio_type *type,const struct eh_audio_setup *setup);
 
 /* Input.
  ***************************************************************************/

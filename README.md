@@ -23,8 +23,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
-- - [ ] Admin menu.
-- - - [ ] Audio: UI ready-ish. Needs emuhost support.
+- - [x] Admin menu.
+- - - [x] Audio: UI ready-ish. Needs emuhost support.
 - - [ ] Auto-upgrade.
 - - [x] Sound effects.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.

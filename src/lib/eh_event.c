@@ -81,6 +81,17 @@ void eh_cb_button(int devid,int btnid,int value,void *dummy) {
   eh_inmgr_button(eh.inmgr,devid,btnid,value);
 }
 
+/* Toggle fullscreen.
+ * This is bigger than it sounds: The setting should stick across launches.
+ */
+ 
+static void eh_toggle_fullscreen() {
+  if (!eh.video->type->set_fullscreen) return;
+  eh.video->type->set_fullscreen(eh.video,eh.video->fullscreen?0:1);
+  eh.fullscreen=eh.video->fullscreen?1:0;
+  eh_config_save();
+}
+
 /* Digested input event from inmgr.
  */
  
@@ -88,9 +99,7 @@ static void eh_trigger_action(int action) {
   switch (action) {
     case EH_BTN_QUIT: eh.terminate=1; break;
     case EH_BTN_SCREENCAP: eh.screencap_requested=1; break;
-    case EH_BTN_FULLSCREEN: {
-        if (eh.video->type->set_fullscreen) eh.video->type->set_fullscreen(eh.video,eh.video->fullscreen?0:1);
-      } break;
+    case EH_BTN_FULLSCREEN: eh_toggle_fullscreen(); break;
     case EH_BTN_PAUSE: {
         if (eh.hard_pause) {
           eh.hard_pause=0;

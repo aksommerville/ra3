@@ -44,9 +44,10 @@ static void audio_replace_driver(struct gui_widget *widget) {
   int devicec=audio_read_form_string(&device,form,"Device",6);
   int rate=audio_read_form_uint(form,"Rate",4);
   int chanc=audio_read_form_uint(form,"Channels",8);
+  char zdevice[256];
   if (
     (drivernamec<0)||
-    (devicec<0)||
+    (devicec<0)||(devicec>=sizeof(zdevice))||
     (rate<200)||(rate>200000)||
     (chanc<1)||(chanc>8)
   ) {
@@ -58,10 +59,20 @@ static void audio_replace_driver(struct gui_widget *widget) {
     fprintf(stderr,"%s: No such driver '%.*s'. How did you pick it? Something is broken here.\n",__func__,drivernamec,drivername);
     return;
   }
-  fprintf(stderr,
-    "%s:%d: OK let's try replacing the audio driver. driver=%s device=%.*s rate=%d chanc=%d\n",
-    __FILE__,__LINE__,type->name,devicec,device,rate,chanc
-  );
+  memcpy(zdevice,device,devicec);
+  zdevice[devicec]=0;
+  struct eh_audio_setup setup={
+    .device=zdevice,
+    .rate=rate,
+    .chanc=chanc,
+    .format=EH_AUDIO_FORMAT_S16N,
+    .buffersize=0, // Emuhost overwrites, at least for now.
+  };
+  struct eh_audio_driver *driver=eh_audio_reinit(type,&setup);
+  if (!driver) return;
+  cheapsynth_del(mn.cheapsynth);
+  mn.cheapsynth=cheapsynth_new(driver->rate,driver->chanc);
+  if (driver->type->play) driver->type->play(driver,1);
 }
 
 /* Commit changed values.

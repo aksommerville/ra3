@@ -48,8 +48,8 @@ static int alsapcm_list_devices_1(
    * 2023-05-29: Leaving this be for now, and will try Pulse for the Nuc.
    */
   
-  int fd=open(path,O_RDONLY|O_NONBLOCK);
-  //int fd=open(path,O_RDONLY);
+  //int fd=open(path,O_RDONLY|O_NONBLOCK);
+  int fd=open(path,O_RDONLY);
   if (fd<0) {
     fprintf(stderr,"!!! %s open failed: (%d) %m\n",path,errno);
     if (errno==EBUSY) {

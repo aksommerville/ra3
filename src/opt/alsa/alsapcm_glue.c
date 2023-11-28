@@ -26,7 +26,7 @@ static int _alsa_init(struct eh_audio_driver *driver,const struct eh_audio_setup
   struct alsapcm_setup setup={
     .rate=config->rate,
     .chanc=config->chanc,
-    //.device=config->device,//TODO This should exist in Emuhost but doesn't yet
+    .device=config->device,
     .buffersize=config->buffersize,
   };
   

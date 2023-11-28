@@ -63,6 +63,15 @@ static int db_gc_unused_strings(struct db *db) {
     }
   }
   
+  {
+    struct db_list **list=db->lists.v;
+    int i=db->lists.c;
+    for (;i-->0;list++) {
+      INUSE((*list)->name)
+      INUSE((*list)->desc)
+    }
+  }
+  
   #undef INUSE
   
   struct db_string_toc_entry *entry=db->strings.toc;

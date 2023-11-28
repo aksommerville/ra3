@@ -19,3 +19,17 @@ Any token in `cmd` beginning with `$` is a variable:
 
 Native launcher should contain `$COMMENT:args` for extra text to add to the command.
 That way the game's path can still be the actual executable path, no extra cruft.
+
+## Upgrades
+
+Each `upgrade` record is a game or launcher that can be automatically updated.
+
+`method` should be `git+make`. I'll probably add other methods in the future.
+There's a field `param` to provide additional data per method; `git+make` doesn't use it.
+
+Set `depend` to the id of an upgrade that should be run first.
+There's an upgrade record for Romassist itself, which includes Emuhost, and all emulators should depend on it.
+
+Deleting a game or launcher deletes any upgrade associated with it.
+
+Deleting an upgrade zeroes `depend` on other upgrades but does not delete them.

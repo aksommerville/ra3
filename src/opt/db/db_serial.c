@@ -399,6 +399,75 @@ int db_launcher_decode(struct db_launcher *launcher,struct db *db,int format,con
   return -1;
 }
 
+/* Upgrade, encode JSON.
+ */
+ 
+static int db_upgrade_encode_json(struct sr_encoder *dst,const struct db *db,const struct db_upgrade *upgrade) {
+  int jsonctx=sr_encode_json_object_start_no_setup(dst);
+  if (jsonctx<0) return -1;
+  
+  sr_encode_json_int(dst,"upgradeid",9,upgrade->upgradeid);
+  db_encode_json_string(dst,db,"name",4,upgrade->name);
+  if (upgrade->desc) db_encode_json_string(dst,db,"desc",4,upgrade->desc);
+  if (upgrade->gameid) sr_encode_json_int(dst,"gameid",6,upgrade->gameid);
+  if (upgrade->launcherid) sr_encode_json_int(dst,"launcherid",10,upgrade->launcherid);
+  if (upgrade->depend) sr_encode_json_int(dst,"depend",6,upgrade->depend);
+  if (upgrade->method) db_encode_json_string(dst,db,"method",6,upgrade->method);
+  if (upgrade->param) db_encode_json_string(dst,db,"param",5,upgrade->param);
+  if (upgrade->checktime) ENCODE_TIME("checktime",9,upgrade->checktime)
+  if (upgrade->buildtime) ENCODE_TIME("buildtime",9,upgrade->buildtime)
+  if (upgrade->status) db_encode_json_string(dst,db,"status",6,upgrade->status);
+  
+  return sr_encode_json_object_end(dst,jsonctx);
+}
+
+/* Upgrade, decode JSON.
+ */
+ 
+static int db_upgrade_decode_json(struct db_upgrade *upgrade,struct db *db,const void *src,int srcc) {
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  int jsonctx=sr_decode_json_object_start(&decoder);
+  if (jsonctx<0) return -1;
+  const char *k;
+  int kc;
+  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+    
+    DECODE_INT(upgrade,upgradeid,"upgradeid")
+    DECODE_STR(upgrade,name,"name")
+    DECODE_STR(upgrade,desc,"desc")
+    DECODE_INT(upgrade,gameid,"gameid")
+    DECODE_INT(upgrade,launcherid,"launcherid")
+    DECODE_INT(upgrade,depend,"depend")
+    DECODE_STR(upgrade,method,"method")
+    DECODE_STR(upgrade,param,"param")
+    DECODE_TIME(upgrade,checktime,"checktime")
+    DECODE_TIME(upgrade,buildtime,"buildtime")
+    DECODE_STR(upgrade,status,"status")
+    
+    if (sr_decode_json_skip(&decoder)<0) return -1;
+  }
+  return sr_decode_json_end(&decoder,jsonctx);
+}
+
+/* Upgrade, dispatch.
+ */
+ 
+int db_upgrade_encode(struct sr_encoder *dst,const struct db *db,const struct db_upgrade *upgrade,int format,int detail) {
+  switch (format) {
+    case 0:
+    case DB_FORMAT_json: return db_upgrade_encode_json(dst,db,upgrade);
+  }
+  return -1;
+}
+
+int db_upgrade_decode(struct db_upgrade *upgrade,struct db *db,int format,const void *src,int srcc) {
+  switch (format) {
+    case 0:
+    case DB_FORMAT_json: return db_upgrade_decode_json(upgrade,db,src,srcc);
+  }
+  return -1;
+}
+
 /* List, encode JSON.
  */
  

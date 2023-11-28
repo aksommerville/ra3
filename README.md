@@ -23,10 +23,12 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
 - [ ] Menu
-- - [x] Admin menu.
-- - - [x] Audio: UI ready-ish. Needs emuhost support.
 - - [ ] Auto-upgrade.
-- - [x] Sound effects.
+- - - [x] "upgrade" table in DB
+- - - [ ] HTTP endpoints
+- - - [ ] Add to web DB view
+- - - [ ] backend: Perform upgrades
+- - - [x] Cascade game and launcher deletions.
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.

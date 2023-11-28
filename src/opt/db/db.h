@@ -186,10 +186,17 @@ int db_game_count(const struct db *db);
 struct db_game *db_game_get_by_index(const struct db *db,int p);
 struct db_game *db_game_get_by_id(const struct db *db,uint32_t gameid);
 
+/* Exact match only, and mind that names are not guaranteed unique.
+ * (in fact we can almost guarantee they're *not* unique -- there's a lot of Donkey Kongs).
+ * Contrary to convention, the empty string *does* match. In case you're looking for games missing a name.
+ */
+struct db_game *db_game_get_by_name(const struct db *db,const char *src,int srcc);
+
 /* Remove this record and cascade:
  *  - Remove from all lists.
  *  - Drop all comments and plays.
  *  - Drop all blobs.
+ *  - Drop any upgrade referring to the game.
  * This likely orphans some strings, so you'll want to db_gc() at some point after.
  * Note that dropping blobs is immediate, but other changes aren't written until you save.
  */
@@ -304,6 +311,8 @@ struct db_launcher *db_launcher_get_by_id(const struct db *db,uint32_t launcheri
  */
 struct db_launcher *db_launcher_for_gameid(const struct db *db,uint32_t gameid);
 
+/* Cascades into upgrade too.
+ */
 int db_launcher_delete(struct db *db,uint32_t launcherid);
 
 struct db_launcher *db_launcher_insert(struct db *db,const struct db_launcher *launcher);
@@ -316,6 +325,43 @@ int db_launcher_set_cmd(struct db *db,struct db_launcher *launcher,const char *s
 int db_launcher_set_desc(struct db *db,struct db_launcher *launcher,const char *src,int srcc);
 
 void db_launcher_dirty(struct db *db,struct db_launcher *launcher);
+
+/* Upgrade table.
+ * Each record is one thing we can upgrade: a game or a launcher.
+ ************************************************************************/
+ 
+struct db_upgrade {
+  uint32_t upgradeid; // READONLY
+  uint32_t name; // string; empty should be normal, and take it from the game or launcher.
+  uint32_t desc; // string; additional documentation
+  uint32_t gameid; // OPTIONAL; must be unique if nonzero
+  uint32_t launcherid; // OPTIONAL; must be unique if nonzero
+  uint32_t depend; // upgradeid; that one should run first, and it dirties this one. For now, only allowing one dependency.
+  uint32_t method; // string; "git+make", and I'll surely add others.
+  uint32_t param; // string; any details needed by (method)
+  uint32_t checktime; // time; when we last looked for updates
+  uint32_t buildtime; // time; <=checktime; last check that caused a build
+  uint32_t status; // string; empty means ok, otherwise a short description of what went wrong
+};
+
+int db_upgrade_count(const struct db *db);
+struct db_upgrade *db_upgrade_get_by_index(const struct db *db,int p);
+struct db_upgrade *db_upgrade_get_by_id(const struct db *db,uint32_t upgradeid);
+
+struct db_upgrade *db_upgrade_get_by_string(const struct db *db,const char *src,int srcc);
+struct db_upgrade *db_upgrade_get_by_gameid(const struct db *db,uint32_t gameid);
+struct db_upgrade *db_upgrade_get_by_launcherid(const struct db *db,uint32_t launcherid);
+
+/* Deleting an upgrade may zero out (depend) in other upgrades, but doesn't delete any other records.
+ */
+int db_upgrade_delete(struct db *db,uint32_t upgradeid);
+void db_upgrade_delete_for_gameid(struct db *db,uint32_t gameid);
+void db_upgrade_delete_for_launcherid(struct db *db,uint32_t launcherid);
+
+struct db_upgrade *db_upgrade_insert(struct db *db,const struct db_upgrade *upgrade);
+struct db_upgrade *db_upgrade_update(struct db *db,const struct db_upgrade *upgrade);
+
+void db_upgrade_dirty(struct db *db,struct db_upgrade *upgrade);
 
 /* List.
  * Lists are db records, and also serve as a utility type.
@@ -477,6 +523,7 @@ int db_game_encode(struct sr_encoder *dst,const struct db *db,const struct db_ga
 int db_comment_encode(struct sr_encoder *dst,const struct db *db,const struct db_comment *comment,int format,int detail);
 int db_play_encode(struct sr_encoder *dst,const struct db *db,const struct db_play *play,int format,int detail);
 int db_launcher_encode(struct sr_encoder *dst,const struct db *db,const struct db_launcher *launcher,int format,int detail);
+int db_upgrade_encode(struct sr_encoder *dst,const struct db *db,const struct db_upgrade *upgrade,int format,int detail);
 int db_list_encode(struct sr_encoder *dst,const struct db *db,const struct db_list *list,int format,int detail);
 int db_list_encode_array(struct sr_encoder *dst,const struct db *db,const struct db_list *list,int format,int detail);
 
@@ -491,6 +538,7 @@ int db_game_decode(struct db_game *game,struct db *db,int format,const void *src
 int db_comment_decode(struct db_comment *comment,struct db *db,int format,const void *src,int srcc);
 int db_play_decode(struct db_play *play,struct db *db,int format,const void *src,int srcc);
 int db_launcher_decode(struct db_launcher *launcher,struct db *db,int format,const void *src,int srcc);
+int db_upgrade_decode(struct db_upgrade *upgrade,struct db *db,int format,const void *src,int srcc);
 int db_list_decode(struct db_list *list,struct db *db,int format,const void *src,int srcc);
 int db_list_decode_array(struct db_list *list,struct db *db,int format,const void *src,int srcc);
 

@@ -17,6 +17,22 @@ struct db_game *db_game_get_by_id(const struct db *db,uint32_t gameid) {
   return db_flatstore_get(&db->games,db_flatstore_search1(&db->games,gameid));
 }
 
+/* Get by name.
+ */
+ 
+struct db_game *db_game_get_by_name(const struct db *db,const char *src,int srcc) {
+  if (!src) srcc=0; else if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  if (srcc>DB_GAME_NAME_LIMIT) return 0; // Can't match.
+  struct db_game *game=db->games.v;
+  int i=db->games.c;
+  for (;i-->0;game++) {
+    if (memcmp(game->name,src,srcc)) continue;
+    if ((srcc<DB_GAME_NAME_LIMIT)&&game->name[DB_GAME_NAME_LIMIT]) continue;
+    return game;
+  }
+  return 0;
+}
+
 /* Delete, cascading.
  */
 
@@ -34,6 +50,7 @@ int db_game_delete(struct db *db,uint32_t gameid) {
     db_list_remove(db,*list,gameid);
   }
   db_blob_delete_for_gameid(db,gameid);
+  db_upgrade_delete_for_gameid(db,gameid);
   
   return 0;
 }

@@ -126,6 +126,7 @@ int db_launcher_delete(struct db *db,uint32_t launcherid) {
   if (p<0) return -1;
   db_flatstore_remove(&db->launchers,p,1);
   db->dirty=1;
+  db_upgrade_delete_for_launcherid(db,launcherid);
   return 0;
 }
 

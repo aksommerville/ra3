@@ -8,6 +8,7 @@ void db_del(struct db *db) {
   if (!db) return;
   db_flatstore_cleanup(&db->games);
   db_flatstore_cleanup(&db->launchers);
+  db_flatstore_cleanup(&db->upgrades);
   db_flatstore_cleanup(&db->comments);
   db_flatstore_cleanup(&db->plays);
   db_liststore_cleanup(&db->lists);
@@ -26,6 +27,7 @@ struct db *db_new(const char *root) {
   
   db->games.name="game"; db->games.objlen=sizeof(struct db_game);
   db->launchers.name="launcher"; db->launchers.objlen=sizeof(struct db_launcher);
+  db->upgrades.name="upgrade"; db->upgrades.objlen=sizeof(struct db_upgrade);
   db->comments.name="comment"; db->comments.objlen=sizeof(struct db_comment);
   db->plays.name="play"; db->plays.objlen=sizeof(struct db_play);
   
@@ -76,6 +78,7 @@ void db_dirty(struct db *db) {
   db->dirty=1;
   db->games.dirty=1;
   db->launchers.dirty=1;
+  db->upgrades.dirty=1;
   db->comments.dirty=1;
   db->plays.dirty=1;
   db->lists.dirty=1;
@@ -101,6 +104,7 @@ int db_save(struct db *db) {
   }
   if (db_flatstore_save(&db->games,db->root,db->rootc)<0) return -1;
   if (db_flatstore_save(&db->launchers,db->root,db->rootc)<0) return -1;
+  if (db_flatstore_save(&db->upgrades,db->root,db->rootc)<0) return -1;
   if (db_flatstore_save(&db->comments,db->root,db->rootc)<0) return -1;
   if (db_flatstore_save(&db->plays,db->root,db->rootc)<0) return -1;
   if (db_stringstore_save(&db->strings,db->root,db->rootc)<0) return -1;
@@ -117,6 +121,7 @@ int db_load(struct db *db) {
   db_clear(db);
   if (db_flatstore_load(&db->games,db->root,db->rootc)<0) return -1;
   if (db_flatstore_load(&db->launchers,db->root,db->rootc)<0) return -1;
+  if (db_flatstore_load(&db->upgrades,db->root,db->rootc)<0) return -1;
   if (db_flatstore_load(&db->comments,db->root,db->rootc)<0) return -1;
   if (db_flatstore_load(&db->plays,db->root,db->rootc)<0) return -1;
   if (db_stringstore_load(&db->strings,db->root,db->rootc)<0) return -1;
@@ -131,6 +136,7 @@ int db_load(struct db *db) {
 void db_clear(struct db *db) {
   db_flatstore_clear(&db->games);
   db_flatstore_clear(&db->launchers);
+  db_flatstore_clear(&db->upgrades);
   db_flatstore_clear(&db->comments);
   db_flatstore_clear(&db->plays);
   db_liststore_clear(&db->lists);

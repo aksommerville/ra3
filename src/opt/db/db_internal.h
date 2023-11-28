@@ -113,6 +113,7 @@ int db_flatstore_save(struct db_flatstore *store,const char *root,int rootc);
 struct db {
   struct db_flatstore games;
   struct db_flatstore launchers;
+  struct db_flatstore upgrades;
   struct db_flatstore comments;
   struct db_flatstore plays;
   struct db_stringstore strings;

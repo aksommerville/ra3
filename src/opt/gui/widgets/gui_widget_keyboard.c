@@ -362,6 +362,8 @@ static void _keyboard_signal(struct gui_widget *widget,int sigid) {
  
 static void _keyboard_update(struct gui_widget *widget) {
   if (WIDGET->pvinput!=widget->gui->pvinput) {
+    uint16_t mypv=WIDGET->pvinput;
+    WIDGET->pvinput=widget->gui->pvinput;
     if (widget->gui->pvinput&EH_BTN_L1) {
       if (!WIDGET->shifted) {
         WIDGET->shifted=1;
@@ -373,10 +375,10 @@ static void _keyboard_update(struct gui_widget *widget) {
         keyboard_refresh_capstex(widget);
       }
     }
-    if ((widget->gui->pvinput&EH_BTN_AUX1)&&!(WIDGET->pvinput&EH_BTN_AUX1)) {
+    if ((widget->gui->pvinput&EH_BTN_AUX1)&&!(mypv&EH_BTN_AUX1)) {
       if (WIDGET->cb) WIDGET->cb(widget,0x0a,WIDGET->userdata);
+      return;
     }
-    WIDGET->pvinput=widget->gui->pvinput;
   }
 }
 

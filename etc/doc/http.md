@@ -52,6 +52,7 @@ GET /api/upgrade?upgradeid|gameid|launcherid|name => Upgrade
 PUT /api/upgrade <= Upgrade => Upgrade (always new)
 PATCH /api/upgrade <= Upgrade => Upgrade (must exist)
 DELETE /api/upgrade?upgradeid => nothing
+POST /api/upgrade?(upgradeid)&(before)&(dry-run) => ...
 
 GET /api/listids => (string|number)[]
 GET /api/list/count => integer
@@ -220,6 +221,28 @@ upgrade {
 }
 ```
 
+`POST /api/upgrade` to trigger upgrades.
+This will not wait for the upgrades to complete. Only queues them for processing and reports what's been queued.
+If any upgrades are currently pending, we respond 409 (Conflict) and do nothing.
+
+No parameters to upgrade everything immediately.
+- `upgradeid` to do just one.
+- `before=YYYY-MM-DDTHH:MM` to do those whose last check is before the given time.
+- `dry-run=1` to do nothing, only report back which upgrades would be performed.
+
+Responds with a report of action taken:
+```
+{
+  upgrades: {
+    upgradeid
+    displayName
+    checktime
+    buildtime
+    status
+  }[]
+}
+```
+
 ## /api/listids
 
 Returns just the name (or ID if no name) of every list in the DB.
@@ -376,3 +399,17 @@ id=http GAME=>SERVER MENU=>SERVER
 id=httpresponse SERVER=>GAME SERVER=>MENU
   Every "http" packet results in exactly one "httpresponse" packet back.
   {id,status,message,headers,body}
+  
+id=upgrade SERVER=>MENU
+  Status change relating to upgrades.
+  (pending) are ones we haven't started yet.
+  (running) without (text) or (status) means we've just started one.
+  (text) is output from the current upgrade, should also have (running).
+  (status) is the exit status of the current upgrade, should also have (running) and it's the last time you'll see it.
+  {
+    id,
+    pending?: upgrade[],
+    running?: upgrade,
+    text?: string,
+    status?: int,
+  }

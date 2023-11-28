@@ -132,6 +132,9 @@ export class Comm {
   processWsJsonLocal(packet) {
     switch (packet.id) {
       case "game": this.currentGameid = packet.gameid || 0; break;
+      
+      //XXX TEMP
+      case "upgrade": console.log(`Comm.processWsJsonLocal:upgrade`, packet); break;
     }
   }
 }

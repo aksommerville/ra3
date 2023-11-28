@@ -150,6 +150,27 @@ struct db_upgrade *db_upgrade_update(struct db *db,const struct db_upgrade *upgr
   return real;
 }
 
+/* Notify of status.
+ */
+ 
+int db_upgrade_update_for_build(struct db *db,uint32_t upgradeid,const char *status,int statusc) {
+  if (!status) statusc=0; else if (statusc<0) { statusc=0; while (status[statusc]) statusc++; }
+  int p=db_flatstore_search1(&db->upgrades,upgradeid);
+  if (p<0) return -1;
+  struct db_upgrade *upgrade=db_flatstore_get(&db->upgrades,p);
+  upgrade->checktime=db_time_now();
+  if (!statusc) {
+    upgrade->status=0;
+    upgrade->buildtime=upgrade->checktime;
+  } else if ((statusc==4)&&!memcmp(status,"noop",4)) {
+    upgrade->status=0;
+  } else {
+    upgrade->status=db_string_intern(db,status,statusc);
+  }
+  db->dirty=db->upgrades.dirty=1;
+  return 0;
+}
+
 /* Dirty.
  */
 

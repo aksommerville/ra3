@@ -30,7 +30,7 @@ static const char *ra_ws_role_repr(int role) {
 /* Send a packet to all clients of a given role.
  */
  
-static int ra_websocket_send_to_role(int role,int packet_type,const void *v,int c) {
+int ra_websocket_send_to_role(int role,int packet_type,const void *v,int c) {
   if (role==RA_WEBSOCKET_ROLE_NONE) return 0;
   const struct ra_websocket_extra *extra=ra.websocket_extrav;
   int i=RA_WEBSOCKET_LIMIT;

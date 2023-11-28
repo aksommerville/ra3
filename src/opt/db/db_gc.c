@@ -51,6 +51,18 @@ static int db_gc_unused_strings(struct db *db) {
     }
   }
   
+  {
+    const struct db_upgrade *upgrade=db->upgrades.v;
+    int i=db->upgrades.c;
+    for (;i-->0;upgrade++) {
+      INUSE(upgrade->name)
+      INUSE(upgrade->desc)
+      INUSE(upgrade->method)
+      INUSE(upgrade->param)
+      INUSE(upgrade->status)
+    }
+  }
+  
   #undef INUSE
   
   struct db_string_toc_entry *entry=db->strings.toc;

@@ -22,14 +22,21 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - [ ] db: Add multiple files from fs by providing one path.
 - [ ] db: Support for automatic updates. Record gittable directories?
+- [ ] db: Are we currently gc'ing at any point? We need to.
 - [ ] Menu
 - - [ ] Auto-upgrade.
 - - - [x] "upgrade" table in DB
 - - - [x] HTTP endpoints
 - - - [x] Add to web DB view
-- - - [ ] backend: Perform upgrades
+- - - [x] backend: Perform upgrades on demand (HTTP)
+- - - - [x] Cascade to dependent upgrades.
+- - - [x] backend: Identify noop git+make builds
+- - - [ ] backend: Perform upgrades automatically. At startup, and every 24 hours if long running.
 - - - [ ] menu: Review upgrade status and trigger manually
 - - - [x] Cascade game and launcher deletions.
+- - - [ ] Upgrade method for db content.
+- - - [x] WebSocket packets for status of running upgrades?
+- - - [ ] Wrapper script to relaunch backend on specific exit statuses, for when it updates itself?
 - - [ ] "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.

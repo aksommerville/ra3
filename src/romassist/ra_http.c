@@ -713,6 +713,64 @@ static int ra_http_delete_upgrade(struct http_xfer *req,struct http_xfer *rsp) {
   return db_upgrade_delete(ra.db,upgradeid);
 }
 
+/* POST /api/upgrade
+ */
+ 
+static int ra_http_post_upgrade(struct http_xfer *req,struct http_xfer *rsp) {
+
+  if (!ra_upgrade_is_idle(&ra.upgrade)) return http_xfer_set_status(rsp,409,"Upgrades currently in progress.");
+
+  int dryrun=0,upgradeid=0;
+  http_xfer_get_query_int(&dryrun,req,"dry-run",7);
+  http_xfer_get_query_int(&upgradeid,req,"upgradeid",9);
+  uint32_t before=0xffffffff;
+  char beforestr[32];
+  int beforestrc=http_xfer_get_query_string(beforestr,sizeof(beforestr),req,"before",6);
+  if ((beforestrc>0)&&(beforestrc<=sizeof(beforestr))) {
+    before=db_time_eval(beforestr,beforestrc);
+  }
+  
+  struct db_upgrade *upgradev=0;
+  int upgradec=ra_upgrade_list(&upgradev,upgradeid,before);
+  if (upgradec<0) return -1;
+  
+  if (upgradec&&!dryrun) {
+    if (ra_upgrade_begin(upgradev,upgradec)<0) {
+      free(upgradev);
+      return http_xfer_set_status(rsp,500,"Failed to initiate %d upgrades.",upgradec);
+    }
+  }
+  
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  if (!dst) {
+    if (upgradev) free(upgradev);
+    return -1;
+  }
+  sr_encode_json_object_start(dst,0,0);
+  int uvctx=sr_encode_json_array_start(dst,"upgrades",8);
+  
+  int i=0; for (;i<upgradec;i++) {
+    struct db_upgrade *upgrade=upgradev+i;
+    int uctx=sr_encode_json_object_start(dst,0,0);
+    sr_encode_json_int(dst,"upgradeid",9,upgrade->upgradeid);
+    db_upgrade_encode_json_displayName(dst,ra.db,upgrade);
+    char tmp[32];
+    int tmpc=db_time_repr(tmp,sizeof(tmp),upgrade->checktime);
+    if ((tmpc>0)&&(tmpc<sizeof(tmp))) sr_encode_json_string(dst,"checktime",9,tmp,tmpc);
+    tmpc=db_time_repr(tmp,sizeof(tmp),upgrade->buildtime);
+    if ((tmpc>0)&&(tmpc<sizeof(tmp))) sr_encode_json_string(dst,"buildtime",9,tmp,tmpc);
+    db_encode_json_string(dst,ra.db,"status",6,upgrade->status);
+    if (sr_encode_json_object_end(dst,uctx)<0) {
+      if (upgradev) free(upgradev);
+      return -1;
+    }
+  }
+  
+  if (upgradev) free(upgradev);
+  sr_encode_json_array_end(dst,uvctx);
+  return sr_encode_json_object_end(dst,0);
+}
+
 /* GET /api/listids
  */
  
@@ -1322,6 +1380,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(PUT,"/api/upgrade",ra_http_put_upgrade)
   _(PATCH,"/api/upgrade",ra_http_patch_upgrade)
   _(DELETE,"/api/upgrade",ra_http_delete_upgrade)
+  _(POST,"/api/upgrade",ra_http_post_upgrade)
   
   _(GET,"/api/listids",ra_http_get_listids)
   _(GET,"/api/list/count",ra_http_count_list)

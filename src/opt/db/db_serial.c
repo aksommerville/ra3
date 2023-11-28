@@ -402,6 +402,23 @@ int db_launcher_decode(struct db_launcher *launcher,struct db *db,int format,con
 /* Upgrade, encode JSON.
  */
  
+int db_upgrade_encode_json_displayName(struct sr_encoder *dst,const struct db *db,const struct db_upgrade *upgrade) {
+  if (upgrade->name) {
+    db_encode_json_string(dst,db,"displayName",11,upgrade->name);
+  } else if (upgrade->gameid) {
+    const struct db_game *game=db_game_get_by_id(db,upgrade->gameid);
+    if (game) {
+      int namec=DB_GAME_NAME_LIMIT;
+      while (namec&&!game->name[namec-1]) namec--;
+      sr_encode_json_string(dst,"displayName",11,game->name,namec);
+    }
+  } else if (upgrade->launcherid) {
+    const struct db_launcher *launcher=db_launcher_get_by_id(db,upgrade->launcherid);
+    if (launcher) db_encode_json_string(dst,db,"displayName",11,launcher->name);
+  }
+  return 0;
+}
+ 
 static int db_upgrade_encode_json(struct sr_encoder *dst,const struct db *db,const struct db_upgrade *upgrade) {
   int jsonctx=sr_encode_json_object_start_no_setup(dst);
   if (jsonctx<0) return -1;
@@ -421,19 +438,7 @@ static int db_upgrade_encode_json(struct sr_encoder *dst,const struct db *db,con
   /* Encoded upgrades have a read-only "displayName" field, to spare clients the need of looking up the game or launcher for display purposes.
    * If displayName comes back to us we ignore it.
    */
-  if (upgrade->name) {
-    db_encode_json_string(dst,db,"displayName",11,upgrade->name);
-  } else if (upgrade->gameid) {
-    const struct db_game *game=db_game_get_by_id(db,upgrade->gameid);
-    if (game) {
-      int namec=DB_GAME_NAME_LIMIT;
-      while (namec&&!game->name[namec-1]) namec--;
-      sr_encode_json_string(dst,"displayName",11,game->name,namec);
-    }
-  } else if (upgrade->launcherid) {
-    const struct db_launcher *launcher=db_launcher_get_by_id(db,upgrade->launcherid);
-    if (launcher) db_encode_json_string(dst,db,"displayName",11,launcher->name);
-  }
+  if (db_upgrade_encode_json_displayName(dst,db,upgrade)<0) return -1;
   
   return sr_encode_json_object_end(dst,jsonctx);
 }

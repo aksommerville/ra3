@@ -111,6 +111,7 @@ int main(int argc,char **argv) {
   if (ra_configure(argc,argv)<0) { status=1; goto _done_; }
   if (ra_init_db()<0) { status=1; goto _done_; }
   if (ra_init_http()<0) { status=1; goto _done_; }
+  if (ra_upgrade_startup()<0) { status=1; goto _done_; }
   
   fprintf(stderr,"%s: Running.\n",ra.exename);
   
@@ -118,6 +119,11 @@ int main(int argc,char **argv) {
     if (ra.sigc) break;
     if (http_update(ra.http,1000)<0) {
       fprintf(stderr,"%s: Error updating HTTP (could be anything).\n",ra.exename);
+      status=1;
+      break;
+    }
+    if (ra_upgrade_update()<0) {
+      fprintf(stderr,"%s: Error performing upgrades.\n",ra.exename);
       status=1;
       break;
     }

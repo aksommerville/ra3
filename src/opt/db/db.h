@@ -327,7 +327,8 @@ int db_launcher_set_desc(struct db *db,struct db_launcher *launcher,const char *
 void db_launcher_dirty(struct db *db,struct db_launcher *launcher);
 
 /* Upgrade table.
- * Each record is one thing we can upgrade: a game or a launcher.
+ * Each record is one thing we can upgrade: a game or a launcher, usually.
+ * The actual upgrading is outside db's jurisdiction, that belongs to romassist (see src/romassist/ra_upgrade.h).
  ************************************************************************/
  
 struct db_upgrade {
@@ -360,6 +361,14 @@ void db_upgrade_delete_for_launcherid(struct db *db,uint32_t launcherid);
 
 struct db_upgrade *db_upgrade_insert(struct db *db,const struct db_upgrade *upgrade);
 struct db_upgrade *db_upgrade_update(struct db *db,const struct db_upgrade *upgrade);
+
+/* Update (checktime,buildtime,status) for one upgrade record.
+ * (status):
+ *   "" => Updates all three fields.
+ *   "noop" => Update checktime and (status="").
+ *   anything else => Update checktime and set (status) as specified.
+ */
+int db_upgrade_update_for_build(struct db *db,uint32_t upgradeid,const char *status,int statusc);
 
 void db_upgrade_dirty(struct db *db,struct db_upgrade *upgrade);
 
@@ -541,6 +550,9 @@ int db_launcher_decode(struct db_launcher *launcher,struct db *db,int format,con
 int db_upgrade_decode(struct db_upgrade *upgrade,struct db *db,int format,const void *src,int srcc);
 int db_list_decode(struct db_list *list,struct db *db,int format,const void *src,int srcc);
 int db_list_decode_array(struct db_list *list,struct db *db,int format,const void *src,int srcc);
+
+// Convenience, produces "displayName":"..." with either the upgrade's name or the name of its game or launcher.
+int db_upgrade_encode_json_displayName(struct sr_encoder *dst,const struct db *db,const struct db_upgrade *upgrade);
 
 /* High-level queries.
  * Results come back in a new sorted non-resident list which you must delete.

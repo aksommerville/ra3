@@ -9,6 +9,7 @@
 #include "opt/db/db.h"
 #include "opt/http/http.h"
 #include "ra_process.h"
+#include "ra_upgrade.h"
 
 // I doubt we'll ever see more than 2 at a time. 8 is plenty.
 #define RA_WEBSOCKET_LIMIT 8
@@ -40,6 +41,7 @@ extern struct ra {
   struct ra_process process;
   uint32_t menu_termv[RA_MENU_TERM_LIMIT]; // timestamps of menu terminations since the last game launch.
   int menu_termc;
+  struct ra_upgrade upgrade;
   
   struct ra_websocket_extra {
     int role;
@@ -59,6 +61,8 @@ int ra_ws_connect_menu(struct http_socket *sock,void *userdata);
 int ra_ws_connect_game(struct http_socket *sock,void *userdata);
 int ra_ws_disconnect(struct http_socket *sock,void *userdata);
 int ra_ws_message(struct http_socket *sock,int type,const void *v,int c,void *userdata);
+
+int ra_websocket_send_to_role(int role,int packet_type,const void *v,int c);
 
 /* The meat of the operation, for one file.
  * Some additional outer layers live in ra_http.c.

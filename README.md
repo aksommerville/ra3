@@ -14,7 +14,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 
 ## TODO
 
-- [ ] Have emuhost supply LDFLAGS. Some like pkg-config script.
+- [x] Have emuhost supply LDFLAGS. Some like pkg-config script.
 - [x] sitter2009: Can't build imgcvt without libSDL. Need to rewrite it. ...actually no need to rewrite, just get the correct O files.
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.

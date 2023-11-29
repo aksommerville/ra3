@@ -346,6 +346,7 @@ void eh_audio_write(const void *v,int framec) {
       break;
     default: return;
   }
+  int64_t busylooptime=0;
   while (samplec>0) {
     int err=eh_aucvt_input(&eh.aucvt,v,samplec);
     if (err<0) return;
@@ -353,6 +354,15 @@ void eh_audio_write(const void *v,int framec) {
     if (samplec<=0) break;
     v=(char*)v+err*samplesize;
     // If aucvt didn't consume it all, busy-loop until it does.
+    // There's some glitch in PulseAudio (?), on my Nuc if the headphones are disconnected, it implicitly is using some dummy device,
+    // and we land here often. I've seen it take >2 seconds for the driver to catch up.
+    // So... if we get into this busy-loop for more than say 20 ms let's drop the input and move on.
+    if (!busylooptime) {
+      busylooptime=eh_now_real_us();
+    } else if (eh_now_real_us()-busylooptime>=20000) {
+      //fprintf(stderr,"aucvt panic, discarding %d samples [%s:%d]\n",samplec,__FILE__,__LINE__);
+      break;
+    }
   }
 }
 

@@ -181,6 +181,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
       if (err!=-2) fprintf(stderr,"%s: Unspecified error processing option '%.*s' = '%.*s'.\n",eh.exename,kc,k,vc,v);
       return -2;
     }
+    if (err>0) return 0;
   }
   
   fprintf(stderr,"%s: Unexpected option '%.*s' = '%.*s'.\n",eh.exename,kc,k,vc,v);

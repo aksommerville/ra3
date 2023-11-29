@@ -123,6 +123,7 @@ struct eh_delegate {
   /* Called before (ready) with individual config fields.
    * These would come from argv, or maybe from a config file.
    * Emuhost will consume fields it understands and you never see those.
+   * Return >0 to acknowledge, -2 to fail without additional logging, <0 to fail with a generic message, or 0 to ignore.
    */
   int (*configure)(const char *k,int kc,const char *v,int vc,int vn);
   

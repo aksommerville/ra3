@@ -30,8 +30,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [x] I think at db_gc we are marking vacant strings as "to remove". Harmless but it impacts logging.
 - [ ] Integrate emulators
 - - [ ] Validate 4 player in all emulators
-- - [ ] akz26: Review inputs. I think I'm missing some of the console switches.
-- - [ ] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
+- - [x] akz26: Review inputs. I think I'm missing some of the console switches.
+- - [x] akz26: Can we emulate paddles with the Atari Modern Joystick's twist feature? (i mean, that is what it's designed for...)
 - - [x] akgambatte: Can we attenuate audio a bit? It's much louder than the other emulators. Reduced dramatically. (if it's quieter than others now, fine, it's also the crappiest!)
 - [ ] Prepare collection
 - - [ ] See rating histogram, try to flatten out the multiple-of-5 spikes.
@@ -43,11 +43,12 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - - 2023-11-26: 1676 remaining
 - [ ] Prepare the Pi.
+- - [ ] Migrate data.
 - - [ ] Ensure keyboards behave sanely.
 - - [ ] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.
 - - [ ] systemd
 - - [ ] Verify poweroff
-- - [ ] Build all the uncontroversial software.
+- - [x] Build all the uncontroversial software.
 - - [ ] Pico-8
 - - [ ] Solarus
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?

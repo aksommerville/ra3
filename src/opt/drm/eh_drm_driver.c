@@ -49,7 +49,7 @@ void eh_drm_quit() {
 /* Init.
  */
  
-int eh_drm_init() {
+int eh_drm_init(const char *device) {
 
   eh_drm.fd=-1;
   eh_drm.crtcunset=1;
@@ -60,7 +60,7 @@ int eh_drm_init() {
   }
   
   if (
-    (drm_open_file()<0)||
+    (drm_open_file(device)<0)||
     (drm_configure()<0)||
     (drm_init_gx()<0)||
   0) return -1;

@@ -46,6 +46,7 @@ static int eh_drivers_init_video_type(const struct eh_video_type *type) {
     .iconw=eh.delegate.iconw,
     .iconh=eh.delegate.iconh,
     .screen=eh.prefer_screen,
+    .device=eh.video_device,
   };
   if (!(eh.video=eh_video_driver_new(type,&delegate,&setup))) {
     fprintf(stderr,"%s: Failed to instantiate video driver '%s'.\n",eh.exename,type->name);

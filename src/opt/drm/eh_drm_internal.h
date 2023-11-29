@@ -51,7 +51,7 @@ extern struct eh_drm_driver {
   
 } eh_drm;
 
-int drm_open_file();
+int drm_open_file(const char *path);
 int drm_configure();
 int drm_init_gx();
 

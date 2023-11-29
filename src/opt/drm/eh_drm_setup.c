@@ -3,22 +3,19 @@
 /* Open device file.
  */
  
-int drm_open_file() {
+int drm_open_file(const char *path) {
 
-  //TODO we now may have a poller -- eh_drm.delegate.poller. Register the file there, and don't poll on our own.
-
-  //TODO allow user to configure, somehow
-  const char *device_path="/dev/dri/card0";
+  if (!path||!path[0]) path="/dev/dri/card0";
   
-  if ((eh_drm.fd=open(device_path,O_RDWR))<0) {
-    fprintf(stderr,"%s: %m\n",device_path);
+  if ((eh_drm.fd=open(path,O_RDWR))<0) {
+    fprintf(stderr,"%s: %m\n",path);
     return -1;
   }
   
   // I get "0.0.0" here, but the important thing is the ioctl doesn't report an error.
   struct drm_version version={0};
   if (ioctl(eh_drm.fd,DRM_IOCTL_VERSION,&version)<0) {
-    fprintf(stderr,"%s:DRM_IOCTL_VERSION: %m\n",device_path);
+    fprintf(stderr,"%s:DRM_IOCTL_VERSION: %m\n",path);
     return -1;
   }
   

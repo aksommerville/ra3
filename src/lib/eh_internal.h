@@ -25,6 +25,7 @@ extern struct eh {
   char *audio_drivers;
   char *input_drivers;
   int fullscreen;
+  char *video_device;
   int audio_rate;
   int audio_chanc;
   char *audio_device;

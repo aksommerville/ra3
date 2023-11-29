@@ -31,6 +31,7 @@ static void eh_print_help(const char *topic,int topicc) {
     "  --audio=LIST             Audio drivers, in order of preference.\n"
     "  --input=LIST             Input drivers -- we will instantiate all.\n"
     "  --fullscreen=0|1\n"
+    "  --video-device=PATH      Default /dev/dri/card0, only DRM uses.\n"
     "  --audio-rate=HZ\n"
     "  --audio-chanc=1|2\n"
     "  --audio-device=STRING\n"
@@ -154,6 +155,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==5)&&!memcmp(k,"audio",5)) return eh_config_set_string(&eh.audio_drivers,v,vc);
   if ((kc==5)&&!memcmp(k,"input",5)) return eh_config_set_string(&eh.input_drivers,v,vc);
   if ((kc==10)&&!memcmp(k,"fullscreen",10)) { eh.fullscreen=vc?vn:1; return 0; }
+  if ((kc==12)&&!memcmp(k,"video-device",12)) return eh_config_set_string(&eh.video_device,v,vc);
   if ((kc==10)&&!memcmp(k,"audio-rate",10)) { eh.audio_rate=vn; return 0; }
   if ((kc==11)&&!memcmp(k,"audio-chanc",11)) { eh.audio_chanc=vn; return 0; }
   if ((kc==12)&&!memcmp(k,"audio-device",12)) return eh_config_set_string(&eh.audio_device,v,vc);

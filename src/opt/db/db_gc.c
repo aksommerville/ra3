@@ -79,6 +79,7 @@ static int db_gc_unused_strings(struct db *db) {
   int i=db->strings.tocc,rmc=0;
   for (;i-->0;entry++,inuse++) {
     if (*inuse) continue;
+    if (!entry->p&&!entry->c) continue; // don't report it "removed" if it was already vacant
     entry->p=0;
     entry->c=0;
     rmc++;

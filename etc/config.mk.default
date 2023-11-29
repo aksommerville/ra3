@@ -2,20 +2,52 @@
 # Local settings for building Romassist v3.
 # This file is not committed to the git repo; it is specific to each build host.
 
-OPT_ENABLE:=abc def
+# Optional units to enable.
+# Required for backend: db http serial fs png
+# Required for menu: gui cheapsynth
+# Required for lib: fakews serial fs png
+# Additionally, lib expects at least one video, audio, and input driver.
+# There should also be a fake opt unit naming the target platform: linux macos mswin
+OPT_ENABLE:=db http fakews serial fs png gui cheapsynth
+OPT_ENABLE+=glx drm pulse alsa evdev xinerama
+OPT_ENABLE+=linux
+
+# What things are we building? Empty=false
 BUILD_ROMASSIST:=1
 BUILD_MENU:=1
 BUILD_LIB:=1
 BUILD_WEB:=1
 
+# These CFLAGS and LDFLAGS get declared by emuhost-config, for all consumers. And also for us.
+# LDPOST behaves the same way.
+LIB_CFLAGS:=$(foreach U,$(OPT_ENABLE),-DUSE_$U=1)
+LIB_LDFLAGS:=
+
+# GCC or similar toolchain.
 GCCPFX:=
-GCCOPTS:=-c -MMD -O3 -Isrc -Werror -Wimplicit
+GCCOPTS:=-c -MMD -O3 -Isrc -Werror -Wimplicit $(LIB_CFLAGS)
 CC:=$(GCCPFX)gcc $(GCCOPTS)
 CXX:=$(GCCPFX)g++ $(GCCOPTS)
 OBJC:=$(GCCPFX)gcc -xobjective-c $(GCCOPTS)
 AS:=$(GCCPFX)gcc -xassembler-with-cpp $(GCCOPTS)
-LD:=$(GCCPFX)gcc
-LDPOST:=
+LD:=$(GCCPFX)gcc $(LIB_LDFLAGS)
+LDPOST:=-lz -lm
 AR:=$(GCCPFX)ar rc
+
+# Some kind of pointless feature detection for LDPOST, to keep OPT_ENABLE orthogonal.
+# We could of course just hard-code these above, and remember to keep OPT_ENABLE and LDPOST synced.
+ifneq (,$(strip $(filter glx,$(OPT_ENABLE))))
+  LDPOST+=-lX11 -lGL -lGLX
+  ifneq (,$(strip $(filter xinerama,$(OPT_ENABLE))))
+    LDPOST+=-lXinerama
+  endif
+endif
+ifneq (,$(strip $(filter drm,$(OPT_ENABLE))))
+  LDPOST+=-ldrm -lgbm -lEGL
+  CC+=-I/usr/include/libdrm
+endif
+ifneq (,$(strip $(filter pulse,$(OPT_ENABLE))))
+  LDPOST+=-lpulse -lpulse-simple
+endif
 
 EXESFX:=

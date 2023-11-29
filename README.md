@@ -15,7 +15,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 ## TODO
 
 - [ ] Have emuhost supply LDFLAGS. Some like pkg-config script.
-- [ ] sitter2009: Can't build imgcvt without libSDL. Need to rewrite it.
+- [x] sitter2009: Can't build imgcvt without libSDL. Need to rewrite it. ...actually no need to rewrite, just get the correct O files.
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
@@ -50,3 +50,4 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Build all the uncontroversial software.
 - - [ ] Pico-8
 - - [ ] Solarus
+- [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?

@@ -26,7 +26,8 @@ mid/%.o:src/%.s;$(PRECMD) $(AS) -o$@ $<
 
 ifneq (,$(strip $(BUILD_LIB)))
   LIB:=out/libemuhost.a
-  all:$(LIB)
+  LIB_CONFIG_SCRIPT:=out/emuhost-config
+  all:$(LIB) $(LIB_CONFIG_SCRIPT)
   OFILES_LIB:=$(filter \
     mid/lib/% \
     mid/opt/fs/% \
@@ -46,6 +47,13 @@ ifneq (,$(strip $(BUILD_LIB)))
     mid/opt/mshid/% \
   ,$(OFILES))
   $(LIB):$(OFILES_LIB);$(PRECMD) $(AR) $@ $^
+  $(LIB_CONFIG_SCRIPT):etc/tool/genehcfg.sh; \
+    CFLAGS="$(LIB_CFLAGS)" \
+    LDFLAGS="$(LIB_LDFLAGS)" \
+    LIBS="$(LDPOST)" \
+    EHLIB="$(abspath $(LIB))" \
+    INC="$(abspath out/include)" \
+    $< $@
   #TODO Name all public headers here.
   LIB_HEADERS_SRC:=src/lib/emuhost.h src/lib/eh_inmgr.h
   LIB_HEADERS_DST:=$(patsubst src/lib/%,out/include/%,$(LIB_HEADERS_SRC))

@@ -31,7 +31,7 @@ struct fakews *fakews_new(
   if (!path) pathc=0; else if (pathc<0) { pathc=0; while (path[pathc]) pathc++; }
   if (pathc<1) return 0;
   if ((port<1)||(port>0xffff)) return 0;
-  
+
   struct fakews *fakews=calloc(1,sizeof(struct fakews));
   if (!fakews) return 0;
   
@@ -185,7 +185,7 @@ int fakews_connect_now(struct fakews *fakews) {
     char zport[32];
     snprintf(zport,sizeof(zport),"%d",fakews->port);
     struct addrinfo hint={
-      .ai_family=AF_UNSPEC,
+      .ai_family=AF_INET,
       .ai_socktype=SOCK_STREAM,
       .ai_protocol=0,
       .ai_flags=AI_NUMERICSERV|AI_ADDRCONFIG

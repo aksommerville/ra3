@@ -54,9 +54,9 @@ int http_server_init_tcp_stream(struct http_server *server) {
 
 int http_server_bind(struct http_server *server,const char *host,int port) {
   if (!server||(server->fd<0)) return -1;
-  if (!host||!host[0]) host="localhost";
+  //if (!host||!host[0]) host="localhost";
   struct addrinfo hints={
-    .ai_family=AF_UNSPEC,
+    .ai_family=AF_INET,
     .ai_socktype=SOCK_STREAM,
     .ai_protocol=IPPROTO_TCP,
     .ai_flags=AI_PASSIVE|AI_NUMERICSERV|AI_ADDRCONFIG,

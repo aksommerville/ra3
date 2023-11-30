@@ -71,10 +71,12 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] pokorc: mmap: Invalid argument (DRM)
 - - [ ] sitter2009: execvp: No such file or directory
 - - [ ] ttaq: /home/kiddo/proj/ttaq/out/ttaq: Using data set at '/home/andy/proj/ttaq/src/data'.
-- - [ ] akgambatte: Audio is screwy and i think running slow.
-- - [ ] akfceu: Works fine but the audio seems muffled. Is that my imagination? Is it a Pi hardware thing? Is that possible?
+- - [x] akgambatte: Audio is screwy and i think running slow.
+- - [x] akfceu: Works fine but the audio seems muffled. Is that my imagination? Is it a Pi hardware thing? Is that possible?
 - - [ ] List "Andy's Picks" is empty? All the other lists look ok. Didn't verify all counts.
-- - [ ] aksnes9x: Similar to akgambatte, choppy audio. Gameplay feels ok actually. Maybe slow?
-- - [ ] Emuhost thinks it should output at 8 kHz! Yes all of these audio problems are real. using alsa
+- - [x] aksnes9x: Similar to akgambatte, choppy audio. Gameplay feels ok actually. Maybe slow?
+- - [x] Emuhost thinks it should output at 8 kHz! Yes all of these audio problems are real. using alsa
 - - [ ] git needs username and password to pull. it must not ask!
+- - [ ] akz26 freeze at quit. Last output: /home/kiddo/proj/akz26/out/akz26: Normal exit. 714 frames in 12 s, 0 faults, video rate 60.087 Hz, CPU usage 0.252
+- - [ ] Getting audio underruns in menu, gambatte, and snes9x, after prevent 0 rate,chanc to alsa. Does seem a lot improved.
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?

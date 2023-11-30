@@ -139,7 +139,7 @@ static int eh_drivers_init_audio_type(const struct eh_audio_type *type) {
   struct eh_audio_setup setup={
     .rate=eh.audio_rate,
     .chanc=eh.audio_chanc,
-    .buffersize=1024,
+    .buffersize=2048,
   };
   if (!setup.rate&&!(setup.rate=eh.delegate.audio_rate)) setup.rate=44100;
   if (!setup.chanc&&!(setup.chanc=eh.delegate.audio_chanc)) setup.chanc=1;

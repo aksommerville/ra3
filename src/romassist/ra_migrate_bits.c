@@ -487,7 +487,7 @@ int ra_migrate_should_insert_game(
   if ((pathc<1)||(pathc>=sizeof(path))) return 0;
   if (!(update->dir=db_string_intern(ra.db,path,pathc))) return 0;
 
-  return 0;
+  return 1;
 }
 
 /* Replace home directory in place.

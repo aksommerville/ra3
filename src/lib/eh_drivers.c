@@ -141,10 +141,8 @@ static int eh_drivers_init_audio_type(const struct eh_audio_type *type) {
     .chanc=eh.audio_chanc,
     .buffersize=1024,
   };
-  if (!setup.rate) {
-    fprintf(stderr,"No audio rate from config, that's normal I think. Setting 44.1k so drivers don't make their own bad decisions.\n");
-    setup.rate=44100;
-  }
+  if (!setup.rate&&!(setup.rate=eh.delegate.audio_rate)) setup.rate=44100;
+  if (!setup.chanc&&!(setup.chanc=eh.delegate.audio_chanc)) setup.chanc=1;
   if (!(eh.audio=eh_audio_driver_new(type,&delegate,&setup))) {
     fprintf(stderr,"%s: Failed to instantiate audio driver '%s'.\n",eh.exename,type->name);
     return 0;
@@ -173,7 +171,7 @@ static int eh_drivers_init_audio() {
     if (err!=-2) fprintf(stderr,"%s: Failed to instantiate audio driver.\n",eh.exename);
     return -2;
   }
-  fprintf(stderr,"%s: Using audio driver '%s'.\n",eh.exename,eh.audio->type->name);
+  fprintf(stderr,"%s: Using audio driver '%s' rate=%d chanc=%d.\n",eh.exename,eh.audio->type->name,eh.audio->rate,eh.audio->chanc);
   
   if (!eh.delegate.generate_pcm) {
     int srcrate=eh.delegate.audio_rate;

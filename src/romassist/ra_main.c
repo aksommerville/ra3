@@ -110,6 +110,9 @@ int main(int argc,char **argv) {
   srand(time(0));
   if (ra_configure(argc,argv)<0) { status=1; goto _done_; }
   if (ra_init_db()<0) { status=1; goto _done_; }
+  
+  if (ra.migrate) return ra_migrate_main();
+  
   if (ra_init_http()<0) { status=1; goto _done_; }
   if (ra_upgrade_startup()<0) { status=1; goto _done_; }
   

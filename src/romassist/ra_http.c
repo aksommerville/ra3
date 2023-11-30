@@ -367,6 +367,27 @@ static int ra_http_delete_game(struct http_xfer *req,struct http_xfer *rsp) {
   return db_game_delete(ra.db,gameid);
 }
 
+/* GET /api/game/file
+ */
+ 
+static int ra_http_get_game_file(struct http_xfer *req,struct http_xfer *rsp) {
+  int gameid=0;
+  if (http_xfer_get_query_int(&gameid,req,"gameid",6)<0) return http_xfer_set_status(rsp,400,"gameid required");
+  struct db_game *game=db_game_get_by_id(ra.db,gameid);
+  if (!game) return http_xfer_set_status(rsp,404,"Game %d not found",gameid);
+  char path[1024];
+  int pathc=db_game_get_path(path,sizeof(path),db,game);
+  if ((pathc<1)||(pathc>=sizeof(path))) return http_xfer_set_status(rsp,500,"Game %d invalid path",gameid);
+  void *serial=0;
+  int serialc=file_read(&serial,path);
+  if (serialc<0) return http_xfer_set_status(rsp,404,"Read failed");
+  int err=http_xfer_append_body(rsp,serial,serialc);
+  free(serial);
+  if (err<0) return -1;
+  http_xfer_set_header(rsp,"Content-Type",12,"application/octet-stream",24);
+  return 0;
+}
+
 /* GET /api/comment/count
  */
  
@@ -1355,6 +1376,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(PUT,"/api/game",ra_http_put_game)
   _(PATCH,"/api/game",ra_http_patch_game)
   _(DELETE,"/api/game",ra_http_delete_game)
+  _(GET,"/api/game/file",ra_http_get_game_file)
   
   _(GET,"/api/comment/count",ra_http_count_comment)
   _(GET,"/api/comment",ra_http_get_comment)

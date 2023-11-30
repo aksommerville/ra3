@@ -17,6 +17,7 @@ static void ra_print_usage(const char *topic,int topicc) {
     "  --terminable=1      Relaunch the menu if it quits, don't let the user quit.\n"
     "  --poweroff=0        Nonzero to call `poweroff` at POST /api/shutdown. Otherwise just quit.\n"
     "  --update=1          Automatically upgrade everything we can.\n"
+    "  --migrate=HOST:PORT Pull content from another installation, then terminate.\n"
     "\n"
   );
 }
@@ -72,6 +73,7 @@ static int ra_configure_kv(const char *k,int kc,const char *v,int vc) {
   INTOPT("terminable",terminable,0,1)
   INTOPT("poweroff",allow_poweroff,0,1)
   INTOPT("update",update_enable,0,1)
+  STROPT("migrate",migrate)
   
   #undef STROPT
   #undef INTOPT

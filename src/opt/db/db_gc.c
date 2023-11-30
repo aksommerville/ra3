@@ -105,8 +105,12 @@ static int db_update_strings_for_removal(struct db *db,int p,int c) {
   struct db_string_toc_entry *entry=db->strings.toc;
   int i=db->strings.tocc;
   for (;i-->0;entry++) {
+    if (!entry->c) continue;
     if (entry->p>=top) entry->p-=c;
-    else if (entry->p>=p) return -1;
+    else if (entry->p>=p) {
+      fprintf(stderr,"*** %s(%d,%d)/%d entry=%d,%d tocc=%d\n",__func__,p,c,db->strings.textc,entry->p,entry->c,db->strings.tocc);
+      return -1;
+    }
   }
   return 0;
 }

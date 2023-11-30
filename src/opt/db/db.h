@@ -177,7 +177,7 @@ struct db_game {
   uint32_t flags;
   uint32_t rating; // 0..99, with 0 meaning unset
   uint32_t pubtime; // Usually just the year.
-  uint32_t dir; // string. Combine with (base) for the file's path.
+  uint32_t dir; // string. Combine with (base) for the file's path. Should not end with a slash.
   char name[DB_GAME_NAME_LIMIT];
   char base[DB_GAME_BASE_LIMIT];
 };

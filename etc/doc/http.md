@@ -22,6 +22,7 @@ GET /api/game?gameid&detail => Game
 PUT /api/game?detail <= Game => Game
 PATCH /api/game?detail <= Game => Game (must exist)
 DELETE /api/game?gameid => nothing
+GET /api/game/file?gameid => binary
 
 GET /api/comment/count => integer
 GET /api/comment?index&count => Comment[]
@@ -164,6 +165,10 @@ game {
   
 }
 ```
+
+The special endpoint `/api/game/file?gameid` lets you download ROM files verbatim.
+Always be mindful of platform; if "native", the returned executable is not likely to work on other machines.
+That is very much Not My Problem :P
 
 ## /api/comment
 

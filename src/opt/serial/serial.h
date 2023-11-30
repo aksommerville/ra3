@@ -219,6 +219,23 @@ int sr_decode_json_array_start(struct sr_decoder *decoder); // => jsonctx
 int sr_decode_json_next(void *kpp,struct sr_decoder *decoder);
 int sr_decode_json_end(struct sr_decoder *decoder,int jsonctx);
 
+/* Iterate a JSON array or object.
+ * Stops if you return nonzero and returns the same.
+ * (v,vc) are the member value in JSON (pointing directly into (src)).
+ * (k,kc) are plain text. But see notes above, we actually don't decode keys fully.
+ * If (src) contains trailing text after the end of the structure, we quietly ignore it.
+ */
+int sr_for_each_of_json_array(
+  const char *src,int srcc,
+  int (*cb)(const char *v,int vc,void *userdata),
+  void *userdata
+);
+int sr_for_each_of_json_object(
+  const char *src,int srcc,
+  int (*cb)(const char *k,int kc,const char *v,int vc,void *userdata),
+  void *userdata
+);
+
 /* Structured encoder.
  * These do require cleanup and must not be copied directly.
  * You may yoink (v) after encoding, and then do not clean up the encoder.

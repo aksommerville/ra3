@@ -45,10 +45,12 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Prepare the Pi.
 - - [ ] Migrate data.
 - - [ ] Ensure keyboards behave sanely.
-- - [ ] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.
+- - [x] Ensure Fast Forward and Screencap are *not* mapped on mom and dad's machine.
 - - [ ] systemd
-- - [ ] Verify poweroff
+- - [ ] Verify poweroff. We can sudo it without a password, at least at the command line.
 - - [x] Build all the uncontroversial software.
 - - [ ] Pico-8
 - - [ ] Solarus
+- - [ ] Boot time is almost exactly 30 seconds. That's acceptable but can we improve it?
+- - [ ] Confirm we don't block for the network on startup.
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?

@@ -35,6 +35,7 @@ extern struct ra {
   int terminable;
   int allow_poweroff; // If nonzero, POST /api/shutdown calls `poweroff`. Zero, only this process terminates.
   int update_enable;
+  char *migrate; // "host:port", to pull content from that installation, instead of normal operation
   
   volatile int sigc;
   struct db *db;
@@ -73,5 +74,10 @@ int ra_autoscreencap(uint32_t gameid,const char *rompath);
 /* Tell menu clients this this game is now running.
  */
 int ra_report_gameid(uint32_t gameid);
+
+/* Initialize DB first. Not HTTP or Upgrade.
+ * Returns exit status.
+ */
+int ra_migrate_main();
 
 #endif

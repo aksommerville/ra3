@@ -397,3 +397,42 @@ int sr_decode_json_next(void *kpp,struct sr_decoder *decoder) {
   }
   return -1;
 }
+
+/* JSON array and object, high-level conveniences.
+ */
+ 
+int sr_for_each_of_json_array(
+  const char *src,int srcc,
+  int (*cb)(const char *v,int vc,void *userdata),
+  void *userdata
+) {
+  if (!src) return -1;
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  if (sr_decode_json_array_start(&decoder)<0) return -1;
+  const char *v;
+  int vc,err;
+  while (sr_decode_json_next(0,&decoder)>0) {
+    if ((vc=sr_decode_json_expression(&v,&decoder))<0) return -1;
+    if (err=cb(v,vc,userdata)) return err;
+  }
+  return sr_decode_json_end(&decoder,0);
+}
+
+int sr_for_each_of_json_object(
+  const char *src,int srcc,
+  int (*cb)(const char *k,int kc,const char *v,int vc,void *userdata),
+  void *userdata
+) {
+  if (!src) return -1;
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  if (sr_decode_json_object_start(&decoder)<0) return -1;
+  const char *k,*v;
+  int kc,vc,err;
+  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+    if ((vc=sr_decode_json_expression(&v,&decoder))<0) return -1;
+    if (err=cb(k,kc,v,vc,userdata)) return err;
+  }
+  return sr_decode_json_end(&decoder,0);
+}

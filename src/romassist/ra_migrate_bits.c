@@ -228,7 +228,7 @@ int ra_migrate_decode_game(
       } else if (blobs&&(kc==5)&&!memcmp(k,"blobs",5)) {
         memset(blobs,0,sizeof(struct sr_decoder));
         blobs->v=v;
-        blobs->c=c;
+        blobs->c=vc;
       }
     }
   }
@@ -246,7 +246,7 @@ struct db_game *ra_migrate_find_existing_game(const struct db_game *incoming) {
    * But don't just assume that an ID match is the same game.
    * Verify platform and basename too -- Those are very unlikely to change once a game is added.
    */
-  if (existing=db_game_get_by_id(ra.db,incoming.gameid)) {
+  if (existing=db_game_get_by_id(ra.db,incoming->gameid)) {
     if (
       (existing->platform==incoming->platform)&&
       !strncmp(existing->base,incoming->base,DB_GAME_BASE_LIMIT)

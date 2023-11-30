@@ -276,7 +276,7 @@ static int ra_migrate_game(struct ra_migrate_context *ctx,const char *src,int sr
  
 static int ra_migrate_game(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
-  ctx->games.incomingc++;
+  ctx->gamecounts.incomingc++;
   
   fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
   /*
@@ -327,7 +327,7 @@ static int ra_migrate_game(const char *src,int srcc,void *userdata) {
       if (!(existing=db_game_insert(ra.db,&update))) return -1;
       ctx->gamecounts.addc++;
     } else {
-      fprintf(stderr,"IGNORE GAME: %.32s\n",inocming.name);
+      fprintf(stderr,"IGNORE GAME: %.32s\n",incoming.name);
       ctx->gamecounts.ignorec++;
       return 0; // And get out now; don't bother examining blobs and comments.
     }
@@ -347,7 +347,7 @@ static int ra_migrate_game(const char *src,int srcc,void *userdata) {
 static int ra_migrate_launcher(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
   fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
-  ctx->launchers.incomingc++;
+  ctx->launchercounts.incomingc++;
   return 0;
 }
 
@@ -357,7 +357,7 @@ static int ra_migrate_launcher(const char *src,int srcc,void *userdata) {
 static int ra_migrate_list(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
   fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
-  ctx->lists.incomingc++;
+  ctx->listcounts.incomingc++;
   return 0;
 }
 
@@ -367,7 +367,7 @@ static int ra_migrate_list(const char *src,int srcc,void *userdata) {
 static int ra_migrate_upgrade(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
   fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
-  ctx->upgrades.incomingc++;
+  ctx->upgradecounts.incomingc++;
   return 0;
 }
 

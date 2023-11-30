@@ -376,7 +376,7 @@ static int ra_http_get_game_file(struct http_xfer *req,struct http_xfer *rsp) {
   struct db_game *game=db_game_get_by_id(ra.db,gameid);
   if (!game) return http_xfer_set_status(rsp,404,"Game %d not found",gameid);
   char path[1024];
-  int pathc=db_game_get_path(path,sizeof(path),db,game);
+  int pathc=db_game_get_path(path,sizeof(path),ra.db,game);
   if ((pathc<1)||(pathc>=sizeof(path))) return http_xfer_set_status(rsp,500,"Game %d invalid path",gameid);
   void *serial=0;
   int serialc=file_read(&serial,path);

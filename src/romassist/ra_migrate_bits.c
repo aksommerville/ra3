@@ -6,6 +6,64 @@
 
 #include "ra_migrate_internal.h"
 
+/* ID change table.
+ */
+ 
+static int ra_migrate_idchangev_search(const struct ra_migrate_context *ctx,char type,uint32_t rid) {
+  int lo=0,hi=ctx->idchangec;
+  while (lo<hi) {
+    int ck=(lo+hi)>>1;
+    const struct ra_migrate_idchange *q=ctx->idchangev+ck;
+         if (type<q->type) hi=ck;
+    else if (type>q->type) lo=ck+1;
+    else if (rid<q->rid) hi=ck;
+    else if (rid>q->rid) lo=ck+1;
+    else return ck;
+  }
+  return -lo-1;
+}
+
+int ra_migrate_idchange_add(struct ra_migrate_context *ctx,char type,uint32_t lid,uint32_t rid) {
+  int p=ra_migrate_idchangev_search(ctx,type,rid);
+  if (p>=0) {
+    if (ctx->idchangev[p].lid==lid) return 0;
+    return -1;
+  }
+  p=-p-1;
+  if (ctx->idchangec>=ctx->idchangea) {
+    int na=ctx->idchangea+256;
+    if (na>INT_MAX/sizeof(struct ra_migrate_idchange)) return -1;
+    void *nv=realloc(ctx->idchangev,sizeof(struct ra_migrate_idchange)*na);
+    if (!nv) return -1;
+    ctx->idchangev=nv;
+    ctx->idchangea=na;
+  }
+  struct ra_migrate_idchange *idchange=ctx->idchangev+p;
+  memmove(idchange+1,idchange,sizeof(struct ra_migrate_idchange)*(ctx->idchangec-p));
+  ctx->idchangec++;
+  idchange->type=type;
+  idchange->rid=rid;
+  idchange->lid=lid;
+  return 0;
+}
+
+uint32_t ra_migrate_local_from_remote_id(const struct ra_migrate_context *ctx,char type,uint32_t rid) {
+  int p=ra_migrate_idchangev_search(ctx,type,rid);
+  if (p<0) return rid;
+  return ctx->idchangev[p].lid;
+}
+
+uint32_t ra_migrate_remote_from_local_id(const struct ra_migrate_context *ctx,char type,uint32_t lid) {
+  int p=ra_migrate_idchangev_search(ctx,type,0);
+  if (p<0) p=-p-1;
+  const struct ra_migrate_idchange *idchange=ctx->idchangev+p;
+  for (;p<ctx->idchangec;p++,idchange++) {
+    if (idchange->type!=type) break;
+    if (idchange->lid==lid) return idchange->rid;
+  }
+  return lid;
+}
+
 /* Introductory logging, and initialize any context fields with a nonzero default.
  */
  
@@ -20,6 +78,7 @@ int ra_migrate_introduce(struct ra_migrate_context *ctx) {
   ctx->launchercounts.beforec=db_launcher_count(ra.db);
   ctx->upgradecounts.beforec=db_upgrade_count(ra.db);
   ctx->commentcounts.beforec=db_comment_count(ra.db);
+  ctx->blobcounts.beforec=0; // not sure we can get an answer for this without a lot of work. it's not important
   
   // sic "intern" not "lookup" for these, in case we're starting from an empty DB.
   ctx->str_native=db_string_intern(ra.db,"native",6);
@@ -47,7 +106,7 @@ int ra_migrate_fetch(struct ra_migrate_context *ctx) {
   int status;
   if ((status=ra_minhttp_request_sync(
     0,&ctx->games,&ctx->minhttp,
-    "GET","/api/game?index=0&count=10&detail=blobs" //TODO count=1000000 when we're ready
+    "GET","/api/game?index=0&count=1000000&detail=blobs"
   ))!=200) {
     fprintf(stderr,"%s: GET /api/game: status %d\n",ra.migrate,status);
     return -2;
@@ -89,7 +148,36 @@ int ra_migrate_validate_final(struct ra_migrate_context *ctx) {
  
 void ra_migrate_report_changes(struct ra_migrate_context *ctx) {
   fprintf(stderr,"****************** Migration complete *******************\n");
-  //TODO Show stats.
+  
+  if (ctx->gamecounts.addc) {
+    fprintf(stderr,"Added %d games, from the %d present on remote.\n",ctx->gamecounts.addc,ctx->gamecounts.incomingc);
+  } else {
+    fprintf(stderr,"No games added, from %d candidates.\n",ctx->gamecounts.incomingc);
+  }
+  if (ctx->gamecounts.modc) {
+    fprintf(stderr,"Modified %d existing games.\n",ctx->gamecounts.modc);
+  }
+  if (ctx->gamecounts.ignorec) {
+    fprintf(stderr,"%d games were ignored; usually this means they are native games with no upgrade method.\n",ctx->gamecounts.ignorec);
+  }
+  
+  int minoraddc=ctx->listcounts.addc+ctx->launchercounts.addc+ctx->upgradecounts.addc+ctx->commentcounts.addc;
+  int minormodc=ctx->listcounts.modc+ctx->launchercounts.modc+ctx->upgradecounts.modc+ctx->commentcounts.modc;
+  if (minoraddc||minormodc) {
+    fprintf(stderr,"Added %d minor records (list, launcher, upgrade, comment), and modified %d.\n",minoraddc,minormodc);
+  } else {
+    fprintf(stderr,"No change to minor records (list, launcher, upgrade, comment).\n");
+  }
+  
+  if (ctx->blobcounts.addc) {
+    fprintf(stderr,"Added %d blobs (typically screencaps)\n",ctx->blobcounts.addc);
+  }
+  
+  if (ctx->romdownloadc) {
+    fprintf(stderr,"Downloaded %d new ROM files.\n",ctx->romdownloadc);
+  }
+  
+  fprintf(stderr,"Total incoming TCP data: %d bytes\n",ctx->minhttp.rcvtotal);
 }
 
 /* Final report: DB failure case.
@@ -97,7 +185,17 @@ void ra_migrate_report_changes(struct ra_migrate_context *ctx) {
  
 void ra_migrate_report_changes_after_failed_commit(struct ra_migrate_context *ctx) {
   fprintf(stderr,"!!! ERROR !!! Failed to save database after migration !!!\n");
-  //TODO List all blob and external changes.
+  int ok=1;
+  if (ctx->blobcounts.addc) {
+    fprintf(stderr,"%d blobs were added but might now be invalid.\n",ctx->blobcounts.addc);
+    ok=0;
+  }
+  if (ctx->romdownloadc) {
+    fprintf(stderr,"%d rom files were downloaded and are now orphaned.\n",ctx->romdownloadc);
+    ok=0;
+  }
+  if (ok) fprintf(stderr,"No unreversible actions appear to have been taken; you're in the same state as before the migration attempt.\n");
+  else fprintf(stderr,"The bulk of the database should still be in its pre-migration state.\n");
 }
 
 /* Get record from a JSON array.
@@ -432,8 +530,261 @@ int ra_migrate_copy_rom_file_if_needed(
   if (file_get_type(lpath)=='f') return 0; // ok easy
   
   // Fetch from the remote.
-  fprintf(stderr,"%s:%d: TODO: Add rom-download endpoint and resume here.\n",__FILE__,__LINE__);
-  return -2;
+  fprintf(stderr,"%s: Downloading ROM for '%.32s'...\n",lpath,lgame->name);
+  struct sr_encoder rsp={0};
+  char req[64];
+  int reqc=snprintf(req,sizeof(req),"/api/game/file?gameid=%d",rgame->gameid);
+  if ((reqc<1)||(reqc>=sizeof(req))) return -1;
+  int err=ra_minhttp_request_sync(0,&rsp,&ctx->minhttp,"GET",req);
+  if (err!=200) {
+    fprintf(stderr,"...download failed! Status %d\n",err);
+    sr_encoder_cleanup(&rsp);
+    return -2;
+  }
+  if ((dir_mkdirp_parent(lpath)<0)||(file_write(lpath,rsp.v,rsp.c)<0)) {
+    fprintf(stderr,"%s: Failed to write file for game '%.32s', %d bytes\n",lpath,lgame->name,rsp.c);
+    sr_encoder_cleanup(&rsp);
+    return -2;
+  }
+  sr_encoder_cleanup(&rsp);
+  
+  return 1;
+}
+
+/* For a blob path from the remote, determine a suitable local path.
+ */
+ 
+int ra_migrate_local_path_for_blob(char *dst,int dsta,struct ra_migrate_context *ctx,int gameid,const char *rpath,int rpathc) {
+  /* Blob paths are "DBROOT/blob/CENTURY/GAMEID-...".
+   * DBROOT, CENTURY, and GAMEID are all subject to change here, and we don't need to read them from (rpath).
+   * So all we need from (rpath) is the stuff after GAMEID.
+   */
+  int dashp=-1;
+  int i=rpathc;
+  while (i-->0) {
+    if (rpath[i]=='/') break;
+    if (rpath[i]=='-') dashp=i;
+  }
+  if (dashp<0) return -1; // (rpath) does not contain a dash in its basename. That's actually a hard error, db requires it.
+  const char *sfx=rpath+dashp; // includes the dash
+  int sfxc=rpathc-dashp;
+  const char *dbroot=db_get_root(ra.db);
+  if (!dbroot) return -1;
+  int century=(gameid/100)*100;
+  int dstc=snprintf(dst,dsta,"%s/blob/%d/%d%.*s",dbroot,century,gameid,sfxc,sfx);
+  if ((dstc<1)||(dstc>=dsta)) return -1;
+  if (db_blob_validate_path(ra.db,dst,dstc)<0) return -1; // just to be on the safe side, but this should always be ok
+  return dstc;
+}
+
+/* Examine an incoming launcher.
+ */
+ 
+struct db_launcher *ra_migrate_consider_launcher(
+  struct db_launcher *update,
+  struct ra_migrate_context *ctx,
+  struct db_launcher *incoming
+) {
+
+  /* Consider launchers the same if their name matches.
+   * Search on ID first for efficiency only.
+   */
+  struct db_launcher *existing=db_launcher_get_by_id(ra.db,incoming->launcherid);
+  if (existing&&(existing->name==incoming->name)) {
+    // cool
+  } else {
+    existing=0;
+    struct db_launcher *q=db_launcher_get_by_index(ra.db,0);
+    int i=db_launcher_count(ra.db);
+    for (;i-->0;q++) {
+      if (q->name==incoming->name) {
+        existing=q;
+        break;
+      }
+    }
+  }
+  
+  /* Don't have it yet? Add verbatim, only tweak ID if necessary.
+   * (cmd) will probably need changed, but I'm leaving that to the user.
+   */
+  if (!existing) {
+    memcpy(update,incoming,sizeof(struct db_launcher));
+    if (db_launcher_get_by_id(ra.db,incoming->launcherid)) update->launcherid=0;
+    return 0;
+  }
+  
+  /* Take incoming changes only if we were zero before.
+   */
+  if (
+    (!existing->name&&incoming->name)||
+    (!existing->platform&&incoming->platform)||
+    (!existing->suffixes&&incoming->suffixes)||
+    (!existing->cmd&&incoming->cmd)||
+    (!existing->desc&&incoming->desc)
+  ) {
+    memcpy(update,incoming,sizeof(struct db_launcher));
+    update->launcherid=existing->launcherid;
+  }
+  return existing;
+}
+
+/* Nonzero if (to) has anything that (from) doesn't.
+ */
+ 
+static int ra_migrate_list_has_additions(const struct db_list *from,const struct db_list *to) {
+  int i=0; for (;i<to->gameidc;i++) {
+    if (!db_list_has(from,to->gameidv[i])) return 1;
+  }
+  return 0;
+}
+
+/* Examine an incoming list.
+ */
+ 
+struct db_list *ra_migrate_consider_list(
+  struct db_list *update,
+  struct ra_migrate_context *ctx,
+  struct db_list *incoming
+) {
+  
+  /* Lists match if their names match exactly.
+   * Search by ID first only as an optimization.
+   */
+  struct db_list *existing=db_list_get_by_id(ra.db,incoming->listid);
+  if (existing&&(existing->name==incoming->name)) {
+    // cool
+  } else {
+    int i=0; for (;;i++) {
+      if (!(existing=db_list_get_by_index(ra.db,i))) break;
+      if (existing->name==incoming->name) break;
+    }
+  }
+  
+  /* If we don't have it already, add it verbatim.
+   * Lists are live objects, so we can't just memcpy it.
+   */
+  if (!existing) {
+    if (db_list_get_by_id(ra.db,incoming->listid)) update->listid=0;
+    else update->listid=incoming->listid;
+    update->name=incoming->name;
+    update->desc=incoming->desc;
+    update->sorted=incoming->sorted;
+    int i=0; for (;i<incoming->gameidc;i++) {
+      db_list_append(ra.db,update,incoming->gameidv[i]);
+    }
+    return 0;
+  }
+  
+  /* Call it dirty if the header fields changed or any games were added.
+   * Don't take in removals or reordering.
+   */
+  if (
+    (existing->name==incoming->name)&&
+    (existing->desc==incoming->desc)&&
+    (existing->sorted==incoming->sorted)&&
+    !ra_migrate_list_has_additions(existing,incoming)
+  ) return existing; // clean
+  
+  /* Dirty. Populate (update).
+   * I'm going to cheat a little and just append everything.
+   * This takes care of checking for duplicates, and satisfies our "add-only" policy, but it also can foul up the order.
+   * Since we're fouling it anyway, set update->sorted=1 so it can at least happen efficiently.
+   */
+  update->listid=existing->listid;
+  update->name=incoming->name;
+  update->desc=incoming->desc;
+  update->sorted=1;
+  int i;
+  for (i=0;i<existing->gameidc;i++) db_list_append(ra.db,update,existing->gameidv[i]);
+  for (i=0;i<incoming->gameidc;i++) db_list_append(ra.db,update,incoming->gameidv[i]);
+  
+  return existing;
+}
+
+/* Examine an incoming upgrade.
+ */
+ 
+struct db_upgrade *ra_migrate_consider_upgrade(
+  struct db_upgrade *update,
+  struct ra_migrate_context *ctx,
+  struct db_upgrade *incoming
+) {
+  
+  /* Translate the game and launcher IDs.
+   * Games and launchers are both processed before upgrades, so they should be translatable.
+   * If either comes up zero when the input was nonzero, or has a value but there's no record for it, abort.
+   */
+  uint32_t rgameid=incoming->gameid?ra_migrate_local_from_remote_id(ctx,'u',incoming->gameid):0;
+  uint32_t rlauncherid=incoming->launcherid?ra_migrate_local_from_remote_id(ctx,'u',incoming->launcherid):0;
+  if (incoming->gameid&&!db_game_get_by_id(ra.db,rgameid)) return 0;
+  if (incoming->launcherid&&!db_launcher_get_by_id(ra.db,rlauncherid)) return 0;
+  
+  /* Do we already have this one?
+   * We can consider upgrades equivalent if they refer to the same game or launcher.
+   */
+  struct db_upgrade *existing=db_upgrade_get_by_id(ra.db,incoming->upgradeid);
+  if (existing) {
+    if (
+      (existing->gameid!=rgameid)||
+      (existing->launcherid!=rlauncherid)
+    ) {
+      // ooh not the same
+      existing=0;
+    }
+  }
+  if (!existing) {
+    struct db_upgrade *q=db_upgrade_get_by_index(ra.db,0);
+    int i=db_upgrade_count(ra.db);
+    for (;i-->0;q++) {
+      if (
+        (q->gameid==rgameid)&&
+        (q->launcherid==rlauncherid)
+      ) {
+        // aha but this one is the same
+        existing=q;
+        break;
+      }
+    }
+  }
+  
+  /* If we have one, call it changed if anything absent in ours is present in theirs.
+   * A difference between two nonzero values, we have to skip it.
+   */
+  if (existing) {
+    if (
+      (!existing->name&&incoming->name)||
+      (!existing->desc&&incoming->desc)||
+      (!existing->method&&incoming->method)||
+      (!existing->param&&incoming->param)
+      // Not considered: upgradeid,gameid,launcherid,depend,checktime,buildtime,status
+    ) {
+      memcpy(update,existing,sizeof(struct db_upgrade));
+      update->name=incoming->name;
+      update->desc=incoming->desc;
+      update->method=incoming->method;
+      update->param=incoming->param;
+    }
+    return existing;
+  }
+  
+  /* We don't have one. Do we want to add it? Yes.
+   */
+  memcpy(update,incoming,sizeof(struct db_upgrade));
+  if (db_upgrade_get_by_id(ra.db,incoming->upgradeid)) update->upgradeid=0;
+  update->gameid=rgameid;
+  update->launcherid=rlauncherid;
+  if (incoming->depend) { // Might have to zero (depend), if it's a record we haven't processed yet.
+    uint32_t dp=ra_migrate_local_from_remote_id(ctx,'u',incoming->depend);
+    if (!dp) {
+      update->depend=0;
+    } else if (!db_upgrade_get_by_id(ra.db,dp)) {
+      update->depend=0;
+    }
+  }
+  // (checktime,buildtime,status): Relevant only to each host, don't copy.
+  update->checktime=0;
+  update->buildtime=0;
+  update->status=0;
   
   return 0;
 }

@@ -152,6 +152,21 @@ int dir_mkdirp(const char *path) {
   return 0;
 }
 
+int dir_mkdirp_parent(const char *path) {
+  if (!path) return -1;
+  int pathc=0,sepp=-1;
+  while (path[pathc]) {
+    if (path[pathc]=='/') sepp=pathc;
+    pathc++;
+  }
+  if (sepp<=0) return -1;
+  char parent[1024];
+  if (sepp>=sizeof(parent)) return -1;
+  memcpy(parent,path,sepp);
+  parent[sepp]=0;
+  return dir_mkdirp(parent);
+}
+
 /* Delete file.
  */
  

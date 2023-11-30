@@ -9,267 +9,94 @@ static void ra_migrate_context_cleanup(struct ra_migrate_context *ctx) {
   sr_encoder_cleanup(&ctx->lists);
   sr_encoder_cleanup(&ctx->launchers);
   sr_encoder_cleanup(&ctx->upgrades);
+  if (ctx->idchangev) free(ctx->idchangev);
 }
 
-#if 0 //XXX move what we can to ra_migrate_bits.c
-
-/* Extract one string field from a JSON object.
+/* Migrate one comment, in the context of a game.
  */
  
-static int ra_extract_json_string(char *dst,int dsta,const char *src,int srcc,const char *k,int kc) {
-  if (!src) return 0;
-  if (!k) return 0;
-  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
-  if (kc<0) { kc=0; while (k[kc]) kc++; }
-  struct sr_decoder decoder={.v=src,.c=srcc};
-  if (sr_decode_json_object_start(&decoder)<0) return 0;
-  const char *qk;
-  int qkc;
-  while ((qkc=sr_decode_json_next(&qk,&decoder))>0) {
-    if ((qkc==kc)&&!memcmp(qk,k,kc)) {
-      return sr_decode_json_string(dst,dsta,&decoder);
-    } else {
-      if (sr_decode_json_skip(&decoder)<0) return 0;
-    }
+struct ra_migrate_comment_context {
+  struct ra_migrate_context *ctx;
+  struct db_game *game; // resident locally
+  // It's tempting to put resident comments here too, so we only have to fetch them once, but those might change during an add.
+  // Safer to force the callback to fetch them for each incoming comment.
+};
+
+static int ra_migrate_comment(const char *src,int srcc,void *userdata) {
+  struct ra_migrate_context *ctx=((struct ra_migrate_comment_context*)userdata)->ctx;
+  struct db_game *game=((struct ra_migrate_comment_context*)userdata)->game;
+  ctx->commentcounts.incomingc++;
+  
+  struct db_comment comment={0};
+  if (db_comment_decode(&comment,ra.db,DB_FORMAT_json,src,srcc)<0) return -1;
+  comment.gameid=game->gameid;
+  
+  /* Skip it if we have an identical comment: k,time,v
+   * Otherwise add it exactly as presented, except for gameid.
+   */
+  struct db_comment *existing=0;
+  int i=db_comments_get_by_gameid(&existing,ra.db,game->gameid);
+  for (;i-->0;existing++) {
+    if (existing->k!=comment.k) continue;
+    if (existing->time!=comment.time) continue;
+    if (existing->v!=comment.v) continue;
+    ctx->commentcounts.skipc++;
+    return 0;
   }
+  if (!db_comment_insert(ra.db,&comment)) return -1;
+  ctx->commentcounts.addc++;
+  
   return 0;
 }
 
-/* Check whether we have this file, download it if possible.
- * Return local path on success, zero if we decline (eg native game, can't assume it's just one file).
- * Input is the encoded game from the remote.
+/* Migrate one blob, in the context of a game.
  */
  
-static int ra_migrate_game_file(char *path,int patha,struct ra_migrate_context *ctx,const char *src,int srcc) {
-  
-  // If the platform is "native", don't bother.
-  char platform[16];
-  int platformc=ra_extract_json_string(platform,sizeof(platform),src,srcc,"platform",8);
-  if ((platformc==6)&&!memcmp(platform,"native",6)) return 0;
+struct ra_migrate_blob_context {
+  struct ra_migrate_context *ctx;
+  struct db_game *game; // resident locally
+};
+
+static int ra_migrate_blob(const char *src,int srcc,void *userdata) {
+  struct ra_migrate_context *ctx=((struct ra_migrate_blob_context*)userdata)->ctx;
+  struct db_game *game=((struct ra_migrate_blob_context*)userdata)->game;
+  ctx->blobcounts.incomingc++;
   
   char rpath[1024];
-  int rpathc=ra_extract_json_string(rpath,sizeof(rpath),src,srcc,"path",4);
-  if ((rpathc<1)||(rpathc>=sizeof(rpath))) return 0;
-  
-  /* It's entirely possible that local and remote paths are the same, and we already have the file.
-   * eg I have a bunch of machines around here with the same collection at /home/andy/rom/
-   * That's obvious and easy to handle, so check it first.
-   */
-  if (file_get_type(rpath)=='f') {
-    if (rpathc<=patha) memcpy(path,rpath,rpathc);
-    if (rpathc<patha) path[rpathc]=0;
-    return rpathc;
-  }
-  
-  /* Synthesize a local path.
-   * TODO This is extremely opinionated, not at all appropriate for general distribution.
-   * We'll expect to put files at "/home/USER/rom/PLATFORM/PREFIX/BASE" where:
-   *  - USER from environment.
-   *  - PLATFORM from incoming JSON.
-   *  - PREFIX is "09" or the lowercase first letter of BASE.
-   *  - BASE from incoming JSON.
-   * That's how mine are organized at least.
-   */
-  if ((platformc<1)||(platformc>sizeof(platform))) return 0;
-  if (!ctx->username||!ctx->username[0]) return 0;
-  const char *base=rpath+rpathc;
-  int basec=0;
-  while ((basec<rpathc)&&(base[-1]!='/')) { base--; basec++; }
-  if (!basec) return 0;
-  char prefix[2];
-  int prefixc;
-       if ((base[0]>='a')&&(base[0]<='z')) { prefix[0]=base[0]; prefixc=1; }
-  else if ((base[0]>='A')&&(base[0]<='Z')) { prefix[0]=base[0]+0x20; prefixc=1; }
-  else { prefix[0]='0'; prefix[1]='9'; prefixc=2; }
+  int rpathc=sr_string_eval(rpath,sizeof(rpath),src,srcc);
+  if ((rpathc<0)||(rpathc>=sizeof(rpath))) return -1;
   char lpath[1024];
-  int lpathc=snprintf(lpath,sizeof(lpath),"/home/%s/rom/%.*s/%.*s/%.*s",ctx->username,platformc,platform,prefixc,prefix,basec,base);
-  if ((lpathc<1)||(lpathc>=sizeof(lpath))) return 0;
+  int lpathc=ra_migrate_local_path_for_blob(lpath,sizeof(lpath),ctx,game->gameid,rpath,rpathc);
+  if ((lpathc<1)||(lpathc>=sizeof(lpath))) return -1;
   
-  /* One more thing: If a file happens to already exist at that path, assume it's the right one.
-   */
+  // File already exists? Great, we're done.
   if (file_get_type(lpath)=='f') {
-    if (lpathc<=patha) memcpy(path,lpath,lpathc);
-    if (lpathc<patha) path[lpathc]=0;
-    return lpathc;
-  }
-  
-  fprintf(stderr,">>> TODO download '%s' and save at '%s'\n",rpath,lpath);
-  
-  return 0;
-}
-
-/* Fallback if ra_migrate_game_file returns zero:
- * If there's an upgrade of method "git+make" for this game, assume that we will be able to install it.
- * If so, compose the expected local path for it.
- */
- 
-static int ra_migrate_gitmake_upgrade_exists_for_game(char *path,int patha,struct ra_migrate_context *ctx,const struct db_game *game) {
-  return 0;
-}
-
-/* Look for comments in this JSON game, and add to our DB if appropriate.
- * Beware that the gameid in (src) is not necessarily ours -- use the parameter (gameid).
- */
- 
-static int ra_migrate_game_comments_inner(struct ra_migrate_context *ctx,uint32_t gameid,struct sr_decoder *decoder) {
-  struct db_comment *existing=0;
-  int existingc=db_comments_get_by_gameid(&existing,ra.db,gameid);
-  if (sr_decode_json_array_start(decoder)<0) return 0;
-  while (sr_decode_json_next(0,decoder)>0) {
-    int jsonctx=sr_decode_json_object_start(decoder);
-    if (jsonctx<0) return -1;
-    struct db_comment incoming={0};
-    const char *k;
-    int kc;
-    while ((kc=sr_decode_json_next(&k,decoder))>0) {
-      if ((kc==1)&&(k[0]=='k')) {
-        if (db_decode_json_string(&incoming.k,ra.db,decoder)<0) return -1;
-      } else if ((kc==1)&&(k[0]=='v')) {
-        if (db_decode_json_string(&incoming.k,ra.db,decoder)<0) return -1;
-      } else if ((kc==4)&&!memcmp(k,"time",4)) {
-        char tmp[32];
-        int tmpc=sr_decode_json_string(tmp,sizeof(tmp),decoder);
-        if ((tmpc<0)||(tmpc>sizeof(tmp))) {
-          if (sr_decode_json_skip(decoder)<0) return -1;
-        } else {
-          incoming.time=db_time_eval(tmp,tmpc);
-        }
-      } else {
-        if (sr_decode_json_skip(decoder)<0) return -1;
-      }
-    }
-    if (sr_decode_json_end(decoder,jsonctx)<0) return -1;
-    ctx->commentcounts.incomingc++;
-    
-    // If any of the incoming fields is blank, skip it.
-    if (!incoming.k||!incoming.v||!incoming.time) {
-      ctx->commentcounts.ignorec++;
-      continue;
-    }
-    
-    // If we have an exact match for all three fields, skip it.
-    int already=0;
-    const struct db_comment *q=existing;
-    int i=existingc;
-    for (;i-->0;q++) {
-      if ((q->k==incoming.k)&&(q->v==incoming.v)&&(q->time==incoming.time)) {
-        already=1;
-        break;
-      }
-    }
-    if (already) {
-      ctx->commentcounts.skipc++;
-      continue;
-    }
-    
-    // OK add it.
-    incoming.gameid=gameid;
-    if (!db_comment_insert(ra.db,&incoming)) return -1;
-    ctx->commentcounts.addc++;
-  }
-  return 0;
-}
- 
-static int ra_migrate_game_comments(struct ra_migrate_context *ctx,uint32_t gameid,const char *src,int srcc) {
-  struct sr_decoder decoder={.v=src,.c=srcc};
-  if (sr_decode_json_object_start(&decoder)<0) return -1;
-  const char *k;
-  int kc;
-  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
-    if ((kc==8)&&!memcmp(k,"comments",8)) {
-      return ra_migrate_game_comments_inner(ctx,gameid,&decoder);
-    } else {
-      if (sr_decode_json_skip(&decoder)<0) return -1;
-    }
-  }
-  return 0;
-}
-
-/* Migrate games.
- */
- 
-static int ra_migrate_game(struct ra_migrate_context *ctx,const char *src,int srcc) {
-  ctx->gamecounts.incomingc++;
-  struct db_game game={0};
-  if (db_game_decode(&game,ra.db,DB_FORMAT_json,src,srcc)<0) return -1;
-  
-  /* Determine whether we have this game already.
-   * That's a subtle question.
-   * If (gameid,base,platform) match, they're the same.
-   * To match a different gameid, require exact match of (base,name,pubtime). Unless one pubtime is zero.
-   */
-  struct db_game *existing=db_game_get_by_id(ra.db,game.gameid);
-  if (existing) {
-    if (existing->platform!=game.platform) {
-      existing=0; // different platforms, definitely not the same game.
-    } else if (strncmp(game.base,existing->base,DB_GAME_BASE_LIMIT)) {
-      existing=0; // different base names, nope. those shouldn't change much.
-    } else {
-      // ok they're the same
-    }
-  }
-  if (!existing) { // No match by gameid, so check (base+name+pubtime).
-    struct db_game *q=db_game_get_by_index(ra.db,0);
-    int i=db_game_count(ra.db);
-    for (;i-->0;q++) {
-      if (q->pubtime&&game.pubtime&&(q->pubtime!=game.pubtime)) continue;
-      if (strncmp(q->name,game.name,DB_GAME_NAME_LIMIT)) continue;
-      if (strncmp(q->base,game.base,DB_GAME_BASE_LIMIT)) continue;
-      existing=q;
-      break;
-    }
-  }
-  
-  /* If we don't have it yet, try to download the ROM file.
-   */
-  if (!existing) {
-    char path[1024];
-    int pathc=ra_migrate_game_file(path,sizeof(path),ctx,src,srcc);
-    if (!pathc) pathc=ra_migrate_gitmake_upgrade_exists_for_game(path,pathc,ctx,game.gameid);
-    if (pathc<0) return pathc;
-    if (!pathc) {
-      fprintf(stderr,"  Game r%d(%.32s), ignoring because we don't seem able to download.\n",game.gameid,game.name);
-      ctx->gamecounts.ignorec++;
-      return 0;
-    }
-    fprintf(stderr,"%.*s: Downloaded game r%d(%.32s).\n",pathc,path,game.gameid,game.name);
-    if (!(existing=db_game_insert(ra.db,&game))) return -1;
-    if (db_game_set_path(ra.db,existing,path,pathc)<0) return -1;
-    ctx->gamecounts.addc++;
-    int err=ra_migrate_game_comments(ctx,existing->gameid,src,srcc);
-    if (err<0) return err;
+    ctx->blobcounts.skipc++;
     return 0;
   }
   
-  /* We already have what we've taken to be a match for this game.
-   * If anything looks different, change it.
-   * TODO This bit is debatable. We can't really say that the incoming data is more correct than ours. It's fair to skip here.
-   */
-  int dirty=(
-    strncmp(game.name,existing->name,DB_GAME_NAME_LIMIT)||
-    (game.platform!=existing->platform)||
-    (game.author!=existing->author)||
-    (game.genre!=existing->genre)||
-    (game.flags!=existing->flags)||
-    (game.rating!=existing->rating)||
-    (game.pubtime!=existing->pubtime)
-  );
-  if (dirty) {
-    game.gameid=existing->gameid;
-    game.dir=existing->dir;
-    memcpy(game.base,existing->base,DB_GAME_BASE_LIMIT);
-    if (!(existing=db_game_update(ra.db,&game))) return -1;
-    ctx->gamecounts.modc++;
-  } else {
-    ctx->gamecounts.skipc++;
+  // Download from the remote.
+  struct sr_encoder rsp={0};
+  char req[1024];
+  int reqc=snprintf(req,sizeof(req),"/api/blob?path=%.*s",rpathc,rpath); // don't bother url-encoding. just assume it doesn't contain '&'
+  if ((reqc<1)||(reqc>=sizeof(req))) return -1;
+  int status=ra_minhttp_request_sync(0,&rsp,&ctx->minhttp,"GET",req);
+  if (status!=200) {
+    fprintf(stderr,"Failed to download blob '%.*s' for game '%.32s', status %d.\n",rpathc,rpath,game->name,status);
+    sr_encoder_cleanup(&rsp);
+    return -1;
   }
-  int err=ra_migrate_game_comments(ctx,existing->gameid,src,srcc);
-  if (err<0) return err;
+  if ((dir_mkdirp_parent(lpath)<0)||(file_write(lpath,rsp.v,rsp.c)<0)) {
+    fprintf(stderr,"%s: Failed to write %d-byte blob\n",lpath,rsp.c);
+    sr_encoder_cleanup(&rsp);
+    return -1;
+  }
+  fprintf(stderr,"%s: Wrote %d-byte blob for game '%.32s'\n",lpath,rsp.c,game->name);
+  sr_encoder_cleanup(&rsp);
+  ctx->blobcounts.addc++;
+  
   return 0;
 }
-
-
-#endif
 
 /* Migrate games.
  */
@@ -277,25 +104,6 @@ static int ra_migrate_game(struct ra_migrate_context *ctx,const char *src,int sr
 static int ra_migrate_game(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
   ctx->gamecounts.incomingc++;
-  
-  fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
-  /*
-    {
-      "gameid":2,
-      "name":"Vigilante 8",
-      "platform":"gameboy",
-      "author":"Vatical",
-      "genre":"Racing",
-      "flags":"player1",
-      "rating":50,
-      "path":"/home/andy/rom/gb/v/vigilante_8.gz",
-      "comments":[
-        {"time":"2023-10-21T18:09","k":"text","v":"Drive around a farm and shoot things."}
-      ],
-      "lists":[],
-      "blobs":["/home/kiddo/proj/ra3/data/blob/0/2-scap-20221124185240.png"]
-    }
-  */
   
   struct db_game incoming={0};
   struct sr_decoder comments={0};
@@ -310,11 +118,9 @@ static int ra_migrate_game(const char *src,int srcc,void *userdata) {
   if (existing) {
     struct db_game update={0};
     if (ra_migrate_should_update_game(&update,ctx,existing,&incoming)>0) {
-      fprintf(stderr,"UPDATE GAME: %.32s\n",update.name);
       if (!(existing=db_game_update(ra.db,&update))) return -1;
       ctx->gamecounts.modc++;
     } else {
-      fprintf(stderr,"KEEP GAME: %.32s\n",existing->name);
       ctx->gamecounts.skipc++;
     }
     
@@ -323,20 +129,34 @@ static int ra_migrate_game(const char *src,int srcc,void *userdata) {
     struct db_game update={0};
     if (ra_migrate_should_insert_game(&update,ctx,&incoming)>0) {
       if ((err=ra_migrate_copy_rom_file_if_needed(ctx,&update,&incoming))<0) return err;
-      fprintf(stderr,"INSERT GAME: %.32s\n",update.name);
+      if (err) ctx->romdownloadc++;
       if (!(existing=db_game_insert(ra.db,&update))) return -1;
       ctx->gamecounts.addc++;
     } else {
-      fprintf(stderr,"IGNORE GAME: %.32s\n",incoming.name);
       ctx->gamecounts.ignorec++;
+      if (ra_migrate_idchange_add(ctx,'g',0,incoming.gameid)<0) return -1;
       return 0; // And get out now; don't bother examining blobs and comments.
     }
   }
+  if (existing->gameid!=incoming.gameid) {
+    if (ra_migrate_idchange_add(ctx,'g',existing->gameid,incoming.gameid)<0) return -1;
+  }
   
-  //TODO comments
-  //TODO blobs
-  fprintf(stderr,"%s:%d: Resume here too\n",__FILE__,__LINE__);
-  return -2;
+  // Take the comments and blobs.
+  if (comments.c) {
+    struct ra_migrate_comment_context subctx={
+      .ctx=ctx,
+      .game=existing,
+    };
+    if ((err=sr_for_each_of_json_array(comments.v,comments.c,ra_migrate_comment,&subctx))<0) return err;
+  }  
+  if (blobs.c) {
+    struct ra_migrate_blob_context subctx={
+      .ctx=ctx,
+      .game=existing,
+    };
+    if ((err=sr_for_each_of_json_array(blobs.v,blobs.c,ra_migrate_blob,&subctx))<0) return err;
+  }
   
   return 0;
 }
@@ -346,8 +166,32 @@ static int ra_migrate_game(const char *src,int srcc,void *userdata) {
  
 static int ra_migrate_launcher(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
-  fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
   ctx->launchercounts.incomingc++;
+  
+  struct db_launcher incoming={0};
+  if (db_launcher_decode(&incoming,ra.db,DB_FORMAT_json,src,srcc)<0) return -1;
+  
+  struct db_launcher update={0};
+  struct db_launcher *existing=ra_migrate_consider_launcher(&update,ctx,&incoming);
+  if (!existing) {
+    if (!update.cmd) {
+      ctx->launchercounts.ignorec++;
+      if (ra_migrate_idchange_add(ctx,'a',0,incoming.launcherid)<0) return -1;
+      return 0;
+    }
+    if (!(existing=db_launcher_insert(ra.db,&update))) return -1;
+    ctx->launchercounts.addc++;
+    // At this point, (cmd) is probably wrong. But we're going to let the user worry about that.
+  } else if (!update.cmd) {
+    ctx->launchercounts.skipc++;
+  } else {
+    if (!(existing=db_launcher_update(ra.db,&update))) return -1;
+    ctx->launchercounts.modc++;
+  }
+  if (existing->launcherid!=incoming.launcherid) {
+    if (ra_migrate_idchange_add(ctx,'a',existing->launcherid,incoming.launcherid)<0) return -1;
+  }
+  
   return 0;
 }
 
@@ -356,8 +200,50 @@ static int ra_migrate_launcher(const char *src,int srcc,void *userdata) {
  
 static int ra_migrate_list(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
-  fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
   ctx->listcounts.incomingc++;
+  
+  struct db_list incoming={0};
+  if (db_list_decode(&incoming,ra.db,DB_FORMAT_json,src,srcc)<0) {
+    db_list_cleanup(&incoming);
+    return -1;
+  }
+  
+  struct db_list update={0};
+  struct db_list *existing=ra_migrate_consider_list(&update,ctx,&incoming);
+  if (!existing) {
+    if (!update.name) {
+      ctx->listcounts.ignorec++;
+      db_list_cleanup(&incoming);
+      db_list_cleanup(&update);
+      if (ra_migrate_idchange_add(ctx,'i',0,incoming.listid)<0) return -1;
+      return 0;
+    }
+    if (!(existing=db_list_insert(ra.db,&update))) {
+      db_list_cleanup(&incoming);
+      db_list_cleanup(&update);
+      return -1;
+    }
+    ctx->listcounts.addc++;
+  } else if (!update.name) {
+    ctx->listcounts.skipc++;
+  } else {
+    if (!(existing=db_list_update(ra.db,&update))) {
+      db_list_cleanup(&incoming);
+      db_list_cleanup(&update);
+      return -1;
+    }
+    ctx->launchercounts.modc++;
+  }
+  
+  if (existing->listid!=incoming.listid) {
+    if (ra_migrate_idchange_add(ctx,'i',existing->listid,incoming.listid)<0) {
+      db_list_cleanup(&incoming);
+      db_list_cleanup(&update);
+      return -1;
+    }
+  }
+  db_list_cleanup(&incoming);
+  db_list_cleanup(&update);
   return 0;
 }
 
@@ -366,8 +252,34 @@ static int ra_migrate_list(const char *src,int srcc,void *userdata) {
  
 static int ra_migrate_upgrade(const char *src,int srcc,void *userdata) {
   struct ra_migrate_context *ctx=userdata;
-  fprintf(stderr,"%s:%d:%s: %.*s\n",__FILE__,__LINE__,__func__,srcc,src);
   ctx->upgradecounts.incomingc++;
+  
+  struct db_upgrade incoming={0};
+  if (db_upgrade_decode(&incoming,ra.db,DB_FORMAT_json,src,srcc)<0) return -1;
+  
+  struct db_upgrade update={0};
+  struct db_upgrade *existing=ra_migrate_consider_upgrade(&update,ctx,&incoming);
+  if (!existing) {
+    if (!update.method) {
+      ctx->upgradecounts.ignorec++;
+      if (ra_migrate_idchange_add(ctx,'u',0,incoming.upgradeid)<0) return -1;
+      return 0;
+    }
+    if (!(existing=db_upgrade_insert(ra.db,&update))) return -1;
+    ctx->upgradecounts.addc++;
+  } else if (!update.method) {
+    ctx->upgradecounts.skipc++;
+  } else {
+    if (!(existing=db_upgrade_update(ra.db,&update))) return -1;
+    ctx->upgradecounts.modc++;
+  }
+  if (existing->upgradeid!=incoming.upgradeid) {
+    if (ra_migrate_idchange_add(ctx,'u',existing->upgradeid,incoming.upgradeid)<0) return -1;
+  }
+  
+  //TODO Would be really cool to clone repositories initially, for upgrades we've added.
+  // Right now, I think that is both too complicated for my appetite, and possibly too presumptuous of us.
+  
   return 0;
 }
 

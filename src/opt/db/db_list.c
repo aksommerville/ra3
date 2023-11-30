@@ -11,6 +11,13 @@ void db_list_del(struct db_list *list) {
   if (list->gamev) free(list->gamev);
   free(list);
 }
+ 
+void db_list_cleanup(struct db_list *list) {
+  if (!list) return;
+  if (list->gameidv) free(list->gameidv);
+  if (list->gamev) free(list->gamev);
+  memset(list,0,sizeof(struct db_list));
+}
 
 /* Get list from store.
  */

@@ -126,6 +126,7 @@ int ra_minhttp_await_response(
       return -1;
     }
     bufc+=err;
+    mh->rcvtotal+=err;
     
     if (!status) {
       const char *line=buf+bufp;

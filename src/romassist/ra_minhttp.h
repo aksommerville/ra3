@@ -11,6 +11,7 @@ struct sr_encoder;
 
 struct ra_minhttp {
   int fd;
+  int rcvtotal; // just for curiosity, total amount of data received
 };
 
 void ra_minhttp_cleanup(struct ra_minhttp *mh);

@@ -10,6 +10,7 @@ int dir_read(const char *path,int (*cb)(const char *path,const char *base,char t
 char file_get_type(const char *path);
 int dir_mkdir(const char *path);
 int dir_mkdirp(const char *path);
+int dir_mkdirp_parent(const char *path);
 int file_unlink(const char *path);
 
 // Returns position of last separator, or -1.

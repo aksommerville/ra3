@@ -20,7 +20,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - [ ] Upgrade method for db content.
-- [ ] Migration aid for two running instances across the network.
+- [x] Migration aid for two running instances across the network.
 - [ ] menu: "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.
@@ -53,4 +53,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Solarus
 - - [ ] Boot time is almost exactly 30 seconds. That's acceptable but can we improve it?
 - - [ ] Confirm we don't block for the network on startup.
+- - [ ] Understand wi-fi. Will it try to configure and connect itself automatically? Should we configure that somewhere?
+- - [ ] We are listening on INADDR_ANY. Add at least some kind of protection against remote-network access. We should only allow clients on the same, unroutable, network.
+- - - The home router should take care of that for us, but let's do something at least.
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?

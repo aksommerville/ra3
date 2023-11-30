@@ -5,6 +5,11 @@
 #include "ra_minhttp.h"
 #include "opt/serial/serial.h"
 #include "opt/fs/fs.h"
+
+struct ra_migrate_idchange {
+  char type; // [gaiu]=game,launcher,list,upgrade
+  uint32_t lid,rid; // local and remote ids
+};
  
 struct ra_migrate_counts {
   int beforec; // what we had initially
@@ -30,12 +35,26 @@ struct ra_migrate_context {
   // No need for comments, plays, or blobs; we get those with games.
   // Blob content, we'll fetch one by one.
   
+  struct ra_migrate_idchange *idchangev;
+  int idchangec,idchangea;
+  
   struct ra_migrate_counts gamecounts;
   struct ra_migrate_counts listcounts;
   struct ra_migrate_counts launchercounts;
   struct ra_migrate_counts upgradecounts;
-  struct ra_migrate_counts commentcounts;
+  struct ra_migrate_counts commentcounts; // comments from skipped or ignored files are not counted
+  struct ra_migrate_counts blobcounts; // ''
+  int romdownloadc;
 };
+
+/* Record any record IDs that changed.
+ * If we didn't record it as a change, translating will return the input id.
+ * (that might be the wrong answer, if we deliberately ignored something).
+ * Insert changes with lid==0 to avoid that.
+ */
+int ra_migrate_idchange_add(struct ra_migrate_context *ctx,char type,uint32_t lid,uint32_t rid);
+uint32_t ra_migrate_local_from_remote_id(const struct ra_migrate_context *ctx,char type,uint32_t rid);
+uint32_t ra_migrate_remote_from_local_id(const struct ra_migrate_context *ctx,char type,uint32_t lid);
 
 /* Startup. Call these three in order.
  */
@@ -117,5 +136,23 @@ int ra_migrate_replace_home_ip(char *dst,int dsta,struct ra_migrate_context *ctx
  * In a fresh migration, this is probably the step where we'll spend 99% of our time.
  */
 int ra_migrate_copy_rom_file_if_needed(struct ra_migrate_context *ctx,const struct db_game *localgame,const struct db_game *remotegame);
+
+// As a rule, we don't change blob basenames except the ID.
+int ra_migrate_local_path_for_blob(char *dst,int dsta,struct ra_migrate_context *ctx,int gameid,const char *rpath,int rpathc);
+
+/* Main receipt logic for launcher, list, and upgrade.
+ * These all follow the exact same semantics.
+ * (but remember that for list, you have to clean up all nonresident records).
+ * (update) should be zeroed initially, and you need to pick a field to check that will always be nonzero in valid records.
+ * We'll decide one of four things:
+ *  - Add record: Return null and populate (update). Mind that zero is valid for the ID, for an insert.
+ *  - Ignore record: Return null without populating (update). That means we don't have this one, but for some reason also don't want it.
+ *  - Update record: Return the existing one, and populate (update) with changes for it.
+ *  - Skip: Return the existing one without populating (update). This is typical, means the remote has something identical to ours.
+ * Games don't have an interface like this, they are a bit finer-grained.
+ */
+struct db_launcher *ra_migrate_consider_launcher(struct db_launcher *update,struct ra_migrate_context *ctx,struct db_launcher *incoming);
+struct db_list *ra_migrate_consider_list(struct db_list *update,struct ra_migrate_context *ctx,struct db_list *incoming);
+struct db_upgrade *ra_migrate_consider_upgrade(struct db_upgrade *update,struct ra_migrate_context *ctx,struct db_upgrade *incoming);
 
 #endif

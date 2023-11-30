@@ -392,6 +392,7 @@ struct db_list {
  * *** DO NOT DO THIS TO RESIDENT LISTS ***
  */
 void db_list_del(struct db_list *list);
+void db_list_cleanup(struct db_list *list);
 
 /* WARNING: Unlike all other records, you can't increment a list returned by index.
  * If you want a range of lists by index, you must call individually for each.

@@ -480,7 +480,7 @@ int ra_migrate_should_insert_game(
   char prefix[2];
   int prefixc=0;
        if ((update->base[0]>='a')&&(update->base[0]<='z')) { prefix[0]=update->base[0]; prefixc=1; }
-  else if ((update->base[0]>='A')&&(update->base[0]<='Z')) { prefix[0]=update->base[0]; prefixc=1; }
+  else if ((update->base[0]>='A')&&(update->base[0]<='Z')) { prefix[0]=update->base[0]+0x20; prefixc=1; }
   else { prefix[0]='0'; prefix[1]='9'; prefixc=2; }
   
   int pathc=snprintf(path,sizeof(path),"/home/%s/rom/%.*s/%.*s",ctx->username,platformc,platform,prefixc,prefix);

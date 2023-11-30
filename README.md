@@ -21,6 +21,9 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - [ ] Upgrade method for db content.
 - [x] Migration aid for two running instances across the network.
+- - 2023-11-30T17:17 Migrated to Pi. Took about a minute, 1.6 GB transferred. Some rom paths get weird, atari7800 and pico8 where i didn't use alphabet directories. whatever.
+- - Full Moon and Full Moon Demo got mixed up, no doubt due to having the same path. Fix manually.
+- - Nothing launches. Update all launchers and native games via web app.
 - [ ] menu: "corrupted size vs. prev_size" on startup, no idea why. random. Has to be either initial HTTP responses or the home/carousel/menubar/gamedetails UI.
 - - 2023-11-26T09:21: Not necessarily the same problem (no error message), but got a failure hundreds of runs after adding startup logs.
 - - - src/menu/mn_main.c:28 Reached end of mn_update, first frame. Exit status 0.
@@ -56,4 +59,22 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Understand wi-fi. Will it try to configure and connect itself automatically? Should we configure that somewhere?
 - - [ ] We are listening on INADDR_ANY. Add at least some kind of protection against remote-network access. We should only allow clients on the same, unroutable, network.
 - - - The home router should take care of that for us, but let's do something at least.
+- - [ ] ctm: drmModeGetResources() failed
+- - [ ] Full Moon: screencap. gameid 28 on pi
+- - [ ] chetyorska: out/romassist: execvp: No such file or directory
+- - [ ] Full Moon: Music screwy. Especially noticeable in Toil and Trouble. stdsyn, pulse, 44100, 1
+- - [ ] Full Moon: Second launch stalls at startup. ...fluke? I'm trying again and it works.
+- - [ ] Is it possible to not show the terminal as the frontend app switches?
+- - [ ] ivand: execvp: No such file or directory
+- - [ ] lilsitter: ''
+- - [ ] plundersquad: VIDEO:ERROR: Failed to initialize X11/GLX video. (that's expected, but why didn't it try DRM?)
+- - [ ] pokorc: mmap: Invalid argument (DRM)
+- - [ ] sitter2009: execvp: No such file or directory
+- - [ ] ttaq: /home/kiddo/proj/ttaq/out/ttaq: Using data set at '/home/andy/proj/ttaq/src/data'.
+- - [ ] akgambatte: Audio is screwy and i think running slow.
+- - [ ] akfceu: Works fine but the audio seems muffled. Is that my imagination? Is it a Pi hardware thing? Is that possible?
+- - [ ] List "Andy's Picks" is empty? All the other lists look ok. Didn't verify all counts.
+- - [ ] aksnes9x: Similar to akgambatte, choppy audio. Gameplay feels ok actually. Maybe slow?
+- - [ ] Emuhost thinks it should output at 8 kHz! Yes all of these audio problems are real. using alsa
+- - [ ] git needs username and password to pull. it must not ask!
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?

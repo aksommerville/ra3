@@ -141,6 +141,10 @@ static int eh_drivers_init_audio_type(const struct eh_audio_type *type) {
     .chanc=eh.audio_chanc,
     .buffersize=1024,
   };
+  if (!setup.rate) {
+    fprintf(stderr,"No audio rate from config, that's normal I think. Setting 44.1k so drivers don't make their own bad decisions.\n");
+    setup.rate=44100;
+  }
   if (!(eh.audio=eh_audio_driver_new(type,&delegate,&setup))) {
     fprintf(stderr,"%s: Failed to instantiate audio driver '%s'.\n",eh.exename,type->name);
     return 0;

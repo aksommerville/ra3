@@ -936,7 +936,10 @@ static int ra_http_list_add_remove(struct http_xfer *req,struct http_xfer *rsp,i
   char listid[64];
   int listidc=http_xfer_get_query_string(listid,sizeof(listid),req,"listid",6);
   if ((listidc<1)||(listidc>sizeof(listid))) return http_xfer_set_status(rsp,400,"listid required");
-  if (!db_game_get_by_id(ra.db,gameid)) return http_xfer_set_status(rsp,404,"Game %d not found",gameid);
+  if (fn==db_list_append) {
+    // Don't require the game to exist to unlist it. Otherwise if a zombie sneaks in, you can't get rid of it!
+    if (!db_game_get_by_id(ra.db,gameid)) return http_xfer_set_status(rsp,404,"Game %d not found",gameid);
+  }
   struct db_list *list=db_list_get_by_string(ra.db,listid,listidc);
   if (!list) return http_xfer_set_status(rsp,404,"List %d not found",listid);
   fn(ra.db,list,gameid);

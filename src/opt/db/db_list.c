@@ -416,7 +416,10 @@ int db_list_gamev_populate(const struct db *db,struct db_list *list) {
   int i=list->gameidc;
   for (;i-->0;id++,dst++) {
     const struct db_game *game=db_game_get_by_id(db,*id);
-    if (!game) return -1;
+    if (!game) {
+      fprintf(stderr,"list %d contains invalid gameid %d\n",list->listid,*id);
+      return -1;
+    }
     memcpy(dst,game,sizeof(struct db_game));
   }
   list->gamec=list->gameidc;

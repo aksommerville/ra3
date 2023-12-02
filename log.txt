@@ -1,0 +1,62 @@
+[000000] codo_init
+[000000]   platform: Linux
+[000000]   codo_system_init
+[000191]   Compiled against SDL version: 2.0.8
+[000191]   Linked against SDL version:   2.25.0
+[000191]   Current video driver: offscreen
+[000191]   codo_reset_timer
+[000191]   codo_gui_init
+[000191]   codo_keys_init
+[000191]   codo_text_init
+[000192]   codo_video_init
+[000192]   codo_mouse_init
+[000192]   codo_joystick_init
+[000194]   searching for joysticks
+[000194]     found 1 joysticks
+[000194]     connecting joystick 0
+[000194]     Controller 0: X360 Controller
+[000194]      Number of Axes: 6
+[000194]      Number of Buttons: 11
+[000194]      Number of Balls: 0
+[000194]      Mapping: 030003f05e0400008e02000014010000,X360 Controller,a:b0,b:b1,back:b6,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b8,leftshoulder:b4,leftstick:b9,lefttrigger:a2,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b10,righttrigger:a5,rightx:a3,righty:a4,start:b7,x:b2,y:b3,platform:Linux
+[000194]   ok
+[000194] ok
+[000217] codo_load_pod: /home/andy/games/pico-8/pico8.dat ok 
+[000219] codo_set_screen 128 128 8 100
+[000219]  window size: 640 540
+[000219] setting fullscreen window size to 1024 768
+[000247]   setting filter to nearest (screen_mode 1  back page width: 128)
+  renderer opengl:
+   flags: 0x0000000E ( |  | )
+   texture formats (8): ARGB8888, ABGR8888, RGB888, BGR888, YV12, IYUV, 0x3231564e, 0x3132564e
+   max texture size: 16384x16384
+[000248]  desktop size: 1024 768
+[000248] ok
+[000249] codo_sound_init mix_buffer_size: 1024
+[000249] codo_sound_init
+[000249] SDL_INIT_AUDIO ok
+[000465] SDL_OpenAudio ok
+[000465]  freq:22050
+ channels:1
+[000465] Built-in audio drivers: 0 pulseaudio 1 alsa 2 sndio 3 dsp 4 disk 5 dummy
+[000465] Current audio driver: alsa
+[000465] splore_init
+[000465] could not load favourites file: favourites.txt
+[000468] connecting joystick 0
+[000468] Controller 0: X360 Controller
+[000468]  Number of Axes: 6
+[000468]  Number of Buttons: 11
+[000468]  Number of Balls: 0
+[000468]  Mapping: 030003f05e0400008e02000014010000,X360 Controller,a:b0,b:b1,back:b6,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b8,leftshoulder:b4,leftstick:b9,lefttrigger:a2,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b10,righttrigger:a5,rightx:a3,righty:a4,start:b7,x:b2,y:b3,platform:Linux
+[002140] loading /home/andy/proj/sitter8/out/sitter.p8.png
+[003811] run_cart current_filename: /home/andy/proj/sitter8/out/sitter.p8.png running_filename: /home/andy/proj/sitter8/out/sitter.p8.png running_cart_lid: 
+[019927] codo_exit
+[019927]   cmusic_stop
+[019927]   codo_main_exit
+[019928]   codo_config_save
+[019928]   codo_sound_exit
+[019928]   codo_video_exit
+[019935]   codo_joystick_exit
+[019935]   codo_system_exit
+[019936]   codo_items_created: 1289
+[019936] ok

@@ -1,3 +1,4 @@
+#define _GNU_SOURCE 1
 #include "ra_internal.h"
 #include "opt/serial/serial.h"
 #include <sys/time.h>
@@ -12,54 +13,121 @@ void ra_process_cleanup(struct ra_process *process) {
   if (process->next_launch) free(process->next_launch);
 }
 
+/* Helper for splitting up the text of a command.
+ */
+ 
+struct ra_cmd {
+  char **envv;
+  int envc,enva;
+  char **argv;
+  int argc,arga;
+};
+
+static void ra_cmd_cleanup(struct ra_cmd *cmd) {
+  if (cmd->envv) {
+    while (cmd->envc-->0) free(cmd->envv[cmd->envc]);
+    free(cmd->envv);
+  }
+  if (cmd->argv) {
+    while (cmd->argc-->0) free(cmd->argv[cmd->argc]);
+    free(cmd->argv);
+  }
+}
+
+static int ra_cmd_require(char ***v,int *c,int *a) {
+  if (*c<*a) return 0;
+  int na=(*a)+8;
+  if (na>INT_MAX/sizeof(void*)) return -1;
+  void *nv=realloc(*v,sizeof(void*)*na);
+  if (!nv) return -1;
+  *v=nv;
+  *a=na;
+  return 0;
+}
+
+static int ra_cmd_envv_append(struct ra_cmd *cmd,const char *src,int srcc) {
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  if (ra_cmd_require(&cmd->envv,&cmd->envc,&cmd->enva)<0) return -1;
+  if (!(cmd->envv[cmd->envc]=malloc(srcc+1))) return -1;
+  memcpy(cmd->envv[cmd->envc],src,srcc);
+  cmd->envv[cmd->envc][srcc]=0;
+  cmd->envc++;
+  return 0;
+}
+
+static int ra_cmd_argv_append(struct ra_cmd *cmd,const char *src,int srcc) {
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  if (ra_cmd_require(&cmd->argv,&cmd->argc,&cmd->arga)<0) return -1;
+  if (!(cmd->argv[cmd->argc]=malloc(srcc+1))) return -1;
+  memcpy(cmd->argv[cmd->argc],src,srcc);
+  cmd->argv[cmd->argc][srcc]=0;
+  cmd->argc++;
+  return 0;
+}
+
+/* (argv) gets a null at the end, no surprises there.
+ * If (envc) is zero we don't touch it -- use execvp and let the current environment pass through.
+ * Nonzero (envc), we copy the current environment and then terminate it.
+ */
+static int ra_cmd_terminate(struct ra_cmd *cmd) {
+  if (cmd->envc) {
+    char **localp=environ;
+    for (;*localp;localp++) if (ra_cmd_envv_append(cmd,*localp,-1)<0) return -1;
+    if (ra_cmd_require(&cmd->envv,&cmd->envc,&cmd->enva)<0) return -1;
+    cmd->envv[cmd->envc]=0;
+  }
+  if (ra_cmd_require(&cmd->argv,&cmd->argc,&cmd->arga)<0) return -1;
+  cmd->argv[cmd->argc]=0;
+  return 0;
+}
+
+/* Split command.
+ */
+ 
+static int ra_process_split_command(struct ra_cmd *cmd,const char *src) {
+  if (!src) return -1;
+  // Tokens before the executable that contain '=' are presumed to be environment variables.
+  // We probably need to handle quoting, and this would be the place for it. Trying to avoid that.
+  int readingenv=1;
+  while (*src) {
+    if ((unsigned char)(*src)<=0x20) { src++; continue; }
+    const char *token=src;
+    int tokenc=0,isenv=0;
+    while ((unsigned char)token[tokenc]>0x20) {
+      if (token[tokenc]=='=') isenv=1;
+      tokenc++;
+    }
+    if (readingenv&&isenv) {
+      if (ra_cmd_envv_append(cmd,token,tokenc)<0) return -1;
+    } else {
+      readingenv=0;
+      if (ra_cmd_argv_append(cmd,token,tokenc)<0) return -1;
+    }
+    src+=tokenc;
+  }
+  // Assert that there is at least one arg -- argv[0] is required -- and terminate both lists.
+  if (cmd->argc<1) return -1;
+  if (ra_cmd_terminate(cmd)<0) return -1;
+  return 0;
+}
+
 /* Launch command.
  */
  
-static int ra_process_launch_command(struct ra_process *process,const char *cmd) {
+static int ra_process_launch_command(struct ra_process *process,const char *cmdstr) {
   
-  /* Allocate and populate argv.
-   */
-  int arga=8,argc=0,cmdp=0;
-  char **argv=malloc(sizeof(void*)*arga);
-  if (!argv) return -1;
-  while (cmd[cmdp]) {
-    if ((unsigned char)cmd[cmdp]<=0x20) { cmdp++; continue; }
-    //TODO Should we allow quoted args? Might be necessary if the user has files with spaces in the names.
-    const char *token=cmd+cmdp;
-    int tokenc=0;
-    while (cmd[cmdp]&&((unsigned char)cmd[cmdp]>0x20)) { cmdp++; tokenc++; }
-    if (argc>=arga-1) {
-      arga+=8;
-      void *nv=realloc(argv,sizeof(void*)*arga);
-      if (!nv) {
-        while (argc-->0) free(argv[argc]);
-        free(argv);
-        return -1;
-      }
-      argv=nv;
-    }
-    if (!(argv[argc]=malloc(tokenc+1))) {
-      while (argc-->0) free(argv[argc]);
-      free(argv);
-      return -1;
-    }
-    memcpy(argv[argc],token,tokenc);
-    argv[argc][tokenc]=0;
-    argc++;
-  }
-  if (!argc) {
-    free(argv);
+  struct ra_cmd cmd={0};
+  if (ra_process_split_command(&cmd,cmdstr)<0) {
+    ra_cmd_cleanup(&cmd);
     return -1;
   }
-  argv[argc]=0;
   
   /* Fork the new process.
    */
   int pid=fork();
   if (pid<0) {
     fprintf(stderr,"%s: fork: %m\n",ra.exename);
-    while (argc-->0) free(argv[argc]);
-    free(argv);
+    ra_cmd_cleanup(&cmd);
     return -1;
   }
   
@@ -67,15 +135,15 @@ static int ra_process_launch_command(struct ra_process *process,const char *cmd)
    */
   if (pid) {
     process->pid=pid;
-    while (argc-->0) free(argv[argc]);
-    free(argv);
+    ra_cmd_cleanup(&cmd);
     return 0;
   }
   
   /* We are the child.
-   * TODO: Working directory? Environment? Capture stdout/stderr? Other housekeeping?
+   * TODO: Working directory? Capture stdout/stderr? Other housekeeping?
    */
-  execvp(argv[0],argv);
+  if (cmd.envc) execvpe(cmd.argv[0],cmd.argv,cmd.envv);
+  else execvp(cmd.argv[0],cmd.argv);
   fprintf(stderr,"%s: execvp: %m\n",ra.exename);
   exit(1);
   return -1;

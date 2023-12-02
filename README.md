@@ -28,12 +28,21 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - - 2023-11-26: 1676 remaining
+- - - 2023-12-02: 1558
 - [ ] Prepare the Pi.
+- - [ ] Write a shell script to clone and build all the repos and then migrate the db.
 - - [ ] Ensure keyboards behave sanely.
 - - [ ] Map every joystick I've got.
 - - [ ] systemd
 - - [ ] Verify poweroff. We can sudo it without a password, at least at the command line.
 - - [ ] Pico-8. Downloaded their Pi build, try it out...
+- - - Works, easy peasy, didn't even need a custom SDL build.
+- - - [x] Except no audio.
+- - - - SDL_AUDIODRIVER=alsa SDL_AUDIO_DEVICE_NAME=hw:0,0 AUDIODEV=hw:0,0 SDL_PATH_DSP=hw:0,0 ./pico8_dyn -run ~/rom/pico8/celeste.p8.png 
+- - - - Tried all three devices and none works.
+- - - Custom build of SDL, and we'll need to adjust the environment at load:
+- - - - LD_PRELOAD=/home/kiddo/pkg/pico-8/libSDL2-2.0.so.0 SDL_AUDIODRIVER=alsa AUDIODEV=hw:0,0 /home/kiddo/pkg/pico-8/pico8_dyn -run ~/rom/pico8/celeste.p8.png
+- - - - [x] Smarten up ra_process to identify and apply environment declarations in a command.
 - - [ ] Solarus
 - - [ ] Boot time is almost exactly 30 seconds. That's acceptable but can we improve it?
 - - [ ] Confirm we don't block for the network on startup.
@@ -42,5 +51,6 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - The home router should take care of that for us, but let's do something at least.
 - - [ ] Is it possible to not show the terminal as the frontend app switches?
 - - [ ] akz26 freeze at quit. Last output: /home/kiddo/proj/akz26/out/akz26: Normal exit. 714 frames in 12 s, 0 faults, video rate 60.087 Hz, CPU usage 0.252
+- - - Got similar out of akfceu. Hot Slots
 - [ ] A missing game shouldn't break list processing. db_list_gamev_populate, we abort if one is missing. tricky...
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?

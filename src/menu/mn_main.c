@@ -6,28 +6,15 @@ struct mn mn={0};
 /* Update.
  */
  
-static int XXX_updatec=0;
- 
 static int mn_update() {
 
-  XXX_updatec++;
-  if (XXX_updatec%1000==1) {
-    fprintf(stderr,"%s:%d: %d frames\n",__FILE__,__LINE__,XXX_updatec);
-  }
-
   gui_update(mn.gui,eh_input_get(0));
-  if (XXX_updatec%1000==1) {
-    fprintf(stderr,"%s:%d: %d frames\n",__FILE__,__LINE__,XXX_updatec);
-  }
           
   int winw=0,winh=0;
   eh_video_get_size(&winw,&winh);
   eh_video_begin();
   gui_render(mn.gui,winw,winh);
   eh_video_end();
-  if (XXX_updatec%1000==1) {
-    fprintf(stderr,"%s:%d: %d frames\n",__FILE__,__LINE__,XXX_updatec);
-  }
 
   return 0;
 }
@@ -155,31 +142,24 @@ static int mn_choose_data_path() {
  */
  
 static int mn_load_none() {
-  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);//2023-11-23T16:03 leave this in place for the next startup segfault, it's happening randomly and rarely
   
   if (mn_choose_data_path()<0) return -1;
   
   dbs_init(&mn.dbs);
-  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   dbs_refresh_search(&mn.dbs);
-  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   dbs_refresh_all_metadata(&mn.dbs);
-  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
 
   struct gui_delegate delegate={
     .userdata=0,
     .cb_sound_effect=mn_cb_sound_effect,
   };
   if (!(mn.gui=gui_new(&delegate,mn.data_path,mn.data_pathc))) return -1;
-  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   struct gui_widget *home=gui_replace_page(mn.gui,&mn_widget_type_home);
-  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (!home) return -1;
   
   if (eh_audio_get_format()!=EH_AUDIO_FORMAT_S16N) return -1;
   if (!(mn.cheapsynth=cheapsynth_new(eh_audio_get_rate(),eh_audio_get_chanc()))) return -1;
 
-  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   return 0;
 }
 

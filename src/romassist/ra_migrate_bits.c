@@ -670,7 +670,10 @@ struct db_list *ra_migrate_consider_list(
     update->desc=incoming->desc;
     update->sorted=incoming->sorted;
     int i=0; for (;i<incoming->gameidc;i++) {
-      db_list_append(ra.db,update,incoming->gameidv[i]);
+      uint32_t gameid=ra_migrate_local_from_remote_id(ctx,'g',incoming->gameidv[i]);
+      if (gameid) {
+        db_list_append(ra.db,update,gameid);
+      }
     }
     return 0;
   }
@@ -696,7 +699,12 @@ struct db_list *ra_migrate_consider_list(
   update->sorted=1;
   int i;
   for (i=0;i<existing->gameidc;i++) db_list_append(ra.db,update,existing->gameidv[i]);
-  for (i=0;i<incoming->gameidc;i++) db_list_append(ra.db,update,incoming->gameidv[i]);
+  for (i=0;i<incoming->gameidc;i++) {
+      uint32_t gameid=ra_migrate_local_from_remote_id(ctx,'g',incoming->gameidv[i]);
+      if (gameid) {
+        db_list_append(ra.db,update,gameid);
+      }
+    }
   
   return existing;
 }

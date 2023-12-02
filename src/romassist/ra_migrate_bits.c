@@ -64,6 +64,55 @@ uint32_t ra_migrate_remote_from_local_id(const struct ra_migrate_context *ctx,ch
   return lid;
 }
 
+/* Replace home directory anywhere in a string.
+ */
+ 
+uint32_t ra_migrate_replace_paths_in_string(const struct ra_migrate_context *ctx,uint32_t srcstringid) {
+  if (!ctx->username||!ctx->username[0]) return srcstringid; // can't do this, let it roll
+  int dstusernamec=0; while (ctx->username[dstusernamec]) dstusernamec++;
+  const char *src=0;
+  int srcc=db_string_get(&src,ra.db,srcstringid);
+  char dst[1024];
+  int dstc=0,srcp=0,changed=0;
+  while (srcp<srcc) {
+    
+    if ((src[srcp]=='/')&&(srcp<=srcc-6)&&!memcmp(src+srcp,"/home/",6)) {
+      const char *srcusername=src+srcp+6;
+      int srcusernamec=0;
+      while (srcp+6+srcusernamec<srcc) {
+        char ch=src[srcp+6+srcusernamec];
+             if ((ch>='a')&&(ch<='z')) srcusernamec++;
+        else if ((ch>='A')&&(ch<='Z')) srcusernamec++;
+        else if ((ch>='0')&&(ch<='9')) srcusernamec++;
+        else if (ch=='-') srcusernamec++;
+        else break;
+      }
+      if (srcusernamec>0) {
+        if ((srcusernamec==dstusernamec)&&!memcmp(ctx->username,srcusername,srcusernamec)) {
+          // This path matches our home directory. No sense checking the rest of the string.
+          return srcstringid;
+        }
+        if (dstc>sizeof(dst)-6) return srcstringid;
+        memcpy(dst+dstc,"/home/",6);
+        dstc+=6;
+        if (dstc>sizeof(dst)-dstusernamec) return srcstringid;
+        memcpy(dst+dstc,ctx->username,dstusernamec);
+        dstc+=dstusernamec;
+        srcp+=6;
+        srcp+=srcusernamec;
+        changed=1;
+        continue;
+      }
+    }
+    
+    if (dstc>=sizeof(dst)) return srcstringid;
+    dst[dstc++]='/';
+    srcp++;
+  }
+  if (!changed) return srcstringid;
+  return db_string_intern(ra.db,dst,dstc);
+}
+
 /* Introductory logging, and initialize any context fields with a nonzero default.
  */
  
@@ -84,6 +133,7 @@ int ra_migrate_introduce(struct ra_migrate_context *ctx) {
   ctx->str_native=db_string_intern(ra.db,"native",6);
   ctx->str_never=db_string_intern(ra.db,"never",5);
   ctx->str_git_make=db_string_intern(ra.db,"git+make",8);
+  ctx->str_args=db_string_intern(ra.db,"args",4);
   
   return 0;
 }
@@ -605,11 +655,12 @@ struct db_launcher *ra_migrate_consider_launcher(
   }
   
   /* Don't have it yet? Add verbatim, only tweak ID if necessary.
-   * (cmd) will probably need changed, but I'm leaving that to the user.
+   * Do pass (cmd) thru our home-directory mangler.
    */
   if (!existing) {
     memcpy(update,incoming,sizeof(struct db_launcher));
     if (db_launcher_get_by_id(ra.db,incoming->launcherid)) update->launcherid=0;
+    update->cmd=ra_migrate_replace_paths_in_string(ctx,update->cmd);
     return 0;
   }
   
@@ -770,7 +821,7 @@ struct db_upgrade *ra_migrate_consider_upgrade(
       update->name=incoming->name;
       update->desc=incoming->desc;
       update->method=incoming->method;
-      update->param=incoming->param;
+      update->param=ra_migrate_replace_paths_in_string(ctx,incoming->param);
     }
     return existing;
   }
@@ -789,6 +840,7 @@ struct db_upgrade *ra_migrate_consider_upgrade(
       update->depend=0;
     }
   }
+  update->param=ra_migrate_replace_paths_in_string(ctx,incoming->param);
   // (checktime,buildtime,status): Relevant only to each host, don't copy.
   update->checktime=0;
   update->buildtime=0;

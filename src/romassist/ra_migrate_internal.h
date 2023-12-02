@@ -26,6 +26,7 @@ struct ra_migrate_context {
   uint32_t str_native;
   uint32_t str_never;
   uint32_t str_git_make;
+  uint32_t str_args;
   
   // Raw JSON from the remote. Read only!
   struct sr_encoder games;
@@ -55,6 +56,11 @@ struct ra_migrate_context {
 int ra_migrate_idchange_add(struct ra_migrate_context *ctx,char type,uint32_t lid,uint32_t rid);
 uint32_t ra_migrate_local_from_remote_id(const struct ra_migrate_context *ctx,char type,uint32_t rid);
 uint32_t ra_migrate_remote_from_local_id(const struct ra_migrate_context *ctx,char type,uint32_t lid);
+
+/* Look for /\/home\/[a-zA-Z0-9-]+\// and replace with /home/USERNAME/, anywhere in this string.
+ * Returns zero on hard errors, returns the same (srcstringid) if nothing changed.
+ */
+uint32_t ra_migrate_replace_paths_in_string(const struct ra_migrate_context *ctx,uint32_t srcstringid);
 
 /* Startup. Call these three in order.
  */

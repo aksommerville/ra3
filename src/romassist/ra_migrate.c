@@ -32,7 +32,7 @@ static int ra_migrate_comment(const char *src,int srcc,void *userdata) {
   comment.gameid=game->gameid;
   
   /* Skip it if we have an identical comment: k,time,v
-   * Otherwise add it exactly as presented, except for gameid.
+   * Otherwise add it exactly as presented, except for gameid. Mostly.
    */
   struct db_comment *existing=0;
   int i=db_comments_get_by_gameid(&existing,ra.db,game->gameid);
@@ -43,6 +43,14 @@ static int ra_migrate_comment(const char *src,int srcc,void *userdata) {
     ctx->commentcounts.skipc++;
     return 0;
   }
+  
+  /* When (k) is "args", apply some adjustment.
+   * These often contain paths on the host filesystem.
+   */
+  if ((comment.k==ctx->str_args)&&comment.v) {
+    if (!(comment.v=ra_migrate_replace_paths_in_string(ctx,comment.v))) return -1;
+  }
+  
   if (!db_comment_insert(ra.db,&comment)) return -1;
   ctx->commentcounts.addc++;
   

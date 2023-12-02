@@ -417,6 +417,22 @@ struct db_game *ra_migrate_find_existing_game(const struct db_game *incoming) {
     for (;i-->0;existing++) {
       if (existing->platform!=incoming->platform) continue;
       if (strncmp(existing->base,incoming->base,DB_GAME_BASE_LIMIT)) continue;
+      
+      /* Actually there's one important exception to this: Full Moon.
+       * There are two Full Moon games, Full and Demo, and they use the same executable.
+       * Not sure how to generalize that distinction so I'll just add a literal exception for it here.
+       * My privilege, as author of both of them :P
+       */
+      #define SAMEBYNAME(a,b) { \
+        if (!strncmp(existing->name,a,DB_GAME_NAME_LIMIT)) { \
+          if (!strncmp(incoming->name,b,DB_GAME_NAME_LIMIT)) continue; \
+        } else if (!strncmp(existing->name,b,DB_GAME_NAME_LIMIT)) { \
+          if (!strncmp(incoming->name,a,DB_GAME_NAME_LIMIT)) continue; \
+        } \
+      }
+      SAMEBYNAME("Full Moon","Full Moon Demo")
+      #undef SAMEBYNAME
+       
       return existing;
     }
   }

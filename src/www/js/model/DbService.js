@@ -214,13 +214,13 @@ export class DbService {
     return this.comm.httpJson("GET", `/api/${tableName}/count`);
   }
   
-  fetchRecords(tableName) {
+  fetchRecords(tableName, detail) {
     let httpCall;
     if (!tableName) return Promise.reject("invalid table");
     if (tableName === "blob") {
       httpCall = this.comm.httpJson("GET", "/api/blob/all");
     } else {
-      const detail = (tableName === "list") ? "id" : "record";
+      if (!detail) detail = (tableName === "list") ? "id" : "record";
       httpCall = this.comm.httpJson("GET", `/api/${tableName}`, { index: 0, count: 999999, detail });
     }
     return httpCall.then(rsp => {

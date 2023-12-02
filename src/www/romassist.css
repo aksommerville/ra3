@@ -568,6 +568,8 @@ h2 {
   list-style-type: none;
   padding: 0;
   margin: 0;
+  max-height: 700px;
+  overflow-y: auto;
 }
 
 .ListsUi .gamesPresent li {
@@ -581,6 +583,11 @@ h2 {
 }
 .ListsUi .gamesPresent li:nth-child(odd) {
   background-color: #bbb;
+}
+
+.ListsUi .gamePresent {
+  width: 100%;
+  cursor: pointer;
 }
 
 .QuickieSearchUi {

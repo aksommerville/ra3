@@ -26,7 +26,7 @@ export class ListsUi {
   }
   
   refreshAll() {
-    this.dbService.fetchRecords("list")
+    this.dbService.fetchRecords("list", "record")
       .then(lists => this.rebuildListsList(lists))
       .catch(error => this.window.console.error(`Failed to fetch lists`, error));
   }
@@ -110,7 +110,7 @@ export class ListsUi {
     for (const game of this.selectedList.games || []) {
       const li = this.dom.spawn(gamesList, "LI");
       this.dom.spawn(li, "INPUT", { type: "button", value: "X", "on-click": () => this.onRemoveGame(game) });
-      this.dom.spawn(li, "DIV", `${game.gameid}: ${game.name}`, { "on-click": () => {
+      this.dom.spawn(li, "DIV", ["gamePresent"], `${game.gameid}: ${game.name}`, { "on-click": () => {
         const modal = this.dom.spawnModal(GameDetailsModal);
         modal.setupGameid(game.gameid);
       }});
@@ -163,6 +163,7 @@ export class ListsUi {
     this.dbService.addToList(game.gameid, this.selectedList.listid).then(() => {
       this.selectedList.games.push(game);
       this.populateHeaderAndPayload();
+      this.element.querySelector(".gamesPresent").scroll(0, 1000000); // we just added something at the bottom; scroll to it
       this.allowEdit(true);
     }).catch(error => {
       this.window.console.error(error);
@@ -176,7 +177,7 @@ export class ListsUi {
       const p = this.selectedList.games.findIndex(g => g.gameid === game.gameid);
       if (p >= 0) {
         this.selectedList.games.splice(p, 1);
-        this.populateHeaderAndPlayload();
+        this.populateHeaderAndPayload();
       }
       this.allowEdit(true);
     }).catch(error => {

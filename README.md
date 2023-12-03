@@ -23,6 +23,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Upload screencap via web app. Or provide URL? I'm thinking if you go search for box art somewhere else.
 - - Actually this can be low priority. Pico-8 gets them automatically, and the emulators you can snap during play. Anything else is a bit exotic.
 - [ ] "Add one file" via menu, from a thumb drive.
+- [ ] Review akgambatte save files, it might still be dropping them in the ROMs dir.
 - [ ] GET /api/blob/all is only returning buckets 0 and 1200, but there are dozens more.
 - [ ] menu: Feedback from upgrade. Also, I'm not seeing git/make output in the server log, that would be nice.
 - [ ] Integrate emulators

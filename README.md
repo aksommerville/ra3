@@ -31,12 +31,14 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - - 2023-11-26: 1676 remaining
-- - - 2023-12-02: 1558
+- - - 2023-12-02: 1558 ...1513
 - [ ] Prepare the Pi.
 - - [ ] Write a shell script to clone and build all the repos and then migrate the db.
 - - [ ] Ensure keyboards behave sanely.
-- - [ ] Map every joystick I've got.
-- - - [ ] See ~/.lexaloffle/pico-8/sdl_controllers.txt. Joystick mapping but format is not clear.
+- - [x] Map every joystick I've got.
+- - - [x] See ~/.lexaloffle/pico-8/sdl_controllers.txt. Joystick mapping but format is not clear.
+- - - There's an SDL tool for it.
+- - - Abandoned hope of mapping all the controllers, too many of my games with their own wacky opinions about config. Got the two that matter on all apps.
 - - [ ] systemd
 - - [ ] Verify poweroff. We can sudo it without a password, at least at the command line.
 - - [x] Pico-8. Downloaded their Pi build, try it out...
@@ -47,6 +49,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - Custom build of SDL, and we'll need to adjust the environment at load:
 - - - - LD_PRELOAD=/home/kiddo/pkg/pico-8/libSDL2-2.0.so.0 SDL_AUDIODRIVER=alsa AUDIODEV=hw:0,0 /home/kiddo/pkg/pico-8/pico8_dyn -run ~/rom/pico8/celeste.p8.png
 - - - - [x] Smarten up ra_process to identify and apply environment declarations in a command.
+- - [ ] Pico-8 is picky about multiple joysticks, it picks player1 and player2 on its own. Can we mitigate that somehow?
 - - [ ] Solarus
 - - [ ] Boot time is almost exactly 30 seconds. That's acceptable but can we improve it?
 - - [ ] Confirm we don't block for the network on startup.
@@ -60,6 +63,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [ ] Check PulseAudio cleanup, maybe it blocks for the I/O thread or something. Pulse does remain in top during the freeze, and CPU doesn't spike or anything.
 - [ ] A missing game shouldn't break list processing. db_list_gamev_populate, we abort if one is missing. tricky...
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?
+- [x] Plunder Squad on Pi, I can enter the input configurator with Atari Stick but it doesn't pick up any button presses???
+- - ...was due to the rotation controller. Not going to open that can of worms, just configure it carefully.
 - [ ] Buy mom and dad licenses for every software where that's an option.
 - - [ ] Pico-8
 - - [ ] Hughson: Witch N Wiz
@@ -106,12 +111,15 @@ Zelda
 DEVICE     EH P8 SIT9 TTAQ CTM PS CHET FM
 Xbox360
 Xbox
-Evercade
+Evercade   x  x  x    x    x   x  x    x
 PowerA
 ElCheapo
 8bdPro2
-AtariStick
+AtariStick x  x  x    x    x   x  x    x
 AtariPad
 Zelda
 8bdSnes
 8bdNes
+
+LD_PRELOAD=~/proj/thirdparty/SDL/build/.libs/libSDL2-2.0.so.0 ~/pkg/pico-8/pico8_dyn -run ~/rom/pico8/celeste.p8.png
+

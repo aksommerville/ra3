@@ -3,6 +3,7 @@
  
 import { Dom } from "../Dom.js";
 import { DbService } from "../model/DbService.js";
+import { GameDetailsModal } from "./GameDetailsModal.js";
 
 export class DbRecordModal {
   static getDependencies() {
@@ -32,6 +33,7 @@ export class DbRecordModal {
     this.alwaysReadOnlyKeys = []; // New records, everything is mutable, including primary keys.
     this.existingRecord = false;
     this.rebuildTable();
+    this.element.querySelector(".fancy").classList.add("hidden"); // Fancy Details only for existing records.
   }
   
   setupEdit(tableName, schema, record) {
@@ -41,6 +43,8 @@ export class DbRecordModal {
     this.alwaysReadOnlyKeys = this.dbService.listReadOnlyKeys(this.tableName);
     this.existingRecord = true;
     this.rebuildTable();
+    if (this.tableSupportsFancy(tableName)) this.element.querySelector(".fancy").classList.remove("hidden");
+    else this.element.querySelector(".fancy").classList.add("hidden");
   }
   
   buildUi() {
@@ -49,6 +53,7 @@ export class DbRecordModal {
     const form = this.dom.spawn(this.element, "FORM", { "on-submit": e => this.onSubmit(e) });
     this.dom.spawn(form, "TABLE");
     const buttonsRow = this.dom.spawn(form, "DIV", ["buttonsRow"]);
+    this.dom.spawn(buttonsRow, "INPUT", ["hidden", "fancy"], { type: "button", value: "Fancy Details", "on-click": () => this.onFancyDetails() });
     this.dom.spawn(buttonsRow, "INPUT", { type: "button", value: "Delete", "on-click": () => this.onDeleteButton() });
     this.dom.spawn(buttonsRow, "INPUT", { type: "submit", value: "Save" });
   }
@@ -159,6 +164,26 @@ export class DbRecordModal {
   
   dismissError(e) {
     this.element.querySelector(".errorMessage").classList.add("hidden");
+  }
+  
+  tableSupportsFancy(tableName) {
+    switch (tableName) {
+      case "game":
+        return true;
+    }
+    return false;
+  }
+  
+  onFancyDetails() {
+    if (!this.record) return;
+    if (!this.existingRecord) return;
+    switch (this.tableName) {
+      case "game": {
+          const modal = this.dom.spawnModal(GameDetailsModal);
+          modal.setupGameid(this.record.gameid);
+          modal.onChanged = game => this.setupEdit(this.tableName, this.schema, game);
+        } break;
+    }
   }
   
   onSubmit(event) {

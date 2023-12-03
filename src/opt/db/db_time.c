@@ -1,6 +1,7 @@
 #include "db_internal.h"
 #include "opt/serial/serial.h"
 #include <time.h>
+#include <sys/time.h>
 
 /* Current time, in db format.
  */
@@ -177,4 +178,23 @@ uint32_t db_time_diff_m(uint32_t older,uint32_t newer) {
   // This is expected to be used in scenarios where you want a difference in minutes...
   // We don't expect (older,newer) to cross multiple days, and produce slightly incorrect results when it does.
   return diff;
+}
+
+/* Name for new anonymous game.
+ */
+ 
+int db_compose_basename_for_anonymous_game(char *dst,int dsta,struct db *db) {
+  if (!dst||(dsta<0)) { dst=0; dsta=0; }
+  struct timeval tv={0};
+  gettimeofday(&tv,0);
+  time_t t=time(0);
+  struct tm tm={0};
+  if (localtime_r(&t,&tm)!=&tm) return 0;
+  int dstc=snprintf(
+    dst,dsta,"%04d%02d%02d%02d%02d%02d%06d",
+    1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec,(int)tv.tv_usec
+  );
+  if (dstc<dsta) return dstc;
+  if (dstc==dsta) return dsta+1;
+  return dstc;
 }

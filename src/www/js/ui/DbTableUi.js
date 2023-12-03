@@ -5,6 +5,7 @@ import { Dom } from "../Dom.js";
 import { Comm } from "../Comm.js";
 import { DbService } from "../model/DbService.js";
 import { DbRecordModal } from "./DbRecordModal.js";
+import { UploadModal } from "./UploadModal.js";
 
 export class DbTableUi {
   static getDependencies() {
@@ -33,6 +34,8 @@ export class DbTableUi {
     this.name = name;
     this.schema = this.dbService.getTableSchema(this.name);
     this.element.querySelector(".name").innerText = this.name;
+    if (this.tableSupportsUpload(name)) this.element.querySelector(".upload").classList.remove("hidden");
+    else this.element.querySelector(".upload").classList.add("hidden");
     this.refreshCount();
   }
   
@@ -42,6 +45,7 @@ export class DbTableUi {
     const header = this.dom.spawn(card, "DIV", ["header"]);
     this.dom.spawn(header, "H2", ["name"]);
     this.dom.spawn(header, "DIV", ["spacer", "pager"]);
+    this.dom.spawn(header, "INPUT", ["upload", "hidden"], { type: "button", value: "Upload", "on-click": () => this.onUpload() });
     this.dom.spawn(header, "INPUT", ["new"], { type: "button", value: "New", "on-click": () => this.onNew() });
     this.dom.spawn(header, "INPUT", ["openToggle"], { type: "button", value: "Open", "on-click": () => this.toggleOpen() });
     this.dom.spawn(card, "DIV", ["togglePanel", "hidden"]);
@@ -105,6 +109,28 @@ export class DbTableUi {
     }
   }
   
+  tableSupportsUpload(tableName) {
+    switch (tableName) {
+      case "game":
+      case "blob":
+        return true;
+    }
+    return false;
+  }
+  
+  onUpload() {
+    const modal = this.dom.spawnModal(UploadModal);
+    switch (this.name) {
+      case "game": modal.setupGame(); break;
+      case "blob": modal.setupBlob(); break;
+      default: this.dom.dismissModalByController(modal); return;
+    }
+    modal.onSaved = () => {
+      this.refreshCount();
+      this.refreshRecordsIfVisible();
+    };
+  }
+  
   onNew() {
     this.forceOpen(true);
     const modal = this.dom.spawnModal(DbRecordModal);
@@ -137,6 +163,12 @@ export class DbTableUi {
     }).catch(e => {
       this.window.console.error(`DbTableUi ${this.name} error`, e);
     });
+  }
+  
+  refreshRecordsIfVisible() {
+    const togglePanel = this.element.querySelector(".togglePanel");
+    if (togglePanel.classList.contains("hidden")) return;
+    this.refreshRecords();
   }
   
   insertRecord(record) {

@@ -388,6 +388,66 @@ static int ra_http_get_game_file(struct http_xfer *req,struct http_xfer *rsp) {
   return 0;
 }
 
+/* PUT /api/game/file
+ */
+ 
+static int ra_http_put_game_file(struct http_xfer *req,struct http_xfer *rsp) {
+
+  // Gather inputs from caller.
+  int dry=0,size=-1;
+  http_xfer_get_query_int(&dry,req,"dry-run",7);
+  http_xfer_get_query_int(&size,req,"size",4);
+  char name[64],platform[32];
+  int namec=http_xfer_get_query_string(name,sizeof(name),req,"name",4);
+  if (namec<0) namec=0;
+  else if (namec>sizeof(name)) return -1;
+  int platformc=http_xfer_get_query_string(platform,sizeof(platform),req,"platform",8);
+  if (platformc<0) platformc=0;
+  else if (platformc>sizeof(platform)) return -1;
+  const void *serial=0;
+  int serialc=http_xfer_get_body(&serial,req);
+  
+  // Let ra_game_upload do the real work.
+  struct ra_game_upload upload={
+    .base=name,
+    .basec=namec,
+    .platform=platform,
+    .platformc=platformc,
+    .serial=serial,
+    .serialc=serialc,
+  };
+  if (!serialc&&(size>0)) upload.serialc=size;
+  if (ra_game_upload_prepare(&upload)<0) {
+    ra_game_upload_cleanup(&upload);
+    return http_xfer_set_status(rsp,500,"Failed to prepare upload.");
+  }
+  if (!dry) {
+    if (ra_game_upload_commit(&upload)<0) {
+      ra_game_upload_cleanup(&upload);
+      return http_xfer_set_status(rsp,500,"Failed to commit upload.");
+    }
+  }
+  
+  // If it's a Pico-8 PNG, and we actually committed it, try autoscreencap.
+  if (upload.gameid&&(upload.platformc==5)&&!memcmp(upload.platform,"pico8",5)&&(upload.pathc>=4)&&!memcmp(upload.path+upload.pathc-4,".png",4)) {
+    ra_autoscreencap(upload.gameid,upload.path);
+  }
+  
+  // Encode a response. This is a partial db Game, but don't use the db's encoder.
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  if (sr_encode_json_object_start(dst,0,0)!=0) {
+    ra_game_upload_cleanup(&upload);
+    return -1;
+  }
+  sr_encode_json_int(dst,"gameid",6,upload.gameid);
+  sr_encode_json_string(dst,"path",4,upload.path,upload.pathc);
+  int unamec=0; while ((unamec<sizeof(upload.name))&&upload.name[unamec]) unamec++;
+  sr_encode_json_string(dst,"name",4,upload.name,unamec);
+  db_encode_json_string(dst,ra.db,"platform",8,upload.platform_stringid);
+  ra_game_upload_cleanup(&upload);
+  return sr_encode_json_object_end(dst,0);
+}
+
 /* GET /api/comment/count
  */
  
@@ -1380,6 +1440,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(PATCH,"/api/game",ra_http_patch_game)
   _(DELETE,"/api/game",ra_http_delete_game)
   _(GET,"/api/game/file",ra_http_get_game_file)
+  _(PUT,"/api/game/file",ra_http_put_game_file)
   
   _(GET,"/api/comment/count",ra_http_count_comment)
   _(GET,"/api/comment",ra_http_get_comment)

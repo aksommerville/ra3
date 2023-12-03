@@ -80,4 +80,31 @@ int ra_report_gameid(uint32_t gameid);
  */
 int ra_migrate_main();
 
+/* Structured helper for uploading games.
+ * Caller should populate the Input part, then call ra_game_upload_prepare.
+ * Preparing selects a local path, a platform, and a display name.
+ * Preparing may intern strings but otherwise doesn't modify the db.
+ * After preparing, ra_game_upload_commit to write the file and add a game record to the db.
+ * (serial) is not required at prepare.
+ * Maybe we'll use it eventually for format detection or something, but null will always be legal.
+ */
+struct ra_game_upload {
+// Input:
+  const char *base;
+  int basec;
+  const char *platform;
+  int platformc;
+  const void *serial; // May be null if only the length is known.
+  int serialc;
+// Output:
+  char *path; // Must be NUL-terminated, in addition to the explicit length below.
+  int pathc;
+  char name[DB_GAME_NAME_LIMIT];
+  uint32_t platform_stringid;
+  uint32_t gameid;
+};
+void ra_game_upload_cleanup(struct ra_game_upload *upload);
+int ra_game_upload_prepare(struct ra_game_upload *upload);
+int ra_game_upload_commit(struct ra_game_upload *upload);
+
 #endif

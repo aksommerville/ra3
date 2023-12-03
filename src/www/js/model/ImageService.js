@@ -21,6 +21,20 @@ export class ImageService {
       element.addEventListener("error", e => reject(e));
     });
   }
+  
+  isPng(bin) {
+    if (!bin?.byteLength || (bin.byteLength < 8)) return false;
+    const u8 = new Uint8Array(bin);
+    if (u8[0] !== 0x89) return false;
+    if (u8[1] !== 0x50) return false;
+    if (u8[2] !== 0x4e) return false;
+    if (u8[3] !== 0x47) return false;
+    if (u8[4] !== 0x0d) return false;
+    if (u8[5] !== 0x0a) return false;
+    if (u8[6] !== 0x1a) return false;
+    if (u8[7] !== 0x0a) return false;
+    return true;
+  }
 }
 
 ImageService.singleton = true;

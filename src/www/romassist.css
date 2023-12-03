@@ -320,7 +320,7 @@ h2 {
   margin: 0 1em;
 }
 
-.DbTableUi input.openToggle {
+.DbTableUi .header > input {
   margin-left: 0.5em;
 }
 

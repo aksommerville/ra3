@@ -227,6 +227,11 @@ void db_game_dirty(struct db *db,struct db_game *game);
 
 int db_game_get_path(char *dst,int dsta,const struct db *db,const struct db_game *game);
 
+/* Anonymous games get a high-resolution timestamp as their name.
+ * It's unusual to upload a game without a name, why would you do that?
+ */
+int db_compose_basename_for_anonymous_game(char *dst,int dsta,struct db *db);
+
 /* Comment table.
  * A comment is loose key=value data associated with one game.
  * Comments do not have IDs of their own; (gameid,time,k) is its primary key.

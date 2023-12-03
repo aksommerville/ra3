@@ -23,6 +23,7 @@ PUT /api/game?detail <= Game => Game
 PATCH /api/game?detail <= Game => Game (must exist)
 DELETE /api/game?gameid => nothing
 GET /api/game/file?gameid => binary
+PUT /api/game/file?dry-run&name&size&platform <= binary => Game
 
 GET /api/comment/count => integer
 GET /api/comment?index&count => Comment[]
@@ -166,9 +167,15 @@ game {
 }
 ```
 
-The special endpoint `/api/game/file?gameid` lets you download ROM files verbatim.
+The special endpoint `GET /api/game/file?gameid` lets you download ROM files verbatim.
 Always be mindful of platform; if "native", the returned executable is not likely to work on other machines.
 That is very much Not My Problem :P
+
+You can also `PUT /api/game/file` to upload a game.
+Server will create a new copy of the file, even in the common case that client and server are the same machine.
+This has a parameter `dry-run=true` to do all the decision-making but don't actually commit the change.
+In that case, the returned `gameid` will be zero. You can supply `size=BYTES` instead of the request body for dry runs.
+You must supply at least one of (`name`, `platform`).
 
 ## /api/comment
 

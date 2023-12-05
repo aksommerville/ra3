@@ -415,4 +415,12 @@ struct eh_input_driver *eh_get_input_driver_by_index(int p) {
   return eh.inputv[p];
 }
 
+const char *eh_get_video_device() {
+  return eh.video_device;
+}
+
+const char *eh_get_audio_device() {
+  return eh.audio_device;
+}
+
 // The public video API is at lib/render/eh_render_obj.c

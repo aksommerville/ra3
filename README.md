@@ -33,11 +33,11 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - - 2023-11-26: 1676 remaining
 - - - 2023-12-02: 1558 ...1513
-- [ ] Concatenate "args" comments
-- [ ] "env" comments
+- [x] Concatenate "args" comments
+- [x] "env" comments ...these would already work by default, "$COMMENT:" is generic.
 - [ ] Emuhost: Add an overscan option, you never know.
-- [ ] emuhost.cfg: Not saving video-device?
-- [ ] Menu: audio-device should populate in UI.
+- [x] emuhost.cfg: Not saving video-device?
+- [x] Menu: audio-device should populate in UI.
 - [ ] Prepare the Pi.
 - - [ ] ALSA doesn't want to work over HDMI! Change everything to Pulse, confirmed it does work.
 - - [ ] Opening server fails if no network! Must fall back to localhost.

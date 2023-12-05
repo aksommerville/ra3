@@ -154,7 +154,7 @@ static int _audio_init(struct gui_widget *widget) {
   if (!driver) return -1;
   
   gui_widget_form_add_string(form,"Driver",6,driver->type->name,-1,1);
-  gui_widget_form_add_string(form,"Device",6,"",-1,0);//TODO eh doesn't deal with device names yet -- it needs to
+  gui_widget_form_add_string(form,"Device",6,eh_get_audio_device(),-1,0);
   gui_widget_form_add_int(form,"Rate",4,driver->rate,0); // Integer input would make sense, but meh, strings are easier.
   gui_widget_form_add_int(form,"Channels",8,driver->chanc,0);
   

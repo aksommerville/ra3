@@ -225,8 +225,7 @@ static int ra_process_insert_command_variable(struct sr_encoder *dst,const char 
   if ((srcc==5)&&!memcmp(src,"$FILE",5)) return sr_encode_raw(dst,path,pathc);
   
   if ((srcc>=9)&&!memcmp(src,"$COMMENT:",9)) {
-    const char *v=0;
-    int vc=0;
+    int addc=0;
     const char *k=src+9;
     int kc=srcc-9;
     int katom=db_string_lookup(ra.db,k,kc);
@@ -235,13 +234,17 @@ static int ra_process_insert_command_variable(struct sr_encoder *dst,const char 
       int i=db_comments_get_by_gameid(&comment,ra.db,gameid);
       for (;i-->0;comment++) {
         if (comment->k==katom) {
-          vc=db_string_get(&v,ra.db,comment->v);
-          break;
+          const char *v=0;
+          int vc=db_string_get(&v,ra.db,comment->v);
+          if (vc>0) {
+            if (addc++) {
+              if (sr_encode_raw(dst," ",1)<0) return -1;
+            }
+            if (sr_encode_raw(dst,v,vc)<0) return -1;
+          }
         }
       }
     }
-    // If a comment is not found, that's perfectly fine, do nothing and carry on.
-    if (vc>0) return sr_encode_raw(dst,v,vc);
     return 0;
   }
       

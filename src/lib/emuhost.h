@@ -302,4 +302,10 @@ struct eh_http_response {
 };
 int eh_http_response_split(struct eh_http_response *response,const char *src,int srcc);
 
+/* Configuration values, normally delivered via the config file.
+ * Usually you'd ask the driver for these, but device names are not stored in live drivers generically.
+ */
+const char *eh_get_video_device();
+const char *eh_get_audio_device();
+
 #endif

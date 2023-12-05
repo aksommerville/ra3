@@ -219,6 +219,7 @@ static int eh_config_encode(struct sr_encoder *dst) {
   if (sr_encode_fmt(dst,"fullscreen=%d\n",eh.fullscreen)<0) return -1;
   if (sr_encode_fmt(dst,"screen=%s\n",eh_config_screen_repr(eh.prefer_screen))<0) return -1;
   if (sr_encode_fmt(dst,"glsl-version=%d\n",eh.glsl_version)<0) return -1;
+  if (sr_encode_fmt(dst,"video-device=%s\n",eh.video_device?eh.video_device:"")<0) return -1;
   
   if (sr_encode_fmt(dst,"audio=%s\n",eh.audio_drivers?eh.audio_drivers:"")<0) return -1;
   if (sr_encode_fmt(dst,"audio-rate=%d\n",eh.audio_rate)<0) return -1;

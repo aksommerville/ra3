@@ -44,16 +44,22 @@ struct http_server *http_server_new(struct http_context *context) {
  */
  
 int http_server_init_tcp_stream(struct http_server *server) {
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (!server||(server->fd>=0)) return -1;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if ((server->fd=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP))<0) return -1;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   int one=1;
   // Cast to (void*) because in Windows it is typed 'char*' for fuck knows what reason...
   setsockopt(server->fd,SOL_SOCKET,SO_REUSEADDR,(void*)&one,sizeof(one));
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   return 0;
 }
 
 int http_server_bind(struct http_server *server,const char *host,int port) {
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (!server||(server->fd<0)) return -1;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   //if (!host||!host[0]) host="localhost";
   struct addrinfo hints={
     .ai_family=AF_INET,
@@ -64,16 +70,23 @@ int http_server_bind(struct http_server *server,const char *host,int port) {
   char service[16];
   snprintf(service,sizeof(service),"%d",port);
   struct addrinfo *ai=0;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (getaddrinfo(host,service,&hints,&ai)<0) return -1;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   int err=bind(server->fd,ai->ai_addr,ai->ai_addrlen);
   freeaddrinfo(ai);
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (err<0) return -1;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   return 0;
 }
 
 int http_server_listen(struct http_server *server,int clientc) {
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (!server||(server->fd<0)) return -1;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   if (listen(server->fd,clientc)<0) return -1;
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   return 0;
 }
 

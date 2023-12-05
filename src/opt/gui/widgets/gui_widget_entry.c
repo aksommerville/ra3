@@ -75,15 +75,25 @@ static void _entry_pack(struct gui_widget *widget) {
  */
  
 static void _entry_draw(struct gui_widget *widget,int x,int y) {
-  gui_draw_rect(widget->gui,x,y,widget->w,widget->h,0x202020ff);//TODO
+  gui_draw_rect(widget->gui,x,y,widget->w,widget->h,0x202020ff);
   int i=0;
   for (;i<widget->childc;i++) {
     struct gui_widget *child=widget->childv[i];
     gui_widget_draw(child,x+child->x,y+child->y);
   }
   if (WIDGET->tex) {
-    //TODO horizontal scrolling and scissor
-    gui_draw_texture(widget->gui,x,y,WIDGET->tex);
+    int texw=0,texh=0;
+    gui_texture_get_size(&texw,&texh,WIDGET->tex);
+    if (texw>widget->w) {
+      int screenw,screenh;
+      gui_get_screen_size(&screenw,&screenh,widget->gui);
+      glEnable(GL_SCISSOR_TEST);
+      glScissor(x,screenh-y-texh,widget->w,texh);
+      gui_draw_texture(widget->gui,x+widget->w-texw,y,WIDGET->tex);
+      glDisable(GL_SCISSOR_TEST);
+    } else {
+      gui_draw_texture(widget->gui,x,y,WIDGET->tex);
+    }
   }
 }
 

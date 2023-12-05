@@ -311,16 +311,20 @@ static int ra_ws_http_encode_response_text(struct sr_encoder *dst,struct http_xf
   if (sr_encode_json_string(dst,"message",7,message,messagec)<0) return -1;
   
   /* Body: If it's already JSON (which should always be the case), don't encode as a JSON string, just dump the raw text.
+   * It can happen that we say "application/json" when the body is actually empty (a/j is the default).
+   * So check for empty, and if there is no body, just don't output "body".
    */
   const void *body=0;
   int bodyc=http_xfer_get_body(&body,rsp);
   if (bodyc<0) bodyc=0;
-  const char *content_type=0;
-  int content_typec=http_xfer_get_header(&content_type,rsp,"Content-Type",12);
-  if ((content_typec==16)&&!memcmp(content_type,"application/json",16)) {
-    if (sr_encode_fmt(dst,",\"body\":%.*s",bodyc,body)<0) return -1;
-  } else {
-    if (sr_encode_json_string(dst,"body",4,body,bodyc)<0) return -1;
+  if (bodyc) {
+    const char *content_type=0;
+    int content_typec=http_xfer_get_header(&content_type,rsp,"Content-Type",12);
+    if ((content_typec==16)&&!memcmp(content_type,"application/json",16)) {
+      if (sr_encode_fmt(dst,",\"body\":%.*s",bodyc,body)<0) return -1;
+    } else {
+      if (sr_encode_json_string(dst,"body",4,body,bodyc)<0) return -1;
+    }
   }
   
   int jsonctx=sr_encode_json_object_start(dst,"headers",7);

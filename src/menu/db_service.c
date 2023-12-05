@@ -295,7 +295,7 @@ static int dbs_receive_meta(struct db_service *dbs,const char *src,int srcc) {
  */
  
 void dbs_http_response(struct db_service *dbs,const char *src,int srcc) {
-  //fprintf(stderr,"%s srcc=%d\n",__func__,srcc);
+  //fprintf(stderr,"%s srcc=%d %.*s\n",__func__,srcc,srcc,src);
   struct eh_http_response response={0};
   if (eh_http_response_split(&response,src,srcc)<0) return;
   if (response.status!=200) {

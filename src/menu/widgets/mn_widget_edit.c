@@ -125,40 +125,24 @@ static int edit_json_member_by_index(char *dst,int dsta,const char *src,int srcc
 
 /* Summarize comments.
  */
-#if 0 // XXX After some difficulty imagining how this UI could work, I've removed comments from the editor. Maybe revisit this later.
-// No UI was written for it, beyond this point.
+
 static int edit_summarize_comments(char *dst,int dsta,const struct dbs_game *game) {
-  // If there is at least one comment, return the first few bytes of its content.
+  // Just the count.
   int totalc=0;
   struct sr_decoder decoder={.v=game->comments,.c=game->commentsc};
   if (sr_decode_json_array_start(&decoder)>=0) {
-    if (sr_decode_json_next(0,&decoder)>0) {
-      if (sr_decode_json_object_start(&decoder)>=0) {
-        const char *k;
-        int kc;
-        while ((kc=sr_decode_json_next(&k,&decoder))>0) {
-          if ((kc==1)&&(k[0]=='v')) {
-            char tmp[1024];
-            int tmpc=sr_decode_json_string(tmp,sizeof(tmp),&decoder);
-            if ((tmpc>=0)&&(tmpc<=sizeof(tmp))) {
-              if (tmpc>dsta) {
-                memcpy(dst,tmp,dsta);
-                if (dsta>=3) memset(dst+dsta-3,'.',3);
-                return dsta;
-              } else {
-                memcpy(dst,tmp,tmpc);
-                return tmpc;
-              }
-            }
-          }
-          if (sr_decode_json_skip(&decoder)<0) break;
-        }
-      }
+    while (sr_decode_json_next(0,&decoder)>0) {
+      totalc++;
+      sr_decode_json_skip(&decoder);
     }
   }
-  return 0; // Otherwise, I think empty is appropriate.
+  int dstc=snprintf(dst,dsta,"%d",totalc);
+  if ((dstc<0)||(dstc>=dsta)) {
+    if (dsta>=1) dst[0]=0;
+    return 0;
+  }
+  return dstc;
 }
-#endif
 
 /* Summarize lists.
  */
@@ -292,6 +276,11 @@ static void edit_cb_lists(struct gui_widget *lists,int add,const char *name,int 
   }
 }
 
+static void edit_cb_comments(struct gui_widget *comments,void *userdata) {
+  struct gui_widget *widget=userdata;
+  gui_widget_button_set_label(gui_widget_form_get_button_by_key(widget->childv[0],"Comments",8),"(edited)",8,0xffffff);
+}
+
 /* Begin editing a non-plain-text field.
  */
  
@@ -356,6 +345,15 @@ static void edit_begin_lists(struct gui_widget *widget) {
   mn_widget_lists_setup(modal,game.lists,game.listsc,mn.dbs.lists,mn.dbs.listsc,edit_cb_lists,widget);
 }
 
+static void edit_begin_comments(struct gui_widget *widget) {
+  struct dbs_game game={0};
+  dbs_game_get(&game,&mn.dbs,WIDGET->gameid);
+  struct gui_widget *modal=gui_push_modal(widget->gui,&mn_widget_type_comments);
+  if (!modal) return;
+  MN_SOUND(ACTIVATE)
+  mn_widget_comments_setup(modal,WIDGET->gameid,game.comments,game.commentsc,edit_cb_comments,widget);
+}
+
 /* From form: Text field edited.
  */
 
@@ -368,6 +366,7 @@ static void edit_cb_text(struct gui_widget *form,const char *k,int kc,const char
     if ((kc==6)&&!memcmp(k,"Rating",6)) { edit_begin_rating(widget); return; }
     if ((kc==12)&&!memcmp(k,"Release Year",12)) { edit_begin_pubtime(widget); return; }
     if ((kc==5)&&!memcmp(k,"Lists",5)) { edit_begin_lists(widget); return; }
+    if ((kc==8)&&!memcmp(k,"Comments",8)) { edit_begin_comments(widget); return; }
     fprintf(stderr,"TODO:%s: Edit field '%.*s'\n",__func__,kc,k);
     return;
   }
@@ -433,15 +432,14 @@ int mn_widget_edit_setup(
   struct gui_widget *flags=gui_widget_form_add_custom(form,"Flags",5,&mn_widget_type_flags);
   if (mn_widget_flags_setup(flags,edit_cb_flags,widget,game.flags,game.flagsc)<0) return -1;
   
-  /* Lists: Big custom modals on actuation, and a custom summary label.
+  /* Lists and comments: Big custom modals on actuation, and a custom summary label.
    */
   char summary[32];
   int summaryc;
-  //summaryc=edit_summarize_comments(summary,sizeof(summary),&game); gui_widget_form_add_string(form,"Comments",8,summary,summaryc,1);
   summaryc=edit_summarize_lists(summary,sizeof(summary),&game); gui_widget_form_add_string(form,"Lists",5,summary,summaryc,1);
+  summaryc=edit_summarize_comments(summary,sizeof(summary),&game); gui_widget_form_add_string(form,"Comments",8,summary,summaryc,1);
   
   // Plays and blobs, I think no reason to display these.
-  // Same with comments, though I'm uneasy about it. User should want to edit this data. Just, it's really inconvenient without a keyboard.
 
   return 0;
 }

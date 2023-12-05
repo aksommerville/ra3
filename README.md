@@ -18,19 +18,14 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - [ ] Upgrade method for db content.
-- [x] "Add one file" via web app, and confirm it works from a phone.
-- [x] DB Game modal: Button to launch fancy details modal, or shift-click to get that instead.
 - [ ] Upload screencap via web app. Or provide URL? I'm thinking if you go search for box art somewhere else.
 - - Actually this can be low priority. Pico-8 gets them automatically, and the emulators you can snap during play. Anything else is a bit exotic.
-- [x] "Add one file" via menu, from a thumb drive.
 - [ ] mn_widget_edit/mn_widget_addgame: See comments, need some new support to facilitate popping up edit after adding a file.
-- [x] Review akgambatte save files, it might still be dropping them in the ROMs dir. ...it's not, i just had a bunch of old ones
 - [ ] GET /api/blob/all is only returning buckets 0 and 1200, but there are dozens more.
 - [ ] menu: Feedback from upgrade. Also, I'm not seeing git/make output in the server log, that would be nice.
 - [ ] Integrate emulators
 - - [ ] Validate 4 player in all emulators
 - [ ] Prepare collection
-- - [x] My collection isn't entirely uniform (~/rom/PLATFORM/PFX/...). Can we carefully normalize the db and fs together?
 - - [ ] See rating histogram, try to flatten out the multiple-of-5 spikes.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
@@ -38,10 +33,16 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - - 2023-11-26: 1676 remaining
 - - - 2023-12-02: 1558 ...1513
+- [ ] Concatenate "args" comments
+- [ ] "env" comments
 - [ ] Emuhost: Add an overscan option, you never know.
+- [ ] emuhost.cfg: Not saving video-device?
+- [ ] Menu: audio-device should populate in UI.
 - [ ] Prepare the Pi.
+- - [ ] ALSA doesn't want to work over HDMI! Change everything to Pulse, confirmed it does work.
+- - [ ] Opening server fails if no network! Must fall back to localhost.
 - - [ ] Write a shell script to clone and build all the repos and then migrate the db.
-- - [ ] Ensure keyboards behave sanely.
+- - [ ] Ensure keyboards behave sanely. ...as is they do not
 - - [ ] systemd
 - - [ ] Verify poweroff. We can sudo it without a password, at least at the command line.
 - - [ ] Pico-8 is picky about multiple joysticks, it picks player1 and player2 on its own. Can we mitigate that somehow?
@@ -58,8 +59,3 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [ ] Check PulseAudio cleanup, maybe it blocks for the I/O thread or something. Pulse does remain in top during the freeze, and CPU doesn't spike or anything.
 - [ ] A missing game shouldn't break list processing. db_list_gamev_populate, we abort if one is missing. tricky...
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?
-- [ ] Buy mom and dad licenses for every software where that's an option.
-- - [ ] Pico-8
-- - [ ] Hughson: Witch N Wiz
-- - [ ] Morphcat: Space Gulls, Micro Mages
-- - [ ] Search for others

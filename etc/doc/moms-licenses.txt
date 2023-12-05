@@ -1,0 +1,37 @@
+2023-12-04
+Making a Gigglebyte for my parents, and ideally it would only contain legally purchased software.
+List here everything I can confirm is legal to distribute.
+
+== I'm the author, it's free by fiat ==
+Romassist
+Plunder Squad
+Full Moon
+Full Moon Demo
+Tag Team Adventure Quest
+Campaign Trail of the Mummy
+Chetyorska
+Pocket Orchestra
+One Day in the Life of Ivan Denisovich
+Sitter 2009
+Sitter-8
+Lil Sitter
+
+== Open source ==
+FCEU
+Snes9x
+Prosystem
+Gambatte
+z26
+
+== Paid ==
+Pico-8
+Witch N Wiz
+Micro Mages
+
+== Confirmed free ==
+Space Gulls
+Bobl
+Every Pico-8 game: I got them all from the Lexaloffle "BBS".
+Fallen Crown
+
+Everything else, assume it's illegal.

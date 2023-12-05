@@ -23,6 +23,7 @@ struct gui_widget_form {
   int margin; // left, right, and center
   int focusp;
   void (*cb)(struct gui_widget *widget,const char *k,int kc,const char *v,int vc,void *userdata);
+  void (*cbp)(struct gui_widget *widget,int p,void *userdata);
   void *userdata;
 };
 
@@ -217,11 +218,12 @@ static void form_cb_edited(struct gui_widget *entry,const char *v,int c,void *us
 static void form_cb_button(struct gui_widget *button,void *userdata) {
   struct gui_widget *widget=userdata;
   struct gui_form_row *row=WIDGET->rowv;
-  int i=WIDGET->rowc;
-  for (;i-->0;row++) {
+  int i=WIDGET->rowc,p=0;
+  for (;i-->0;row++,p++) {
     if (row->v==button) {
       if (row->custom) {
-        if (WIDGET->cb) WIDGET->cb(widget,row->k,row->kc,0,-1,WIDGET->userdata);
+        if (WIDGET->cbp) WIDGET->cbp(widget,p,WIDGET->userdata);
+        else if (WIDGET->cb) WIDGET->cb(widget,row->k,row->kc,0,-1,WIDGET->userdata);
       } else {
         struct gui_widget *modal=gui_push_modal(widget->gui,&gui_widget_type_entry);
         if (!modal) return;
@@ -374,6 +376,16 @@ void gui_widget_form_set_callback(
 ) {
   if (!widget||(widget->type!=&gui_widget_type_form)) return;
   WIDGET->cb=cb;
+  WIDGET->userdata=userdata;
+}
+
+void gui_widget_form_set_index_callback(
+  struct gui_widget *widget,
+  void (*cb)(struct gui_widget *widget,int p,void *userdata),
+  void *userdata
+) {
+  if (!widget||(widget->type!=&gui_widget_type_form)) return;
+  WIDGET->cbp=cb;
   WIDGET->userdata=userdata;
 }
 

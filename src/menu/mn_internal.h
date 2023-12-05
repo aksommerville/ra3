@@ -45,6 +45,7 @@ extern const struct gui_widget_type mn_widget_type_network;
 extern const struct gui_widget_type mn_widget_type_interface;
 extern const struct gui_widget_type mn_widget_type_indev; // Input config for a single device.
 extern const struct gui_widget_type mn_widget_type_addgame;
+extern const struct gui_widget_type mn_widget_type_comments;
 
 int mn_widget_daterange_setup(
   struct gui_widget *widget,
@@ -97,6 +98,14 @@ int mn_widget_lists_encode(char *dst,int dsta,struct gui_widget *widget);
 int mn_widget_indev_setup(
   struct gui_widget *widget,
   int devid
+);
+
+int mn_widget_comments_setup(
+  struct gui_widget *widget,
+  int gameid,
+  const char *src,int srcc,
+  void (*cb)(struct gui_widget *comments,void *userdata),
+  void *userdata
 );
 
 void mn_cb_sound_effect(int sfxid,void *userdata);

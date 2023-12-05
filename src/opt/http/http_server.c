@@ -71,7 +71,16 @@ int http_server_bind(struct http_server *server,const char *host,int port) {
   snprintf(service,sizeof(service),"%d",port);
   struct addrinfo *ai=0;
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
-  if (getaddrinfo(host,service,&hints,&ai)<0) return -1;
+  if (getaddrinfo(host,service,&hints,&ai)<0) {
+    if (host&&!strcmp(host,"0.0.0.0")) {
+      if (getaddrinfo("localhost",service,&hints,&ai)>=0) {
+        fprintf(stderr,"!!!! getaddrinfo(0.0.0.0) failed, trying localhost instead...\n");
+        goto _proceed_;
+      }
+    }
+    return -1;
+   _proceed_:;
+  }
   fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   int err=bind(server->fd,ai->ai_addr,ai->ai_addrlen);
   freeaddrinfo(ai);

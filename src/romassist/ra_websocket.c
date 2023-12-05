@@ -234,6 +234,8 @@ static int ra_ws_http_decode_request(struct http_xfer *req,const void *v,int c) 
   int pathc=0;
   char query[256]="";
   int queryc=0;
+  const char *body=0; // json expression
+  int bodyc=0;
   
   struct sr_decoder decoder={.v=v,.c=c};
   if (sr_decode_json_object_start(&decoder)<0) return -1;
@@ -265,16 +267,30 @@ static int ra_ws_http_decode_request(struct http_xfer *req,const void *v,int c) 
     }
     
     if ((kc==4)&&!memcmp(k,"body",4)) {
-      char body[1024];
-      int bodyc=sr_decode_json_string(body,sizeof(body),&decoder);
-      if ((bodyc<0)||(bodyc>sizeof(body))) return -1;
-      if (http_xfer_append_body(req,body,bodyc)<0) return -1;
+      if ((bodyc=sr_decode_json_expression(&body,&decoder))<0) return -1;
       continue;
     }
     
     if (sr_decode_json_skip(&decoder)<0) return -1;
   }
   if (!methodc||!pathc) return -1;
+  
+  if (bodyc) {
+    struct sr_encoder *dst=http_xfer_get_body_encoder(req);
+    const char *encoding=0;
+    int encodingc=http_xfer_get_header(&encoding,req,"X-Body-Encoding",15);
+    if ((encodingc==6)&&!memcmp(encoding,"base64",6)&&(bodyc>=2)&&(body[0]=='"')&&(body[bodyc-1]=='"')) {
+      body++; // strip quotes. there can't be any other json escapes in a base64 string, and this spares us the effort of json decoding.
+      bodyc-=2;
+      if (sr_encoder_require(dst,(bodyc*3+3)/4)<0) return -1;
+      int err=sr_base64_decode(dst->v+dst->c,dst->a-dst->c,body,bodyc);
+      if ((err<0)||(dst->c>dst->a-err)) return -1;
+      dst->c+=err;
+    } else {
+      struct sr_decoder bdecoder={.v=body,.c=bodyc};
+      if (sr_decode_json_string_to_encoder(dst,&bdecoder)<0) return -1;
+    }
+  }
   
   char line[600];
   int linec=snprintf(line,sizeof(line),"%.*s %.*s%.*s HTTP/1.1",methodc,method,pathc,path,queryc,query);

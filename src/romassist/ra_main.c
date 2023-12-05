@@ -17,77 +17,6 @@ static void ra_rcvsig(int sigid) {
   }
 }
 
-/* XXX One-off: Create alphabetical directories for pico8 and gameboy and move files as needed.
- * Before this, pico8 had all the files loose in one directory, and gameboy was called "gb" with its non-alpha named "_09"
- * After, my whole ROM collection will be formatted uniformly. (it matters, for bulk import and migration)
- */
- 
-#include "opt/fs/fs.h"
- 
-static int XXX_normalize_file_names() {
-  fprintf(stderr,"Normalizing ROM file paths...\n");
-  uint32_t str_pico8=db_string_lookup(ra.db,"pico8",5);
-  uint32_t str_gameboy=db_string_lookup(ra.db,"gameboy",7);
-  if (!str_pico8||!str_gameboy) {
-    fprintf(stderr,"!!! strings not interned. 'pico8'=%d 'gameboy'=%d\n",str_pico8,str_gameboy);
-    return -1;
-  }
-  int modc=0,otherc=0,alreadyc=0;
-  char path[1024];
-  int pathc;
-  struct db_game *game=db_game_get_by_index(ra.db,0);
-  int i=db_game_count(ra.db);
-  for (;i-->0;game++) {
-    char prefix[3]={0};
-         if ((game->base[0]>='a')&&(game->base[0]<='z')) prefix[0]=game->base[0];
-    else if ((game->base[0]>='A')&&(game->base[0]<='Z')) prefix[0]=game->base[0]+0x20;
-    else if ((game->base[0]>='0')&&(game->base[0]<='9')) { prefix[0]='0'; prefix[1]='9'; }
-    else {
-      fprintf(stderr,"!!! Unusual basename: '%.32s'\n",game->base);
-      return -1;
-    }
-    if (game->platform==str_gameboy) {
-      pathc=snprintf(path,sizeof(path),"/home/andy/rom/gameboy/%s/%.32s",prefix,game->base);
-    } else if (game->platform==str_pico8) {
-      pathc=snprintf(path,sizeof(path),"/home/andy/rom/pico8/%s/%.32s",prefix,game->base);
-    } else {
-      otherc++;
-      continue;
-    }
-    if ((pathc<1)||(pathc>=sizeof(path))) {
-      fprintf(stderr,"!!! error around game %d '%.32s'\n",game->gameid,game->name);
-      return -1;
-    }
-    char prior[1024];
-    int priorc=db_game_get_path(prior,sizeof(prior),ra.db,game);
-    if ((priorc<1)||(priorc>=sizeof(prior))) {
-      fprintf(stderr,"!!! error around game %d '%.32s'\n",game->gameid,game->name);
-      return -1;
-    }
-    if ((priorc==pathc)&&!memcmp(prior,path,pathc)) {
-      alreadyc++;
-      continue;
-    }
-    modc++;
-    // It's heavy-handed but mkdirp_parent for every file, just to be safe.
-    if (dir_mkdirp_parent(path)<0) return -1;
-    // Now, IMPORTANTLY, rename the file. Don't copy it. This is important because I expect some unlisted ones will get left behind; I'll want those to stand out after.
-    if (rename(prior,path)<0) {
-      fprintf(stderr,"%s: rename: %m\n",path);
-      return -1;
-    }
-    if (db_game_set_path(ra.db,game,path,pathc)<0) return -1;
-  }
-  fprintf(stderr,"Modified %d files, %d already done, %d no need\n",modc,alreadyc,otherc);
-  if (modc) {
-    if (db_save(ra.db)<0) {
-      fprintf(stderr,"!!!!!!!!!! Failed to save database, after modifying %d files. Database now does not match filesystem.\n",modc);
-      return -1;
-    }
-  }
-  return 0;
-}
-
 /* Init database.
  */
  
@@ -102,10 +31,6 @@ static int ra_init_db() {
   /* Opportunity for one-off DB actions that I don't feel like exposing the right way.
    */
   if (0) {
-    if (XXX_normalize_file_names()<0) {
-      fprintf(stderr,"!!!!! FAILURE !!!!!\n");
-      return -1;
-    }
     fprintf(stderr,"db action complete. reporting failure to abort process.\n");
     return -1;
   }

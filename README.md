@@ -22,14 +22,15 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [x] DB Game modal: Button to launch fancy details modal, or shift-click to get that instead.
 - [ ] Upload screencap via web app. Or provide URL? I'm thinking if you go search for box art somewhere else.
 - - Actually this can be low priority. Pico-8 gets them automatically, and the emulators you can snap during play. Anything else is a bit exotic.
-- [ ] "Add one file" via menu, from a thumb drive.
-- [ ] Review akgambatte save files, it might still be dropping them in the ROMs dir.
+- [x] "Add one file" via menu, from a thumb drive.
+- [ ] mn_widget_edit/mn_widget_addgame: See comments, need some new support to facilitate popping up edit after adding a file.
+- [x] Review akgambatte save files, it might still be dropping them in the ROMs dir. ...it's not, i just had a bunch of old ones
 - [ ] GET /api/blob/all is only returning buckets 0 and 1200, but there are dozens more.
 - [ ] menu: Feedback from upgrade. Also, I'm not seeing git/make output in the server log, that would be nice.
 - [ ] Integrate emulators
 - - [ ] Validate 4 player in all emulators
 - [ ] Prepare collection
-- - [ ] My collection isn't entirely uniform (~/rom/PLATFORM/PFX/...). Can we carefully normalize the db and fs together?
+- - [x] My collection isn't entirely uniform (~/rom/PLATFORM/PFX/...). Can we carefully normalize the db and fs together?
 - - [ ] See rating histogram, try to flatten out the multiple-of-5 spikes.
 - - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3

@@ -125,6 +125,14 @@ int dbs_request_http(
   void (*cb)(struct eh_http_response *rsp,void *userdata),
   void *userdata
 );
+int dbs_request_http_with_body(
+  struct db_service *dbs,
+  const char *method,const char *path,
+  const void *body,int bodyc,
+  int binary,
+  void (*cb)(struct eh_http_response *rsp,void *userdata),
+  void *userdata
+);
 void dbs_cancel_request(struct db_service *dbs,int corrid);
 
 /* On a success, we may assume that the backend is going to terminate us.

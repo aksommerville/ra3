@@ -15,6 +15,9 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+struct sr_encoder;
+struct sr_decoder;
+
 /* Text primitives.
  *****************************************************************************/
 
@@ -202,6 +205,10 @@ int sr_decode_json_boolean(struct sr_decoder *decoder); // => 0,1, or <0 for err
  * All other JSON decode calls advance the read head no matter what.
  */
 int sr_decode_json_string(char *dst,int dsta,struct sr_decoder *decoder);
+
+/* An alternative to sr_decode_json_string() with no length problems.
+ */
+int sr_decode_json_string_to_encoder(struct sr_encoder *dst,struct sr_decoder *decoder);
 
 /* To start reading an array or object, call one of the "start" and record what it returns.
  * Then call sr_decode_json_next() until it returns <=0.

@@ -214,6 +214,18 @@ int sr_decode_json_string(char *dst,int dsta,struct sr_decoder *decoder) {
   return srcc;
 }
 
+int sr_decode_json_string_to_encoder(struct sr_encoder *dst,struct sr_decoder *decoder) {
+  while (1) {
+    int err=sr_decode_json_string(dst->v+dst->c,dst->a-dst->c,decoder);
+    if (err<0) return err;
+    if (dst->c<=dst->a-err) {
+      dst->c+=err;
+      return err;
+    }
+    if (sr_encoder_require(dst,err)<0) return -1;
+  }
+}
+
 /* Contextless JSON primitives.
  */
  

@@ -756,6 +756,18 @@ int dbs_request_http(
   void (*cb)(struct eh_http_response *rsp,void *userdata),
   void *userdata
 ) {
+  return dbs_request_http_with_body(dbs,method,path,0,0,0,cb,userdata);
+}
+
+int dbs_request_http_with_body(
+  struct db_service *dbs,
+  const char *method,const char *path,
+  const void *body,int bodyc,
+  int binary,
+  void (*cb)(struct eh_http_response *rsp,void *userdata),
+  void *userdata
+) {
+  if (!body) bodyc=0; else if (bodyc<0) { bodyc=0; while (((char*)body)[bodyc]) bodyc++; }
   struct fakews *fakews=eh_get_fakews();
   if (!fakews) return -1;
   if (!fakews_is_connected(fakews)) {
@@ -785,9 +797,22 @@ int dbs_request_http(
   sr_encode_json_string(&encoder,"id",2,"http",4);
   sr_encode_json_string(&encoder,"method",6,method,-1);
   sr_encode_json_string(&encoder,"path",4,path,-1);
+  
   int hdrctx=sr_encode_json_object_start(&encoder,"headers",7);
   sr_encode_json_int(&encoder,"X-Correlation-Id",16,listener->corrid);
+  if (bodyc&&binary) {
+    sr_encode_json_string(&encoder,"X-Body-Encoding",15,"base64",6);
+  }
   sr_encode_json_object_end(&encoder,hdrctx);
+  
+  if (bodyc) {
+    if (binary) {
+      sr_encode_json_base64(&encoder,"body",4,body,bodyc);
+    } else {
+      sr_encode_json_string(&encoder,"body",4,body,bodyc);
+    }
+  }
+  
   if (sr_encode_json_object_end(&encoder,0)<0) {
     sr_encoder_cleanup(&encoder);
     dbs->listenerc--;

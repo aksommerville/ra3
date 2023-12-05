@@ -44,6 +44,7 @@ extern const struct gui_widget_type mn_widget_type_input;
 extern const struct gui_widget_type mn_widget_type_network;
 extern const struct gui_widget_type mn_widget_type_interface;
 extern const struct gui_widget_type mn_widget_type_indev; // Input config for a single device.
+extern const struct gui_widget_type mn_widget_type_addgame;
 
 int mn_widget_daterange_setup(
   struct gui_widget *widget,

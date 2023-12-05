@@ -402,7 +402,7 @@ id=http GAME=>SERVER MENU=>SERVER
   Requests are served immediately.
   Provide (path) and (query) separate.
   (query) and (headers) should be simple {key:value} objects.
-  (body) must be a string. There's no good way to send a binary body (and I think, shouldn't ever be a need for one).
+  (body) must be a string. Use header "X-Body-Encoding: base64" for binary data. (there's probably a generic HTTP equivalent for that but I'm too lazy to search).
   All HTTP calls documented above should work, and should grok all future changes automatically; this abstraction is implemented generically.
   If you need to be certain which response is associated with which request, add a header "X-Correlation-Id", and server echoes it back.
   Long response bodies are no problem, but most other fields have static limits. (src/romassist/ra_websocket.c if you need to tweak).

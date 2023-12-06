@@ -40,9 +40,9 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [x] Menu: audio-device should populate in UI.
 - [ ] Prepare the Pi.
 - - [ ] ALSA doesn't want to work over HDMI! Change everything to Pulse, confirmed it does work.
-- - [ ] Opening server fails if no network! Must fall back to localhost.
+- - [x] Opening server fails if no network! Must fall back to localhost.
 - - [ ] Write a shell script to clone and build all the repos and then migrate the db.
-- - [ ] Ensure keyboards behave sanely. ...as is they do not
+- - [ ] Ensure keyboards behave sanely. ...as is they do not. doesn't even show up in the device list!
 - - [ ] systemd
 - - [ ] Verify poweroff. We can sudo it without a password, at least at the command line.
 - - [ ] Pico-8 is picky about multiple joysticks, it picks player1 and player2 on its own. Can we mitigate that somehow?

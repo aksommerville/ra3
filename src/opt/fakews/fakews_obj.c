@@ -192,23 +192,38 @@ int fakews_connect_now(struct fakews *fakews) {
     };
     struct addrinfo *aiv=0;
     int err=getaddrinfo(fakews->host,zport,&hint,&aiv);
-    if (err<0) return -1;
-    struct addrinfo *ai=aiv;
-    for (;ai;ai=ai->ai_next) {
-      if (!ai->ai_addr) continue;
-      // Filter addresses? I think anything is probably ok.
-      fakews->family=ai->ai_family;
-      fakews->socktype=ai->ai_socktype;
-      fakews->protocol=ai->ai_protocol;
-      if (!(fakews->raddr=malloc(ai->ai_addrlen))) {
-        freeaddrinfo(aiv);
-        return -1;
+    if ((err==EAI_NONAME)&&fakews->host&&!strcmp(fakews->host,"localhost")) {
+      // getaddrinfo, even for "localhost", fails on the Pi when the network is disconnected.
+      // The loopback interface does remain usable in this case, we just have to name it explicitly.
+      if (!(fakews->raddr=malloc(sizeof(struct sockaddr_in)))) return -1;
+      fakews->raddrc=sizeof(struct sockaddr_in);
+      struct sockaddr_in *sin=(struct sockaddr_in*)fakews->raddr;
+      sin->sin_family=AF_INET;
+      sin->sin_port=htons(fakews->port);
+      memcpy(&sin->sin_addr,"\x7f\x00\x00\x01",4);
+      fakews->family=AF_INET;
+      fakews->socktype=SOCK_STREAM;
+      fakews->protocol=IPPROTO_TCP;
+    } else if (err) {
+      return -1;
+    } else { // getaddrinfo ok...
+      struct addrinfo *ai=aiv;
+      for (;ai;ai=ai->ai_next) {
+        if (!ai->ai_addr) continue;
+        // Filter addresses? I think anything is probably ok.
+        fakews->family=ai->ai_family;
+        fakews->socktype=ai->ai_socktype;
+        fakews->protocol=ai->ai_protocol;
+        if (!(fakews->raddr=malloc(ai->ai_addrlen))) {
+          freeaddrinfo(aiv);
+          return -1;
+        }
+        memcpy(fakews->raddr,ai->ai_addr,ai->ai_addrlen);
+        fakews->raddrc=ai->ai_addrlen;
+        break;
       }
-      memcpy(fakews->raddr,ai->ai_addr,ai->ai_addrlen);
-      fakews->raddrc=ai->ai_addrlen;
-      break;
+      freeaddrinfo(aiv);
     }
-    freeaddrinfo(aiv);
     if (!fakews->raddr) return -1;
   }
   

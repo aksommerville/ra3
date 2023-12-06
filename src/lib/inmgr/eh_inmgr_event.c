@@ -100,7 +100,7 @@ int eh_inmgr_connect(struct eh_inmgr *inmgr,struct eh_input_driver *driver,int d
     if (device->config=eh_inmgr_guess_config(inmgr,device->driver,devid)) {
       // Made one up, also ok.
     } else {
-      //const char *devname=eh_input_device_name(driver,devid);
+      //const char *devname=eh_inmgr_device_name(inmgr,devid);
       //fprintf(stderr,"%s:%d Dropping unconfigurable device '%s'\n",driver?driver->type->name:"(none)",devid,devname);
       eh_inmgr_devicev_remove(inmgr,p);
       return 0;

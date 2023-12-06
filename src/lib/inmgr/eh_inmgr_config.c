@@ -172,8 +172,30 @@ static int eh_inmgr_config_cb_button(int btnid,uint32_t hidusage,int lo,int hi,i
   
   //fprintf(stderr,"  %s 0x%08x %d..%d usage=0x%08x\n",__func__,btnid,lo,hi,hidusage);
   
-  // Ignore anything on page 7 (Keyboard). There could be tons of these, and we're not interested.
-  if ((hidusage&0xffff0000)==0x00070000) return 0;
+  // Page 7, Keyboard: There's usually a hundred of these if there's one.
+  // Either make a concrete determination for the small default keyboard map, or ignore it.
+  if ((hidusage&0xffff0000)==0x00070000) switch (hidusage&0xffff) {
+    #define _(u,b) case u: return eh_inmgr_config_guess_rule(config,btnid,lo,hi,EH_BTN_##b);
+    _(0x50,LEFT)
+    _(0x4f,RIGHT)
+    _(0x52,UP)
+    _(0x51,DOWN)
+    _(0x1d,SOUTH)
+    _(0x1b,WEST)
+    _(0x04,EAST)
+    _(0x16,NORTH)
+    _(0x35,L1)
+    _(0x2a,R1)
+    _(0x2b,L2)
+    _(0x31,R2)
+    _(0x28,AUX1)
+    _(0x2c,AUX2)
+    _(0x38,AUX3)
+    _(0x29,QUIT)
+    _(0x44,FULLSCREEN)
+    #undef _
+    default: return 0;
+  }
   
   // Page 9 (Generic Button), assign anywhere.
   if ((hidusage&0xffff0000)==0x00090000) return eh_inmgr_config_guess_rule(config,btnid,lo,hi,EH_BTN_ANY);
@@ -398,7 +420,6 @@ static int eh_generate_default_keyboard_mapping(struct eh_inmgr *inmgr,struct eh
 
 /* Make up a config for a physical device.
  * (driver) is allowed to be NULL, and in that case we assume it's the System Keyboard.
- * TODO: In that case, we should create a static mapping. Keyboards are all alike.
  */
 
 struct eh_inmgr_config *eh_inmgr_guess_config(struct eh_inmgr *inmgr,struct eh_input_driver *driver,int devid) {
@@ -442,6 +463,5 @@ struct eh_inmgr_config *eh_inmgr_guess_config(struct eh_inmgr *inmgr,struct eh_i
   if (inmgr->delegate.cb_config_dirty) {
     inmgr->delegate.cb_config_dirty(inmgr->delegate.userdata);
   }
-  fprintf(stderr,"...%s config=%p\n",__func__,config);
   return config;
 }

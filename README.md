@@ -42,13 +42,13 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] ALSA doesn't want to work over HDMI! Change everything to Pulse, confirmed it does work.
 - - [x] Opening server fails if no network! Must fall back to localhost.
 - - [ ] Write a shell script to clone and build all the repos and then migrate the db.
-- - [ ] Ensure keyboards behave sanely. ...as is they do not. doesn't even show up in the device list!
+- - [x] Ensure keyboards behave sanely. ...as is they do not. doesn't even show up in the device list!
 - - [ ] systemd
 - - [ ] Verify poweroff. We can sudo it without a password, at least at the command line.
-- - [ ] Pico-8 is picky about multiple joysticks, it picks player1 and player2 on its own. Can we mitigate that somehow?
+- - [x] Pico-8 is picky about multiple joysticks, it picks player1 and player2 on its own. Can we mitigate that somehow? ...no, it's a well known problem to Pico-8
 - - [ ] Solarus
 - - [ ] Boot time is almost exactly 30 seconds. That's acceptable but can we improve it?
-- - [ ] Confirm we don't block for the network on startup.
+- - [x] Confirm we don't block for the network on startup.
 - - [ ] Understand wi-fi. Will it try to configure and connect itself automatically? Should we configure that somewhere?
 - - [ ] We are listening on INADDR_ANY. Add at least some kind of protection against remote-network access. We should only allow clients on the same, unroutable, network.
 - - - The home router should take care of that for us, but let's do something at least.

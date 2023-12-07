@@ -3,7 +3,7 @@ Description=Romassist server.
 
 [Service]
 Type=simple
-ExecStart=su kiddo -c '/home/kiddo/proj/ra3/out/romassist --dbroot=/home/kiddo/proj/ra3/data --htdocs=/home/kiddo/proj/ra3/src/www --menu=/home/kiddo/proj/ra3/out/romassist-menu --no-terminable < /dev/null'
+ExecStart=su kiddo -c '/home/kiddo/proj/ra3/out/romassist --dbroot=/home/kiddo/proj/ra3/data --htdocs=/home/kiddo/proj/ra3/src/www --menu=/home/kiddo/proj/ra3/out/romassist-menu --no-terminable --poweroff < /dev/null'
 
 [Install]
 WantedBy=multi-user.target

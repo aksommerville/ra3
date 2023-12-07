@@ -35,13 +35,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - 2023-12-02: 1558 ...1513
 - [ ] Emuhost: Add an overscan option, you never know.
 - [ ] Prepare the Pi.
-- - [x] Write a shell script to clone and build all the repos and then migrate the db.
-- - - etc/migration/ra3-update-or-install.sh
-- - [x] systemd
-- - [x] Verify poweroff. We can sudo it without a password, at least at the command line.
 - - [ ] Solarus
-- - [x] Boot time is almost exactly 30 seconds. That's acceptable but can we improve it?
-- - - 2023-12-07 timed again just now and it was more like 20. not broke, don't fix.
 - - [ ] Understand wi-fi. Will it try to configure and connect itself automatically? Should we configure that somewhere?
 - - [ ] We are listening on INADDR_ANY. Add at least some kind of protection against remote-network access. We should only allow clients on the same, unroutable, network.
 - - - The home router should take care of that for us, but let's do something at least.
@@ -52,10 +46,4 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [ ] Check PulseAudio cleanup, maybe it blocks for the I/O thread or something. Pulse does remain in top during the freeze, and CPU doesn't spike or anything.
 - [ ] A missing game shouldn't break list processing. db_list_gamev_populate, we abort if one is missing. tricky...
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?
-
-Enable systemd:
-First, verify username and paths in etc/romassist.service.
-kiddo@raspberrypi:~/proj/ra3 $ sudo cp etc/romassist.service /etc/systemd/system/romassist.service
-kiddo@raspberrypi:~/proj/ra3 $ sudo systemctl start romassist
-kiddo@raspberrypi:~/proj/ra3 $ sudo systemctl enable romassist
 

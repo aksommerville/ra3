@@ -106,7 +106,7 @@ uint32_t ra_migrate_replace_paths_in_string(const struct ra_migrate_context *ctx
     }
     
     if (dstc>=sizeof(dst)) return srcstringid;
-    dst[dstc++]='/';
+    dst[dstc++]=src[srcp];
     srcp++;
   }
   if (!changed) return srcstringid;

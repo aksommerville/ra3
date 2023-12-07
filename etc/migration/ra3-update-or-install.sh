@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #---------------------------------------------------------------------------
 # First, clone or pull, then build, for each of our source projects.
@@ -15,6 +15,8 @@ fi
 PROJS="ra3 akz26 akprosys akfceu akgambatte aksnes9x"
 PROJS="$PROJS rabbit chetyorska ctm fullmoon4 ivand lilsitter plundersquad pokorc sitter2009 sitter8 ttaq"
 
+NO_MAKE_PROJS="sitter8"
+
 for PROJ in $PROJS ; do
   PROOT="$PROJDIR/$PROJ"
   if [ -d "$PROOT" ] ; then
@@ -24,8 +26,10 @@ for PROJ in $PROJS ; do
     echo "Cloning $PROJ..."
     ( cd .. && git clone "https://github.com/aksommerville/$PROJ" ) || exit 1
   fi
-  echo "Building $PROJ..."
-  make -C"$PROOT" || exit 1
+  if ! grep -q "$PROJ" <<<"$NO_MAKE_PROJS" ; then
+    echo "Building $PROJ..."
+    make -C"$PROOT" || exit 1
+  fi
 done
 
 #-----------------------------------------------------------------------
@@ -34,7 +38,7 @@ done
 read -p "Source HOST:PORT for DB migration, or empty to skip: " REMOTEHOST
 if [ -n "$REMOTEHOST" ] ; then
   echo "Starting DB migration..."
-  out/romassist --migrate="$REMOTEHOST" || exit 1
+  out/romassist --dbroot=data --migrate="$REMOTEHOST" || exit 1
 else
   echo "Skipping DB migration."
 fi

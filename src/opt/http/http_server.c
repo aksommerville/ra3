@@ -9,7 +9,10 @@ void http_server_del(struct http_server *server) {
   if (!server) return;
   if (server->refc-->1) return;
   
-  if (server->fd>=0) close(server->fd);
+  if (server->fd>=0) {
+    shutdown(server->fd,SHUT_WR);
+    close(server->fd);
+  }
   
   free(server);
 }
@@ -62,9 +65,8 @@ static int http_server_bind_localhost(struct http_server *server,int port) {
   return 0;
 }
 
-int http_server_bind(struct http_server *server,const char *host,int port) {
+int http_server_bind(struct http_server *server,const char *host,int port,int open_to_public) {
   if (!server||(server->fd<0)) return -1;
-  //if (!host||!host[0]) host="localhost";
   struct addrinfo hints={
     .ai_family=AF_INET,
     .ai_socktype=SOCK_STREAM,
@@ -76,21 +78,23 @@ int http_server_bind(struct http_server *server,const char *host,int port) {
   struct addrinfo *ai=0;
   int err;
   if (err=getaddrinfo(host,service,&hints,&ai)) {
-    if ((err==EAI_NONAME)&&host&&!strcmp(host,"0.0.0.0")) {
-      fprintf(stderr,"Failed to look up network interface. Trying a fallback localhost...\n");
-      return http_server_bind_localhost(server,port);
-    }
     return -1;
   }
   err=bind(server->fd,ai->ai_addr,ai->ai_addrlen);
   freeaddrinfo(ai);
-  if (err<0) return -1;
+  if (err<0) {
+    return -1;
+  }
+  server->open_to_public=open_to_public;
+  server->port=port;
   return 0;
 }
 
 int http_server_listen(struct http_server *server,int clientc) {
   if (!server||(server->fd<0)) return -1;
-  if (listen(server->fd,clientc)<0) return -1;
+  if (listen(server->fd,clientc)<0) {
+    return -1;
+  }
   return 0;
 }
 

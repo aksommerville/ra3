@@ -13,7 +13,8 @@ static void ra_print_usage(const char *topic,int topicc) {
     "  --dbroot=PATH       Directory containing our database.\n"
     "  --htdocs=PATH       Directory containing static files for HTTP service.\n"
     "  --menu=PATH         Executable for front end.\n"
-    "  --port=2600         TCP port for HTTP server.\n"
+    "  --port=2600         TCP port for HTTP server on localhost.\n"
+    "  --public-port=0     TCP port accessible to remote hosts. (0 for localhost only).\n"
     "  --terminable=1      Relaunch the menu if it quits, don't let the user quit.\n"
     "  --poweroff=0        Nonzero to call `poweroff` at POST /api/shutdown. Otherwise just quit.\n"
     "  --update=1          Automatically upgrade everything we can.\n"
@@ -70,6 +71,7 @@ static int ra_configure_kv(const char *k,int kc,const char *v,int vc) {
   STROPT("htdocs",htdocs)
   STROPT("menu",menu)
   INTOPT("port",http_port,1,65535)
+  INTOPT("public-port",public_port,0,65535)
   INTOPT("terminable",terminable,0,1)
   INTOPT("poweroff",allow_poweroff,0,1)
   INTOPT("update",update_enable,0,1)
@@ -150,6 +152,7 @@ int ra_configure(int argc,char **argv) {
     ra.exename=argv[0];
   }
   ra.http_port=2600;
+  ra.public_port=0;
   ra.terminable=1;
   ra.update_enable=1;
   

@@ -1,4 +1,5 @@
 #include "ra_internal.h"
+#include "opt/http/http_context.h"
 #include <time.h>
 #include <signal.h>
 #include <unistd.h>
@@ -43,7 +44,17 @@ static int ra_init_db() {
  
 static int ra_init_http() {
   if (!(ra.http=http_context_new())) return -1;
-  if (!http_serve(ra.http,ra.http_port)) {
+  
+  struct http_server *server=0;
+  if (ra.http_port==ra.public_port) {
+    server=http_serve(ra.http,ra.http_port,1);
+    if (!server) { // Couldn't get INADDR_ANY? Try localhost instead.
+      server=http_serve(ra.http,ra.http_port,0);
+    }
+  } else {
+    server=http_serve(ra.http,ra.http_port,0);
+  }
+  if (!server) {
     fprintf(stderr,"%s: Failed to open TCP server on port %d.\n",ra.exename,ra.http_port);
     return -2;
   }

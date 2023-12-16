@@ -35,6 +35,7 @@ void http_context_remove_server(struct http_context *context,struct http_server 
 
 struct http_socket *http_context_add_new_socket(struct http_context *context,int fd);
 void http_context_remove_socket(struct http_context *context,struct http_socket *socket);
+void http_context_drop_all_sockets(struct http_context *context);
 
 struct http_server *http_context_get_server_by_fd(const struct http_context *context,int fd);
 struct http_socket *http_context_get_socket_by_fd(const struct http_context *context,int fd);

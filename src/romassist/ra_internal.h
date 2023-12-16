@@ -32,6 +32,7 @@ extern struct ra {
   char *htdocs;
   char *menu;
   int http_port;
+  int public_port;
   int terminable;
   int allow_poweroff; // If nonzero, POST /api/shutdown calls `poweroff`. Zero, only this process terminates.
   int update_enable;

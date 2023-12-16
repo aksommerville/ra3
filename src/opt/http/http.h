@@ -56,12 +56,11 @@ void http_context_remove_fd(struct http_context *context,int fd);
 struct http_server *http_context_get_server_by_index(const struct http_context *context,int p);
 
 /* Create a server and start listening.
- * We will only listen on localhost, as this library is not suitable for facing the public internet.
+ * (open_to_public) to listen on INADDR_ANY, zero for localhost only.
  * You'll normally do this once per context. But can listen on as many ports as you like.
  * Returns WEAK.
- * TODO I copied this from Full Moon, which indeed should be localhost-only. Maybe relax that restriction for Romassist.
  */
-struct http_server *http_serve(struct http_context *context,int port);
+struct http_server *http_serve(struct http_context *context,int port,int open_to_public);
 
 /* Create a listener and attach to some method and path.
  * Listeners are tested in the order you add them, and only the first match wins.

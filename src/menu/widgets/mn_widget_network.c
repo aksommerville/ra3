@@ -20,18 +20,6 @@ struct mn_widget_network {
 static void _network_del(struct gui_widget *widget) {
 }
 
-/* Form callback.
- */
- 
-static void network_cb_form(struct gui_widget *form,const char *k,int kc,const char *v,int vc,void *userdata) {
-  struct gui_widget *widget=userdata;
-  
-  if ((kc==7)&&!memcmp(k,"Upgrade",7)) {
-    dbs_request_http(&mn.dbs,"POST","/api/upgrade",0,0);
-    return;
-  }
-}
-
 /* Get this host's IP address as a string.
  * This will be the wrong answer, if you're running menu on a different host than romassist.
  * Our design is that menu and romassist run on the same host.
@@ -70,6 +58,51 @@ static int network_get_my_ip_address(char *dst,int dsta) {
   return dstc;
 }
 
+/* POST /api/enable-public callback.
+ */
+ 
+static void network_cb_enable_public(struct eh_http_response *rsp,void *userdata) {
+  struct gui_widget *widget=userdata;
+  if (rsp->status==200) {
+    struct gui_widget *button=gui_widget_form_get_button_by_key(widget->childv[0],"Web",3);
+    if (!button) return;
+    char url[256];
+    memcpy(url,"http://",7);
+    int urlc=7;
+    int addrc=network_get_my_ip_address(url+urlc,sizeof(url)-urlc);
+    if ((addrc>0)&&(urlc+addrc<=sizeof(url))) {
+      urlc+=addrc;
+    } else {
+      memcpy(url+urlc,"localhost",9);
+      urlc+=9;
+    }
+    if (urlc<sizeof(url)-rsp->bodyc) { // sic <, one extra for the colon
+      url[urlc++]=':';
+      memcpy(url+urlc,rsp->body,rsp->bodyc);
+      urlc+=rsp->bodyc;
+      gui_widget_button_set_label(button,url,urlc,0xffffff);
+      gui_dirty_pack(widget->gui);
+    }
+  }
+}
+
+/* Form callback.
+ */
+ 
+static void network_cb_form(struct gui_widget *form,const char *k,int kc,const char *v,int vc,void *userdata) {
+  struct gui_widget *widget=userdata;
+  
+  if ((kc==3)&&!memcmp(k,"Web",3)) {
+    dbs_request_http(&mn.dbs,"POST","/api/enable-public",network_cb_enable_public,widget);
+    return;
+  }
+  
+  if ((kc==7)&&!memcmp(k,"Upgrade",7)) {
+    dbs_request_http(&mn.dbs,"POST","/api/upgrade",0,0);
+    return;
+  }
+}
+
 /* Init.
  */
  
@@ -80,6 +113,7 @@ static int _network_init(struct gui_widget *widget) {
   
   //gui_widget_form_add_string(form,"Show Invalid Games?",19,mn.show_invalid?"Show":"Hide",4,1);
   
+  /**
   char url[256];
   memcpy(url,"http://",7);
   int urlc=7;
@@ -93,7 +127,9 @@ static int _network_init(struct gui_widget *widget) {
   memcpy(url+urlc,":2600",5);//TODO get from emuhost
   urlc+=5;
   gui_widget_form_add_readonly_string(form,"URL",3,url,urlc);
+  /**/
   
+  gui_widget_form_add_string(form,"Web",3,"Enable",6,1);
   gui_widget_form_add_string(form,"Upgrade",7,"Begin",5,1);
   
   return 0;

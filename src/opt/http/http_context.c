@@ -174,6 +174,16 @@ void http_context_remove_socket(struct http_context *context,struct http_socket 
   }
 }
 
+/* Drop all sockets.
+ */
+ 
+void http_context_drop_all_sockets(struct http_context *context) {
+  if (!context) return;
+  while (context->socketc>0) {
+    http_context_remove_socket(context,context->socketv[context->socketc-1]);
+  }
+}
+
 /* Get server or socket by fd or index.
  */
  
@@ -206,17 +216,15 @@ struct http_socket *http_context_get_socket_by_fd(const struct http_context *con
 /* Create server, public convenience.
  */
  
-struct http_server *http_serve(struct http_context *context,int port) {
+struct http_server *http_serve(struct http_context *context,int port,int open_to_public) {
   if (port<1) return 0;
   struct http_server *server=http_context_add_new_server(context);
   if (!server) return 0;
   
-  // TODO Make hostname configurable (between localhost and 0.0.0.0).
-  const char *hostname="0.0.0.0";
-  //const char *hostname="localhost";
+  const char *hostname=open_to_public?"0.0.0.0":"localhost";
   if (
     (http_server_init_tcp_stream(server)<0)||
-    (http_server_bind(server,hostname,port)<0)||
+    (http_server_bind(server,hostname,port,open_to_public)<0)||
     (http_server_listen(server,10)<0)
   ) {
     http_context_remove_server(context,server);

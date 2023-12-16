@@ -1,6 +1,8 @@
 #include "ra_internal.h"
 #include "opt/fs/fs.h"
 #include "opt/serial/serial.h"
+#include "opt/http/http_context.h"
+#include "opt/http/http_server.h"
 
 /* Read and parse a "detail" query param.
  */
@@ -1301,6 +1303,35 @@ static int ra_http_shutdown(struct http_xfer *req,struct http_xfer *rsp) {
   return 0;
 }
 
+/* POST /api/enable-public
+ */
+ 
+static int ra_http_enable_public(struct http_xfer *req,struct http_xfer *rsp) {
+  
+  int p=0;
+  for (;;p++) {
+    struct http_server *server=http_context_get_server_by_index(ra.http,p);
+    if (!server) break;
+    if (server->open_to_public) {
+      struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+      sr_encode_json_int(dst,0,0,server->port);
+      return 0;
+    }
+  }
+  
+  if (!ra.public_port||(ra.public_port==ra.http_port)) {
+    return http_xfer_set_status(rsp,500,"Unable to open public server on port %d\n",ra.public_port);
+  }
+  
+  struct http_server *server=http_serve(ra.http,ra.public_port,1);
+  if (!server) {
+    return http_xfer_set_status(rsp,500,"Error opening public server on port %d\n",ra.public_port);
+  }
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  sr_encode_json_int(dst,0,0,server->port);
+  return 0;
+}
+
 /* POST /api/autoscreencap
  */
 
@@ -1393,6 +1424,7 @@ static int64_t ra_http_now() {
  
 static int ra_http_wrap_call(int (*servlet)(struct http_xfer *req,struct http_xfer *rsp),struct http_xfer *req,struct http_xfer *rsp) {
   int64_t starttime=ra_http_now();
+  if (http_xfer_ref(rsp)<0) return -1; // necessary because we have a call that drops all sockets (and kills the xfers implicitly)
   if (servlet(req,rsp)<0) {
     if (!http_xfer_get_status(rsp)) http_xfer_set_status(rsp,500,"Unspecified error");
     http_xfer_set_body(rsp,0,0);
@@ -1406,6 +1438,7 @@ static int ra_http_wrap_call(int (*servlet)(struct http_xfer *req,struct http_xf
   }
   int64_t endtime=ra_http_now();
   ra_http_log_response(req,rsp,(int)((endtime-starttime)/1000));
+  http_xfer_del(rsp);
   return 0;
 }
 
@@ -1488,6 +1521,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(POST,"/api/random",ra_http_random)
   _(POST,"/api/terminate",ra_http_terminate)
   _(POST,"/api/shutdown",ra_http_shutdown)
+  _(POST,"/api/enable-public",ra_http_enable_public)
   
   _(POST,"/api/autoscreencap",ra_http_autoscreencap)
   

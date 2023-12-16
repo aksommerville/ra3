@@ -1,0 +1,85 @@
+2023-12-15
+Pi Setup Notes
+
+- Raspbian image from vendor, go thru the initial setup.
+- Do not configure wi-fi.
+- Preferences/Raspberry Pi Configuration: 
+- - Boot: To CLI
+- - Auto login YES, Network at Boot NO, Splash Screen NO (all defaults)
+- - Headless Resolution: 1920x1080
+- - Interfaces:
+- - - SSH YES
+- - - GPU Memory 256 (from 76; wild guess)
+- - It prompts to reboot, and you get a sane CLI.
+- (On my PC) Drop "raspberrypi" SSH key, multiple machines have that hostname: ssh-keygen -f /home/andy/.ssh/known_hosts -R raspberrypi
+- sudo apt install vim libdrm-dev libegl-dev libgles-dev libgbm-dev libpulse-dev libasound2-dev
+- git config --global pull.rebase false
+- mkdir proj ; cd proj
+- git clone https://github.com/aksommerville/ra3
+- cd ra3 ; make # Prompts to edit etc/config.mk:
+- - OPT_ENABLE: Remove glx xinerama
+- - LDPOST: Add -lpthread
+- - LDPOST for drm: Add -lGLESv2 (TODO This should probably be the default)
+- make # ra3 should build clean, fix if not
+- Run script to install all the other repos: etc/migration/ra3-update-or-install.sh
+- Takes some time, smoke em if you got em. If it fails anywhere, fix and run again, it's incremental.
+- - And it will fail. fullmoon4/etc/config.mk: TARGETS:=linux ; linux_USE_GLX:=
+- - ~18 min, with a few interruptions.
+- Ensure server is running on my PC: make run-bg
+- Script prompts to migrate DB: 192.168.yadda.yadda:2600
+- - First time, it will transfer about 1.6 GB of ROMs and screencaps, takes about 2 minutes.
+- systemd? YES
+- Install Pico-8.
+- - XXX I have it at ~/games/pico-8_0.2.5g_raspi.zip. (if you're not me, buy at lexaloffle.com)
+- - Scratch that; I now have it unpacked and configured at ~/pkg/pico-8-pi
+- - Launcher cmd: LD_PRELOAD=/home/kiddo/pkg/pico-8/libSDL2-2.0.so.0 SDL_AUDIODRIVER=alsa AUDIODEV=default /home/kiddo/pkg/pico-8/pico8_dyn -run $FILE
+- Trial run: ra3$ make run
+- - It will try /dev/dri/card0 by default, but for some reason the Pi has to use /dev/dri/card1.
+- - Create ~/.romassist/emuhost.cfg: video-device=/dev/dri/card1
+- Using web app from my PC, add args to native apps (see Settings/Network for IP address):
+- - CTM: --video-device=/dev/dri/card1
+- - Chetyorska: --video-device=/dev/dri/card1
+- - Full Moon: --video-device=/dev/dri/card1 --synth=minsyn
+- - Ivan: --video-device=/dev/dri/card1
+- - Lil Sitter: --video-device=/dev/dri/card1 --files=/home/kiddo/proj/lilsitter/out/data
+- - - path: /home/kiddo/proj/lilsitter/out/linuxdrm/Sitter
+- - Plunder Squad: 
+- - - path: /home/kiddo/proj/plundersquad/out/linux-drm/plundersquad
+- - Pocket Orchestra: --video-device=/dev/dri/card1
+- - Sitter 2009: --video-device=/dev/dri/card1
+- - - path: /home/kiddo/proj/sitter2009/linuxdrm/sitter
+- - TTAQ: --video-device=/dev/dri/card1 --data=/home/kiddo/proj/ttaq/src/data 
+- - - Plus copy etc/input to ~/.ttaq/input
+- Map input devices:
+- - Romassist Menu: Covers all emulators, plus pokorc, lilsitter, and ivand.
+- - CTM: My devices are mapped in the default config. Others: Run and it dumps a guess config; update the config file manually.
+- - Chetyorska: My devices are mapped in the default config. Others.... godspeed. I think they're hard-coded?
+- - Plunder Squad: In game.
+- - Full Moon: In game.
+- - Sitter 2009: Hard-coded in sitter2009/src/drm_alsa_evdev/sitter_evdev_my_device.cpp (TODO!!!). And tweak at ~/.sitter/sitter.cfg
+- - - Beware that it's not good about player ID assignment. If there are garbage devices, they get assigned willy-nilly just like joysticks.
+- - TTAQ: My devices are mapped in the default config. Others, edit etc/input manually.
+- - Pico-8: Copied installation from first prototype. Configuring, you have to use a tool in the SDL source distro.
+- Drop high scores if you set by mistake:
+- - rm ~/.ivand/highscore
+- - rm ~/.pocket-orchestra/highscore
+- - rm ~/.sitter/sitter.highscore
+- - rm ~/.ttaq/saved-game
+- - rm ~/proj/fullmoon4/out/linux/save
+
+- [ ] !!! Unable to reach via 192.168.1.62 on startup. systemctl stop/start, then it's fine. Menu runs fine.
+- - Is this because we're not waiting for the network to come up fully before starting?
+- - Pretty big problem if so.
+- - Must at least allow a manual "drop and reopen" option from the menu.
+- - reboot, same. yes, do make a manual option. The web app needs to be accessible with nothing but the Menu. OK if there's a manual step.
+
+Fan noise. Did I unplug it in the first prototype? If so, just do that again.
+
+--- ~/.vimrc ---
+filetype indent off
+syntax on
+set autoindent
+set tabstop=2
+set shiftwidth=2
+set expandtab
+

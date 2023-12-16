@@ -80,6 +80,7 @@ GET /api/histograms => ...
 POST /api/launch?gameid => Play
 POST /api/random?text&list&platform&author&genre&flags&notflags&rating&pubtime => Play
 POST /api/terminate => nothing
+POST /api/enable-public => int (TCP port)
 
 POST /api/autoscreencap => report
 
@@ -348,6 +349,13 @@ The menu itself does not terminate on this, though it technically could.
 
 Quit the server or power down the machine (whichever the backend is configured to do).
 An extra header is required, to illustrate the call's gravity: X-I-Know-What-Im-Doing: true
+
+## /api/enable-public
+
+Ask server to open its public TCP port, if it's configured to.
+This is necessary on my Raspberry Pi at least, because the server starts running before ethernet is fully configured.
+So the main server falls back to localhost-only, which is fine for everything except web access from a cell phone.
+And the idea of not serving on INADDR_ANY until being told to, that feels right.
 
 ## /api/autoscreencap
 

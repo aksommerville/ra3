@@ -9,7 +9,10 @@ void http_socket_del(struct http_socket *socket) {
   if (!socket) return;
   if (socket->refc-->1) return;
   
-  if (socket->fd>=0) close(socket->fd);
+  if (socket->fd>=0) {
+    shutdown(socket->fd,SHUT_WR);
+    close(socket->fd);
+  }
   http_xfer_del(socket->req);
   http_xfer_del(socket->rsp);
   http_listener_del(socket->listener);

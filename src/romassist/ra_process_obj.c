@@ -183,7 +183,7 @@ int ra_process_update(struct ra_process *process) {
   
   /* If no process running, run in order of preference:
    *  - Game if requested (next_launch).
-   *  - Menu if configured (ra.menu).
+   *  - Menu if configured (ra.menu). 2024-02-04: Don't launch menu until the server is up.
    *  - Nothing, leave it zero.
    */
   if (!process->pid) {
@@ -196,7 +196,7 @@ int ra_process_update(struct ra_process *process) {
       ra_report_gameid(ra.process.gameid);
     } else if (process->menu_terminated) {
       // Wait for main to acknowledge, or quit if it decides to.
-    } else if (ra.menu) {
+    } else if (ra.menu&&http_context_get_server_by_index(ra.http,0)) {
       if (ra_process_launch_command(process,ra.menu)<0) {
         return -2;
       }

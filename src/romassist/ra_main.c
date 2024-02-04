@@ -46,18 +46,20 @@ static int ra_init_http() {
   if (!(ra.http=http_context_new())) return -1;
   
   struct http_server *server=0;
-  if (ra.http_port==ra.public_port) {
-    server=http_serve(ra.http,ra.http_port,1);
-    if (!server) { // Couldn't get INADDR_ANY? Try localhost instead.
-      server=http_serve(ra.http,ra.http_port,0);
+  #define TRYSERVE \
+    if (ra.http_port==ra.public_port) { \
+      server=http_serve(ra.http,ra.http_port,1); \
+      if (!server) { /* Couldn't get INADDR_ANY? Try localhost instead. */ \
+        server=http_serve(ra.http,ra.http_port,0); \
+      } \
+    } else { \
+      server=http_serve(ra.http,ra.http_port,0); \
     }
-  } else {
-    server=http_serve(ra.http,ra.http_port,0);
-  }
+  TRYSERVE
   if (!server) {
-    fprintf(stderr,"%s: Failed to open TCP server on port %d.\n",ra.exename,ra.http_port);
-    return -2;
+    fprintf(stderr,"%s: Failed to open TCP server on port %d. Starting without, and we'll retry periodically.\n",ra.exename,ra.http_port);
   }
+  #undef TRYSERVE
   
   if (!http_listen(ra.http,0,"/api/**",ra_http_api,0)) return -1;
   if (!http_listen_websocket(ra.http,"/ws/menu",ra_ws_connect_menu,ra_ws_disconnect,ra_ws_message,0)) return -1;
@@ -128,6 +130,15 @@ int main(int argc,char **argv) {
   
   while (1) {
     if (ra.sigc) break;
+
+    // 2024-02-04: Desperately trying to get ra to boot with the pi. It has no network initially, so http_serve fails.
+    // Can we retry that repeatedly until it works?
+    if (!http_context_get_server_by_index(ra.http,0)) {
+      if (http_serve(ra.http,ra.http_port,0)) {
+        fprintf(stderr,"%s:%d !!! got http server on a deferred retry\n",__FILE__,__LINE__);
+      }
+    }
+
     if (http_update(ra.http,1000)<0) {
       fprintf(stderr,"%s: Error updating HTTP (could be anything).\n",ra.exename);
       status=1;

@@ -7,3 +7,4 @@ ExecStart=su kiddo -c '/home/kiddo/proj/ra3/out/romassist --dbroot=/home/kiddo/p
 
 [Install]
 WantedBy=multi-user.target
+Wants=network-online.target

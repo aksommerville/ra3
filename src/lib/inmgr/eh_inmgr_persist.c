@@ -112,8 +112,8 @@ int eh_inmgr_decode_config(struct eh_inmgr *inmgr,const void *src,int srcc,const
       return -1;
     }
     if ((dstbtnid=eh_btnid_eval(dsttoken,dsttokenc))<0) {
-      if (refname) fprintf(stderr,"%s:%d: Failed to evaluate '%.*s' as logical button id.\n",refname,lineno,dsttokenc,dsttoken);
-      return -1;
+      if (refname) fprintf(stderr,"%s:%d:WARNING Failed to evaluate '%.*s' as logical button id.\n",refname,lineno,dsttokenc,dsttoken);
+      continue; // Not fatal. I'm going to share these config files with other games, which might define their own extra buttons.
     }
     
     struct eh_inmgr_rule *rule=eh_inmgr_config_add_rule(config,srcbtnid);

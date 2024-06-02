@@ -120,8 +120,16 @@ void eh_render_commit(struct eh_render *render) {
     {0,0},{0,1},{1,0},{1,1},
   };
   
-  glEnable(GL_TEXTURE_2D);
   glUseProgram(render->programid);
+  glEnable(GL_TEXTURE_2D);
+  if (render->pixelRefresh<1.0f) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    glUniform1f(render->loc_pixelRefresh,render->pixelRefresh);
+  } else {
+    glDisable(GL_BLEND);
+    glUniform1f(render->loc_pixelRefresh,1.0f); // not relevant but let's be consistent
+  }
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(0,2,GL_FLOAT,0,sizeof(positionv[0]),positionv);

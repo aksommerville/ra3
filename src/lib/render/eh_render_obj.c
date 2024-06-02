@@ -154,9 +154,10 @@ static const char eh_vshader[]=
 
 static const char eh_fshader[]=
   "uniform sampler2D sampler;\n"
+  "uniform float pixelRefresh;\n"
   "varying vec2 vtexcoord;\n"
   "void main() {\n"
-  "  gl_FragColor=texture2D(sampler,vtexcoord);\n"
+  "  gl_FragColor=vec4(texture2D(sampler,vtexcoord).rgb,pixelRefresh);\n"
   "}\n"
 "";
 
@@ -248,6 +249,9 @@ static int eh_render_init_shader(struct eh_render *render) {
   glBindAttribLocation(render->programid,1,"atexcoord");
   
   if (eh_render_link(render)<0) return -1;
+  
+  glUseProgram(render->programid);
+  render->loc_pixelRefresh=glGetUniformLocation(render->programid,"pixelRefresh");
 
   return 0;
 }
@@ -260,6 +264,7 @@ struct eh_render *eh_render_new() {
   if (!render) return 0;
   
   render->dstr_dirty=1;
+  render->pixelRefresh=1.0f;
   
   if (eh_render_init_conversion(render)<0) {
     eh_render_del(render);
@@ -296,6 +301,12 @@ void eh_render_after(struct eh_render *render) {
     eh.video->type->end(eh.video);
     render->srcfb=0;
   }
+}
+
+void eh_render_set_pixel_refresh(struct eh_render *render,float pixelRefresh) {
+  if (pixelRefresh<=0.0f) render->pixelRefresh=0.0f;
+  else if (pixelRefresh>=1.0f) render->pixelRefresh=1.0f;
+  else render->pixelRefresh=pixelRefresh;
 }
 
 /* Public API.

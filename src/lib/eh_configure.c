@@ -2,6 +2,33 @@
 #include "opt/serial/serial.h"
 #include "opt/fs/fs.h"
 
+/* --help
+ */
+ 
+static void eh_print_help(const char *topic,int topicc) {
+  fprintf(stderr,"Usage: %s [OPTIONS] ROMFILE\n",eh.exename);
+  fprintf(stderr,
+    "\n"
+    "OPTIONS:\n"
+    "  --help                   Print this message.\n"
+    "  --video=LIST             Video drivers, in order of preference.\n"
+    "  --audio=LIST             Audio drivers, in order of preference.\n"
+    "  --input=LIST             Input drivers -- we will instantiate all.\n"
+    "  --fullscreen=0|1\n"
+    "  --video-device=PATH      Default /dev/dri/card0, only DRM uses.\n"
+    "  --pixel-refresh=1.0      Lower for motion blur.\n"
+    "  --audio-rate=HZ\n"
+    "  --audio-chanc=1|2\n"
+    "  --audio-device=STRING\n"
+    "  --glsl-version=INT\n"
+    "  --input-config=PATH\n"
+    "  --screen=any             (left,right,top,bottom) Try to land window on the given monitor.\n"
+    "  --crop=x,y,w,h\n"
+    "  --romassist=HOST:PORT\n"
+    "\n"
+  );
+}
+
 /* Set string.
  */
  
@@ -18,30 +45,16 @@ int eh_config_set_string(char **dst,const char *src,int srcc) {
   return 0;
 }
 
-/* --help
+/* Set float.
  */
  
-static void eh_print_help(const char *topic,int topicc) {
-  fprintf(stderr,"Usage: %s [OPTIONS] ROMFILE\n",eh.exename);
-  fprintf(stderr,
-    "\n"
-    "OPTIONS:\n"
-    "  --help                   Print this message.\n"
-    "  --video=LIST             Video drivers, in order of preference.\n"
-    "  --audio=LIST             Audio drivers, in order of preference.\n"
-    "  --input=LIST             Input drivers -- we will instantiate all.\n"
-    "  --fullscreen=0|1\n"
-    "  --video-device=PATH      Default /dev/dri/card0, only DRM uses.\n"
-    "  --audio-rate=HZ\n"
-    "  --audio-chanc=1|2\n"
-    "  --audio-device=STRING\n"
-    "  --glsl-version=INT\n"
-    "  --input-config=PATH\n"
-    "  --screen=any             (left,right,top,bottom) Try to land window on the given monitor.\n"
-    "  --crop=x,y,w,h\n"
-    "  --romassist=HOST:PORT\n"
-    "\n"
-  );
+static int eh_config_set_float(float *dst,const char *src,int srcc,float lo,float hi) {
+  double v=0.0;
+  if (sr_double_eval(&v,src,srcc)<0) return -1;
+  if (v<lo) *dst=lo;
+  else if (v>hi) *dst=hi;
+  else *dst=v;
+  return 0;
 }
 
 /* --screen
@@ -156,6 +169,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==5)&&!memcmp(k,"input",5)) return eh_config_set_string(&eh.input_drivers,v,vc);
   if ((kc==10)&&!memcmp(k,"fullscreen",10)) { eh.fullscreen=vc?vn:1; return 0; }
   if ((kc==12)&&!memcmp(k,"video-device",12)) return eh_config_set_string(&eh.video_device,v,vc);
+  if ((kc==13)&&!memcmp(k,"pixel-refresh",13)) return eh_config_set_float(&eh.pixel_refresh,v,vc,0.0f,1.0f);
   if ((kc==10)&&!memcmp(k,"audio-rate",10)) { eh.audio_rate=vn; return 0; }
   if ((kc==11)&&!memcmp(k,"audio-chanc",11)) { eh.audio_chanc=vn; return 0; }
   if ((kc==12)&&!memcmp(k,"audio-device",12)) return eh_config_set_string(&eh.audio_device,v,vc);
@@ -220,6 +234,7 @@ static int eh_config_encode(struct sr_encoder *dst) {
   if (sr_encode_fmt(dst,"screen=%s\n",eh_config_screen_repr(eh.prefer_screen))<0) return -1;
   if (sr_encode_fmt(dst,"glsl-version=%d\n",eh.glsl_version)<0) return -1;
   if (sr_encode_fmt(dst,"video-device=%s\n",eh.video_device?eh.video_device:"")<0) return -1;
+  if (sr_encode_fmt(dst,"pixel-refresh=%f\n",eh.pixel_refresh)<0) return -1;
   
   if (sr_encode_fmt(dst,"audio=%s\n",eh.audio_drivers?eh.audio_drivers:"")<0) return -1;
   if (sr_encode_fmt(dst,"audio-rate=%d\n",eh.audio_rate)<0) return -1;
@@ -311,6 +326,7 @@ static void eh_configure_start() {
   eh.fbcrop.y=0;
   eh.fbcrop.w=eh.delegate.video_width;
   eh.fbcrop.h=eh.delegate.video_height;
+  eh.pixel_refresh=1.0f;
 }
 
 /* Finish configuration.

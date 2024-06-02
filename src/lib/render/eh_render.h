@@ -21,4 +21,9 @@ void eh_render_bounds_dirty(struct eh_render *render);
 void eh_render_before(struct eh_render *render);
 void eh_render_after(struct eh_render *render);
 
+/* Opacity of final framebuffer transfer, 0..1, default 1.
+ * This is needed for Gameboy, to simulate how its screen's pixels took longer than one frame to fully change color.
+ */
+void eh_render_set_pixel_refresh(struct eh_render *render,float pixelRefresh);
+
 #endif

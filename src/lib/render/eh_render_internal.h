@@ -48,6 +48,8 @@ struct eh_render {
   uint8_t *cropbuf;
   
   GLuint programid;
+  GLuint loc_pixelRefresh;
+  GLfloat pixelRefresh;
   
   int gx_in_progress;
 };

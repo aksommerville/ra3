@@ -85,6 +85,7 @@ static int eh_drivers_init_video() {
     fprintf(stderr,"%s: Failed to instantiate renderer.\n",eh.exename);
     return -2;
   }
+  eh_render_set_pixel_refresh(eh.render,eh.pixel_refresh);
   
   // Apportion an input device id for the keyboard if there is one.
   if (eh.video->type->provides_keyboard) {

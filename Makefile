@@ -85,6 +85,7 @@ ifneq (,$(strip $(BUILD_ROMASSIST)))
     run-bg:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --no-update
   endif
 endif
+serve:run-bg
 
 ifneq (,$(strip $(BUILD_MENU)))
   EXE_MENU:=out/romassist-menu$(EXESFX)

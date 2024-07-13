@@ -20,6 +20,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Upgrade method for db content.
 - [ ] Upload screencap via web app. Or provide URL? I'm thinking if you go search for box art somewhere else.
 - - Actually this can be low priority. Pico-8 gets them automatically, and the emulators you can snap during play. Anything else is a bit exotic.
+- - ^ Not sure I agree with this. Just installed some new games on the Pi and ended up having to scp the screencaps over. Needs a fix.
 - [ ] mn_widget_edit/mn_widget_addgame: See comments, need some new support to facilitate popping up edit after adding a file.
 - [ ] GET /api/blob/all is only returning buckets 0 and 1200, but there are dozens more.
 - [ ] menu: Feedback from upgrade. Also, I'm not seeing git/make output in the server log, that would be nice.
@@ -33,6 +34,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - - 2023-11-26: 1676 remaining
 - - - 2023-12-02: 1558 ...1513
+- - - 2024-07-13: 1285
 - [ ] Emuhost: Add an overscan option, you never know.
 - [ ] Prepare the Pi.
 - - [ ] Solarus
@@ -46,4 +48,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - - [ ] Check PulseAudio cleanup, maybe it blocks for the I/O thread or something. Pulse does remain in top during the freeze, and CPU doesn't spike or anything.
 - [ ] A missing game shouldn't break list processing. db_list_gamev_populate, we abort if one is missing. tricky...
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?
-
+- [ ] Find games that could use high-score persistence. (IDs here are on my Nuc)
+- - [ ] 2758: Super Mario Duck Track
+- [x] Just out of curiosity, I'd like to see a list of the commonest words across all our text. Now that I have a few thousand games metadata'd.
+- - db_wordcloud. It works, but doesn't tell us much interesting.
+- [ ] Stats per author. Something more detailed than histogram, eg average rating and range of dates.

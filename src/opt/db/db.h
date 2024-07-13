@@ -702,6 +702,9 @@ int db_list_sort_auto(struct db *db,struct db_list *list,int sort,int descend);
  */
 int db_list_paginate(struct db_list *list,int page_size,int page_index);
 
+/* Histogram: For querying "what values exist for field X, and how many games have them?".
+ *****************************************************************************/
+
 struct db_histogram {
   struct db_histogram_entry {
     uint32_t stringid;
@@ -749,5 +752,33 @@ int db_histogram_encode(
   int format,
   int detail
 );
+
+/* Wordcloud. A one-trick pony that yoinks tokens out of the string store and histograms them.
+ * The idea is to identify strings that could be useful as search terms.
+ * Certain common words (articles, prepositions, ...) are never logged.
+ ****************************************************************************/
+
+struct db_wordcloud {
+  struct db *db; // WEAK. Owner must set directly.
+  struct db_wordcloud_entry {
+    int vc;
+    const char *v; // WEAK
+    int instc; // how many appearances
+  } *entryv;
+  int entryc,entrya;
+};
+
+void db_wordcloud_cleanup(struct db_wordcloud *wc);
+
+/* Wipe (wc), then rebuild it by walking the string store.
+ * Entries are sorted by (vc,text).
+ */
+int db_wordcloud_gather(struct db_wordcloud *wc);
+
+/* Drop anything with fewer than (min) or greater than (max) appearances.
+ * We start by sorting in-place, on (instc) descending.
+ * So it's sensible to provide (1,INT_MAX) if you don't want to filter but just want the sorting.
+ */
+void db_wordcloud_filter_by_count(struct db_wordcloud *wc,int instc_min,int instc_max);
 
 #endif

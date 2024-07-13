@@ -32,6 +32,20 @@ static int ra_init_db() {
   /* Opportunity for one-off DB actions that I don't feel like exposing the right way.
    */
   if (0) {
+    struct db_wordcloud wc={.db=ra.db};
+    if (db_wordcloud_gather(&wc)<0) {
+      fprintf(stderr,"db_wordcloud_gather failed!\n");
+      return -1;
+    }
+    db_wordcloud_filter_by_count(&wc,0,INT_MAX); // <-- TODO
+    fprintf(stderr,"wordcloud found %d words in our %d games.\n",wc.entryc,db_game_count(ra.db));
+    int dumpc=100; if (dumpc>wc.entryc) dumpc=wc.entryc;
+    fprintf(stderr,"Top %d:\n",dumpc);
+    const struct db_wordcloud_entry *entry=wc.entryv;
+    int i=0; for (;i<dumpc;i++,entry++) {
+      fprintf(stderr,"  %5d %.*s\n",entry->instc,entry->vc,entry->v);
+    }
+    db_wordcloud_cleanup(&wc);
     fprintf(stderr,"db action complete. reporting failure to abort process.\n");
     return -1;
   }

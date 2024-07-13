@@ -32,6 +32,7 @@ static int ra_init_db() {
   /* Opportunity for one-off DB actions that I don't feel like exposing the right way.
    */
   if (0) {
+    #if 0
     struct db_wordcloud wc={.db=ra.db};
     if (db_wordcloud_gather(&wc)<0) {
       fprintf(stderr,"db_wordcloud_gather failed!\n");
@@ -46,6 +47,35 @@ static int ra_init_db() {
       fprintf(stderr,"  %5d %.*s\n",entry->instc,entry->vc,entry->v);
     }
     db_wordcloud_cleanup(&wc);
+    #endif
+    #if 1
+    struct db_detailgram dg={.db=ra.db};
+    const char *field="genre";
+    if (db_detailgram_gather(&dg,field)<0) {
+      fprintf(stderr,"db_detailgram_gather failed!\n");
+      return -1;
+    }
+    fprintf(stderr,"detailgram found %d values for '%s'\n",dg.entryc,field);
+    //db_detailgram_filter_gamec(&dg,2,INT_MAX);
+    db_detailgram_sort_rating_avg_desc(&dg);
+    int dumpc=100; if (dumpc>dg.entryc) dumpc=dg.entryc;
+    fprintf(stderr,"Top %d:\n",dumpc);//TODO actually "Top" is misleading here, they're not sorted meaningfully
+    const struct db_detailgram_entry *entry=dg.entryv;
+    int i=dumpc; for (;i-->0;entry++) {
+      const char *name=0;
+      int namec=db_string_get(&name,ra.db,entry->v);
+      if (namec<0) namec=0;
+      int yearlo=0,yearhi=0;
+      db_time_unpack(&yearlo,0,0,0,0,entry->pubtime_lo);
+      db_time_unpack(&yearhi,0,0,0,0,entry->pubtime_hi);
+      fprintf(stderr,
+        "  %30.*s: %4d games. rating=%2d..%2d~%2d. pubtime=%4d..%4d\n",
+        namec,name,entry->gamec,
+        entry->rating_lo,entry->rating_hi,entry->rating_avg,
+        yearlo,yearhi
+      );
+    }
+    #endif
     fprintf(stderr,"db action complete. reporting failure to abort process.\n");
     return -1;
   }

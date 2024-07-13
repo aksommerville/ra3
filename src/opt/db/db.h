@@ -753,6 +753,42 @@ int db_histogram_encode(
   int detail
 );
 
+/* Detailgram: A more interesting pivot aggregation that shows stats for games with one identical header field.
+ * I'm thinking author is the useful one.
+ *******************************************************************/
+ 
+struct db_detailgram {
+  struct db *db; // WEAK, owner must set directly.
+  int fldp; // Offset into struct db_game for the pivot field (uint32_t).
+  struct db_detailgram_entry {
+    uint32_t v; // Value of pivot field.
+    int gamec;
+    int rating_sum,rating_lo,rating_hi;
+    int rating_avg; // Populated in a separate pass at the end of gather.
+    uint32_t pubtime_lo,pubtime_hi; // (0,0) initially, but we ignore zeroes from games.
+    int flags[32]; // Count per flag, little-endian.
+  } *entryv;
+  int entryc,entrya;
+};
+
+void db_detailgram_cleanup(struct db_detailgram *dg);
+
+/* Clear any existing content and rebuild.
+ * (field) is one of: "author", "platform", "genre"
+ * Games where the pivot field is unset are discarded, there's no "zero bucket".
+ */
+int db_detailgram_gather(struct db_detailgram *dg,const char *field);
+
+// It's normal to ask for (min==2) to ignore the abundant one-offs that mess with your averages.
+void db_detailgram_filter_gamec(struct db_detailgram *dg,int min,int max);
+
+void db_detailgram_sort_count_desc(struct db_detailgram *dg);
+void db_detailgram_sort_count_asc(struct db_detailgram *dg); // Not sure this is useful, but maybe you're looking for outliers.
+void db_detailgram_sort_rating_avg_desc(struct db_detailgram *dg);
+void db_detailgram_sort_rating_avg_asc(struct db_detailgram *dg); // "Show me the worst"
+void db_detailgram_sort_pubtime_hi_desc(struct db_detailgram *dg);
+void db_detailgram_sort_pubtime_lo_asc(struct db_detailgram *dg); // Zeroes go at the end.
+
 /* Wordcloud. A one-trick pony that yoinks tokens out of the string store and histograms them.
  * The idea is to identify strings that could be useful as search terms.
  * Certain common words (articles, prepositions, ...) are never logged.

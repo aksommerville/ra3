@@ -52,4 +52,5 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] 2758: Super Mario Duck Track
 - [x] Just out of curiosity, I'd like to see a list of the commonest words across all our text. Now that I have a few thousand games metadata'd.
 - - db_wordcloud. It works, but doesn't tell us much interesting.
-- [ ] Stats per author. Something more detailed than histogram, eg average rating and range of dates.
+- [x] Stats per author. Something more detailed than histogram, eg average rating and range of dates.
+- - db_detailgram. Kind of like wordcloud, not sure it's going to be useful.

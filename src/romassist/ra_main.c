@@ -110,7 +110,7 @@ static int ra_init_http() {
   if (!http_listen_websocket(ra.http,"/ws/game",ra_ws_connect_game,ra_ws_disconnect,ra_ws_message,0)) return -1;
   if (!http_listen(ra.http,HTTP_METHOD_GET,"/**",ra_http_static,0)) return -1;
   
-  fprintf(stderr,"%s: Serving HTTP on port %d.\n",ra.exename,ra.http_port);
+  if (server) fprintf(stderr,"%s: Serving HTTP on port %d.\n",ra.exename,ra.http_port);
   return 0;
 }
 

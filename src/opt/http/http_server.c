@@ -78,12 +78,21 @@ int http_server_bind(struct http_server *server,const char *host,int port,int op
   struct addrinfo *ai=0;
   int err;
   if (err=getaddrinfo(host,service,&hints,&ai)) {
-    return -1;
-  }
-  err=bind(server->fd,ai->ai_addr,ai->ai_addrlen);
-  freeaddrinfo(ai);
-  if (err<0) {
-    return -1;
+    if (host&&!strcmp(host,"localhost")&&!open_to_public) {
+      struct sockaddr_in sin={.sin_family=AF_INET,.sin_port=htons(port)};
+      memcpy(&sin.sin_addr,"\x7f\0\0\1",4);
+      if (bind(server->fd,(struct sockaddr*)&sin,sizeof(sin))<0) {
+        return -1;
+      }
+    } else {
+      return -1;
+    }
+  } else {
+    err=bind(server->fd,ai->ai_addr,ai->ai_addrlen);
+    freeaddrinfo(ai);
+    if (err<0) {
+      return -1;
+    }
   }
   server->open_to_public=open_to_public;
   server->port=port;

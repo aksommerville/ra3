@@ -52,6 +52,7 @@ struct eh_render {
   GLfloat pixelRefresh;
   
   int gx_in_progress;
+  int auto_collect_metadata_clock;
 };
 
 /* Main entry point for framebuffer conversion and delivery.

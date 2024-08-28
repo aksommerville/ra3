@@ -177,6 +177,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==12)&&!memcmp(k,"input-config",12)) return eh_config_set_string(&eh.input_config_path,v,vc);
   if ((kc==6)&&!memcmp(k,"screen",6)) { eh.prefer_screen=eh_config_screen_eval(v,vc); return 0; }
   if ((kc==4)&&!memcmp(k,"crop",4)) return eh_config_set_crop(v,vc);
+  if ((kc==21)&&!memcmp(k,"auto-collect-metadata",21)) { eh.auto_collect_metadata=1; return 0; }
   
   /* "--romassist" splits into two fields.
    */

@@ -659,6 +659,9 @@ h2 {
 .CompraterUi .bucketColumn.left {
   border-left: 1px solid #000;
 }
+.CompraterUi .bucketColumn.tooMany {
+  background-color: #533;
+}
 
 .CompraterUi .bucketColumn .header {
   background-color: #888;

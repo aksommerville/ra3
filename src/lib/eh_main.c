@@ -66,7 +66,13 @@ static int eh_startup_vm() {
 static int eh_update() {
 
   // Regulate timing. This may block.
-  int framec=eh_clock_tick(&eh.clock);
+  int framec;
+  if (eh.auto_collect_metadata) {
+    framec=20;
+    eh_auto_collect_metadata_update(&eh.acm);
+  } else {
+    framec=eh_clock_tick(&eh.clock);
+  }
   
   // Timing adjustment per audio conversion.
   // It is perfectly normal to overrun and underrun regularly.

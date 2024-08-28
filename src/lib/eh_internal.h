@@ -6,6 +6,7 @@
 #include "eh_clock.h"
 #include "eh_inmgr.h"
 #include "eh_aucvt.h"
+#include "eh_auto_collect_metadata.h"
 #include "render/eh_render.h"
 #include "opt/fakews/fakews.h"
 #include <string.h>
@@ -36,6 +37,9 @@ extern struct eh {
   char *romassist_host;
   int romassist_port;
   struct { int x,y,w,h; } fbcrop; // True dimensions of video output. delegate->width,height are only input from client.
+  int auto_collect_metadata; // A special experimental mode. XXX Started but not implemented.
+  
+  struct eh_auto_collect_metadata acm;
   
   struct eh_clock clock;
   struct eh_video_driver *video;

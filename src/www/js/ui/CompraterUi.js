@@ -48,6 +48,7 @@ export class CompraterUi {
   }
   
   populateColumn(column, rating) {
+    column.classList.remove("tooMany");
     this.dom.spawn(column, "DIV", ["header"], rating);
     const bucket = this.buckets[rating];
     if (!bucket) return;
@@ -68,6 +69,16 @@ export class CompraterUi {
     }
     if (scroll + this.thumbnailCount < bucket.length) {
       this.dom.spawn(column, "INPUT", { type: "button", value: `^^^ ${bucket.length - this.thumbnailCount - scroll} ^^^`, "on-click": () => this.scrollColumn(rating, 1, column) });
+    }
+    
+    // Highlight the column if it has substantially more games than its immediate neighbors.
+    // Ratings are arbitrary, and for no particular reason, I want to smooth out the distribution.
+    if (bucket.length >= 10) {
+      const min = bucket.length * 0.5;
+      if (
+        (this.buckets[rating - 1] && (this.buckets[rating - 1].length < min)) ||
+        (this.buckets[rating + 1] && (this.buckets[rating + 1].length < min))
+      ) column.classList.add("tooMany");
     }
   }
   

@@ -27,14 +27,20 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Integrate emulators
 - - [ ] Validate 4 player in all emulators
 - [ ] Prepare collection
-- - [ ] See rating histogram, try to flatten out the multiple-of-5 spikes.
-- - [ ] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
+- - [x] See rating histogram, try to flatten out the multiple-of-5 spikes.
+- - [x] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
 - - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
 - - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.
 - - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
 - - - 2023-11-26: 1676 remaining
 - - - 2023-12-02: 1558 ...1513
 - - - 2024-07-13: 1285
+- - - 2024-07-27: 998
+- - - 2024-08-25: 166
+- - - 2024-08-27: 0 whoo hoo!
+- - [x] When initial review is complete, look again at the ones I've flagged. eg 2600 Paddles, and disorganized errors, missing mappers.
+- - [ ] More lists. I'd like a list of like "the best of every style", all the archetype games.
+- - [x] Ensure sports games have the name of the sport in comments somewhere. I think a negative-text search could help to locate these.
 - [ ] Emuhost: Add an overscan option, you never know.
 - [ ] Prepare the Pi.
 - - [ ] Solarus
@@ -54,3 +60,4 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - db_wordcloud. It works, but doesn't tell us much interesting.
 - [x] Stats per author. Something more detailed than histogram, eg average rating and range of dates.
 - - db_detailgram. Kind of like wordcloud, not sure it's going to be useful.
+- [ ] When I play lots of games in a row, launching from web, it tends to forget the fullscreen setting. Why?

@@ -274,6 +274,7 @@ int eh_aucvt_input(struct eh_aucvt *aucvt,const void *src,int samplec) {
   
   // Eliminate all audio while fast-forwarding.
   if (eh.fastfwd) return samplec;
+  if (eh.auto_collect_metadata) return samplec;
   
   int okc=aucvt->bufa-aucvt->bufc;
   if (okc>=samplec) okc=samplec;

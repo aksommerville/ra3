@@ -299,6 +299,9 @@ void eh_render_after(struct eh_render *render) {
     eh.video->type->begin(eh.video);
     eh_render_commit(render);
     eh.video->type->end(eh.video);
+    if (eh.auto_collect_metadata) { // TODO Do we need to support GX clients too? Not sure we use that at all.
+      eh_auto_collect_metadata_fb(render->srcfb);
+    }
     render->srcfb=0;
   }
 }

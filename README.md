@@ -18,6 +18,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.
 - [ ] Upgrade method for db content.
+- - Go big. I want an interactive process via the GUI, where you enter the remote IP address, then one by one resolve discrepancies.
+- - etc/doc/20240906-upgrade-notes.txt
 - [ ] Upload screencap via web app. Or provide URL? I'm thinking if you go search for box art somewhere else.
 - - Actually this can be low priority. Pico-8 gets them automatically, and the emulators you can snap during play. Anything else is a bit exotic.
 - - ^ Not sure I agree with this. Just installed some new games on the Pi and ended up having to scp the screencaps over. Needs a fix.
@@ -27,20 +29,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] Integrate emulators
 - - [ ] Validate 4 player in all emulators
 - [ ] Prepare collection
-- - [x] See rating histogram, try to flatten out the multiple-of-5 spikes.
-- - [x] Review ROMs. Eliminate duplicates, faulty, and obscene. Populate metadata for everything we keep.
-- - - Games initially with rating==0 (in pages): gameboy=81 snes=27 nes=20 atari2600=44 atari5200=8 atari7800=6 c64=186 genesis=114 n64=11 scv=3
-- - - That's about 6000 games. But we're probably not going to support 5200, c64, n64, or genesis, and scv remains highly questionable.
-- - - gameboy+snes+nes+atari2600: 2064 games. Still a ton.
-- - - 2023-11-26: 1676 remaining
-- - - 2023-12-02: 1558 ...1513
-- - - 2024-07-13: 1285
-- - - 2024-07-27: 998
-- - - 2024-08-25: 166
-- - - 2024-08-27: 0 whoo hoo!
-- - [x] When initial review is complete, look again at the ones I've flagged. eg 2600 Paddles, and disorganized errors, missing mappers.
 - - [ ] More lists. I'd like a list of like "the best of every style", all the archetype games.
-- - [x] Ensure sports games have the name of the sport in comments somewhere. I think a negative-text search could help to locate these.
 - [ ] Emuhost: Add an overscan option, you never know.
 - [ ] Prepare the Pi.
 - - [ ] Solarus
@@ -56,8 +45,13 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] If the menu's connection to Romassist gets broken, it's impossible to quit or shut down. Should we do something about this?
 - [ ] Find games that could use high-score persistence. (IDs here are on my Nuc)
 - - [ ] 2758: Super Mario Duck Track
-- [x] Just out of curiosity, I'd like to see a list of the commonest words across all our text. Now that I have a few thousand games metadata'd.
-- - db_wordcloud. It works, but doesn't tell us much interesting.
-- [x] Stats per author. Something more detailed than histogram, eg average rating and range of dates.
-- - db_detailgram. Kind of like wordcloud, not sure it's going to be useful.
 - [ ] When I play lots of games in a row, launching from web, it tends to forget the fullscreen setting. Why?
+- [ ] More platforms
+- - [ ] Genesis
+- - [ ] C64
+- - [ ] DOS?
+- - [ ] Atari 5200?
+- - [ ] Atari 400?
+- - [ ] Super Cassette Vision? Give it another look.
+- - [ ] PC Engine?
+- - N64, PS1, and newer are out of scope. ROMs too big, and I don't want to support analogue input.

@@ -1,0 +1,38 @@
+2024-09-06
+
+I want a fancy option to interactively merge two databases.
+Main use case is I collect new games and annotate them primarily on my PC, and there's a Pi already provisioned with an older state of the same set.
+
+One might expect the orchestration to live in Server, but I'm thinking Menu instead.
+Server would involve adding a huge amount of state, and then like, what happens if the process is aborted?
+And adding HTTP or WS endpoints for every little step of the operation... messy.
+Problem with doing it in Menu is that we'll have to reimplement for Web.
+
+Within Menu, neither of the databases is local.
+That might actually make things simpler. We have two hosts to talk to, and they are symmetric.
+
+## Main flow, from user's point of view.
+
+- Settings/Network: Add an option "Sync".
+- New modal to collect initial parameters:
+- - Remote IP address and port.
+- - Access: Read Only, Write Only, Read/Write. Default Read Only.
+- - Add games? Y/N/Ask for both Remote and Local. (n/a if we have one-way access)
+- - Delete games? ''
+- - Add screencaps? ''
+- - Add plays? ''
+- - Add launchers? ''
+- Show spinner and fast-updating text, which game is being looked at. Progress bar quantized by games.
+- Interrupt with a new modal at any conflict:
+- - This is a 2-way merge, not 3-way, so we generally don't know which side is newer.
+- - Show all game fields, highlight discrepancies. "Use Remote", "Use Local", "Refine", "Skip", "Abort".
+- - Retain the highlighted button. Typically the user will "Use Remote" dozens of times in a row.
+- - "Refine" to allow editing each field individually, then we update both hosts (or just the writeable one).
+- Modal changes to summary. Count of games modified, added, removed. And count of "other change" eg plays.
+
+## TODO
+
+- [ ] Back up data and roms.
+- [ ] Stand a second ra3 instance on my PC with older data.
+- [ ] Add UI for initiation.
+- [ ] New service in Menu for orchestration.

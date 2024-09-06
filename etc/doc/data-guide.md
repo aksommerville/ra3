@@ -17,8 +17,9 @@ Any token in `cmd` beginning with `$` is a variable:
 - `$COMMENT:foo` for the value of the first comment of type "foo" for this game, or empty.
 - Anything else is an error; the launcher won't work.
 
-Native launcher should contain `$COMMENT:args` for extra text to add to the command.
+All launchers should contain `$COMMENT:args` for extra text to add to the command.
 That way the game's path can still be the actual executable path, no extra cruft.
+And we can add per-game tweaks, eg ones that expect a zapper or paddles.
 
 ## Upgrades
 

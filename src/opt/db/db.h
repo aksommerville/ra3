@@ -702,6 +702,18 @@ int db_list_sort_auto(struct db *db,struct db_list *list,int sort,int descend);
  */
 int db_list_paginate(struct db_list *list,int page_size,int page_index);
 
+/* See etc/doc/http.md around GET /api/export.
+ * Generate an enormous JSON dump of the entire database.
+ */
+int db_export(struct sr_encoder *dst,struct db *db,uint32_t flags);
+#define DB_EXPORT_comments   0x0001
+#define DB_EXPORT_plays      0x0002
+#define DB_EXPORT_launchers  0x0004
+#define DB_EXPORT_upgrades   0x0008
+#define DB_EXPORT_lists      0x0010
+#define DB_EXPORT_blobs      0x0020
+#define DB_EXPORT_DEFAULT    0x0033 /* No launchers or upgrades. */
+
 /* Histogram: For querying "what values exist for field X, and how many games have them?".
  *****************************************************************************/
 

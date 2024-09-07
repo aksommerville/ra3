@@ -5,6 +5,7 @@
 #include "opt/gui/gui.h"
 #include "opt/cheapsynth/cheapsynth.h"
 #include "db_service.h"
+#include "sync/sync.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

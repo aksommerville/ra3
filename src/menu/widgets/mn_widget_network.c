@@ -101,6 +101,12 @@ static void network_cb_form(struct gui_widget *form,const char *k,int kc,const c
     dbs_request_http(&mn.dbs,"POST","/api/upgrade",0,0);
     return;
   }
+  
+  if ((kc==4)&&!memcmp(k,"Sync",4)) {
+    struct gui_widget *sync=gui_push_modal(widget->gui,&mn_widget_type_sync);
+    if (!sync) return;
+    return;
+  }
 }
 
 /* Init.
@@ -131,6 +137,7 @@ static int _network_init(struct gui_widget *widget) {
   
   gui_widget_form_add_string(form,"Web",3,"Enable",6,1);
   gui_widget_form_add_string(form,"Upgrade",7,"Begin",5,1);
+  gui_widget_form_add_string(form,"Sync",4,"...",3,1);
   
   return 0;
 }

@@ -155,6 +155,7 @@ int gui_widget_is_ancestor(const struct gui_widget *ancestor,const struct gui_wi
 int gui_widget_add_child(struct gui_widget *parent,struct gui_widget *child);
 int gui_widget_insert_child(struct gui_widget *parent,int p,struct gui_widget *child);
 void gui_widget_remove_child(struct gui_widget *parent,struct gui_widget *child);
+void gui_widget_remove_all_children(struct gui_widget *parent);
 
 /* Widget types.
  * Client should add its own types, mostly at screen or modal scope.

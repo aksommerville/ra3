@@ -11,6 +11,10 @@ Problem with doing it in Menu is that we'll have to reimplement for Web.
 Within Menu, neither of the databases is local.
 That might actually make things simpler. We have two hosts to talk to, and they are symmetric.
 
+Problemo!
+The HTTP connection to the local database is brokered opaquely via libemuhost.
+There does not appear to be an HTTP client that we can borrow for the remote connection.
+
 ## Main flow, from user's point of view.
 
 - Settings/Network: Add an option "Sync".
@@ -32,7 +36,10 @@ That might actually make things simpler. We have two hosts to talk to, and they 
 
 ## TODO
 
-- [ ] Back up data and roms.
-- [ ] Stand a second ra3 instance on my PC with older data.
+- [x] Back up data and roms. ...~/proj/rabackup
+- [x] Stand a second ra3 instance on my PC with older data.
+- - Latest stable code with latest data at ra3, port 43215.
+- - New repo with changes and no data at ra3-sync, port 2600.
+- [ ] New "export" endpoint with complete and concise data.
 - [ ] Add UI for initiation.
 - [ ] New service in Menu for orchestration.

@@ -274,3 +274,16 @@ void gui_widget_remove_child(struct gui_widget *parent,struct gui_widget *child)
     return;
   }
 }
+
+/* Remove all children.
+ */
+ 
+void gui_widget_remove_all_children(struct gui_widget *parent) {
+  if (!parent) return;
+  while (parent->childc>0) {
+    parent->childc--;
+    struct gui_widget *child=parent->childv[parent->childc];
+    child->parent=0;
+    gui_widget_del(child);
+  }
+}

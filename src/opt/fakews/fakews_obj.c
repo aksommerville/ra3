@@ -247,6 +247,7 @@ int fakews_connect_now(struct fakews *fakews) {
     return -1;
   }
   fprintf(stderr,"Connected to %.*s:%d\n",fakews->hostc,fakews->host,fakews->port);
+  if (fakews->cb_connect) fakews->cb_connect(fakews->userdata);
   
   return 0;
 }

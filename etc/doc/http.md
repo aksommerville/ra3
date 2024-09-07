@@ -84,6 +84,8 @@ POST /api/enable-public => int (TCP port)
 
 POST /api/autoscreencap => report
 
+GET /api/export => See below.
+
 WS /ws/menu => Long running connection for menu clients.
 WS /ws/game => Long running connection for game clients.
 ```
@@ -365,6 +367,77 @@ Would be cool in the future if we can launch a headless emulator, run for a few 
 But that's probably overkill.
 
 Returns a JSON report describing what changed.
+
+## /api/export
+
+Dump the entire database in a more or less portable format.
+
+| Param        | Desc |
+|--------------|------|
+| comments     | 0,[1] |
+| plays        | 0,[1] |
+| launchers    | [0],1 |
+| upgrades     | [0],1 |
+| lists        | 0,[1] |
+| blobs        | 0,[1] |
+
+Response:
+```
+{
+  games: Table(
+    gameid: int
+    name: string
+    path: string
+    platform: string
+    author: string
+    genre: string
+    flags: string[]
+    rating: int
+    pubtime: string
+    comments?: Table(
+      time: string,
+      k: string,
+      v: string,
+    ) or zero if none,
+    plays?: Table(
+      time: string,
+      dur: int, minutes,
+    ) or zero if none,
+  ),
+  launchers?: Table(
+    launcherid: int,
+    name: string,
+    platform: string,
+    suffixes: string,
+    cmd: string,
+    desc: string,
+  ),
+  upgrades?: Table(
+    upgradeid: int,
+    name: string,
+    desc: string,
+    gameid: int,
+    launcherid: int,
+    depend: int (upgradeid),
+    method: string,
+    param: string,
+    checktime: string,
+    buildtime: string,
+    status: string,
+  ),
+  lists?: Table(
+    listid: int,
+    name: string,
+    desc: string,
+    sorted: int,
+    gameids: int[],
+  ),
+  blobs?: string[], basename only
+}
+```
+
+`Table` is an array whose first member is an array of strings (keys).
+Subsequent members are arrays of values only.
 
 ## WebSocket
 

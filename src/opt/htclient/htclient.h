@@ -1,8 +1,6 @@
 /* htclient.h
  * Simple HTTP client.
  * For trusted remotes only! Don't use against the public internet.
- *
- * ...on second thought, this seems like overkill for our clients.
  */
  
 #ifndef HTCLIENT_H

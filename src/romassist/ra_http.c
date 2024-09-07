@@ -1395,6 +1395,40 @@ static int ra_http_autoscreencap(struct http_xfer *req,struct http_xfer *rsp) {
   return sr_encode_json_object_end(dst,0);
 }
 
+/* GET /api/export
+ */
+ 
+static int ra_http_export_cb_query(const char *k,int kc,const char *v,int vc,void *userdata) {
+  uint32_t *flags=userdata;
+  int vn;
+  if (sr_int_eval(&vn,v,vc)<2) return -1;
+  #define _(tag) if ((kc==sizeof(#tag)-1)&&!memcmp(k,#tag,kc)) { \
+    if (vn) (*flags)|=DB_EXPORT_##tag; \
+    else (*flags)&=~DB_EXPORT_##tag; \
+    return 0; \
+  }
+  _(comments)
+  _(plays)
+  _(launchers)
+  _(upgrades)
+  _(lists)
+  _(blobs)
+  #undef _
+  return -1;
+}
+ 
+static int ra_http_export(struct http_xfer *req,struct http_xfer *rsp) {
+  uint32_t flags=DB_EXPORT_DEFAULT;
+  if (http_xfer_for_query(req,ra_http_export_cb_query,&flags)<0) return http_xfer_set_status(rsp,400,"Unexpected parameter");
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  int dstc0=dst->c;
+  if (db_export(dst,ra.db,flags)<0) {
+    dst->c=dstc0;
+    return http_xfer_set_status(rsp,500,"Failed to export database");
+  }
+  return 0;
+}
+
 /* Log call. We only log after the fact. Could be a problem if you want to trace servlet failures?
  */
  
@@ -1524,6 +1558,8 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(POST,"/api/enable-public",ra_http_enable_public)
   
   _(POST,"/api/autoscreencap",ra_http_autoscreencap)
+  
+  _(GET,"/api/export",ra_http_export)
   
   #undef _
   return http_xfer_set_status(rsp,404,"Not found");

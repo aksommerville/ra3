@@ -13,6 +13,7 @@ struct mn_widget_home {
   struct gui_widget hdr;
   int focusp; // index in childv: 0=menubar, 1=carousel, 2=gamedetails
   uint16_t pvinput;
+  int unlock_state; // L1+R1 and Down Down Down: Exit kiosk mode.
 };
 
 #define WIDGET ((struct mn_widget_home*)widget)
@@ -29,11 +30,14 @@ static void _home_del(struct gui_widget *widget) {
 static int _home_init(struct gui_widget *widget) {
   widget->opaque=1;
   
-  if (!gui_widget_spawn(widget,&mn_widget_type_menubar)) return -1;
+  if (!mn.kiosk) {
+    if (!gui_widget_spawn(widget,&mn_widget_type_menubar)) return -1;
+    WIDGET->focusp=1;
+  } else {
+    WIDGET->focusp=0;
+  }
   if (!gui_widget_spawn(widget,&mn_widget_type_carousel)) return -1;
   if (!gui_widget_spawn(widget,&mn_widget_type_gamedetails)) return -1;
-  if (widget->childc!=3) return -1;
-  WIDGET->focusp=1; // Focus always begins on the carousel.
   
   return 0;
 }
@@ -42,29 +46,36 @@ static int _home_init(struct gui_widget *widget) {
  */
  
 static void _home_pack(struct gui_widget *widget) {
-  if (widget->childc!=3) return;
-  struct gui_widget *menubar=widget->childv[0];
-  struct gui_widget *carousel=widget->childv[1];
-  struct gui_widget *gamedetails=widget->childv[2];
+  struct gui_widget *menubar=0,*carousel=0,*gamedetails=0;
+  if (widget->childc==2) {
+    carousel=widget->childv[0];
+    gamedetails=widget->childv[1];
+  } else if (widget->childc==3) {
+    menubar=widget->childv[0];
+    carousel=widget->childv[1];
+    gamedetails=widget->childv[2];
+  } else return;
   
   /* All three children get the full width.
    * menubar gets its preferred height, and the other two split the remainder evenly.
    */
-  int chw,chh;
-  gui_widget_measure(&chw,&chh,menubar,widget->w,widget->h);
-  menubar->x=0;
-  menubar->y=0;
-  menubar->w=widget->w;
-  menubar->h=chh;
+  int chw,chh=0;
+  if (menubar) {
+    gui_widget_measure(&chw,&chh,menubar,widget->w,widget->h);
+    menubar->x=0;
+    menubar->y=0;
+    menubar->w=widget->w;
+    menubar->h=chh;
+    gui_widget_pack(menubar);
+  }
   carousel->x=0;
-  carousel->y=menubar->h;
+  carousel->y=chh;
   carousel->w=widget->w;
   carousel->h=(widget->h-carousel->y)>>1;
   gamedetails->x=0;
   gamedetails->y=carousel->y+carousel->h;
   gamedetails->w=widget->w;
   gamedetails->h=widget->h-gamedetails->y;
-  gui_widget_pack(menubar);
   gui_widget_pack(carousel);
   gui_widget_pack(gamedetails);
 }
@@ -92,6 +103,20 @@ static void _home_update(struct gui_widget *widget) {
     if ((input&EH_BTN_R2)&&!(WIDGET->pvinput&EH_BTN_R2)) {
       MN_SOUND(ACTIVATE)
       dbs_randomize(&mn.dbs);
+    }
+    if (mn.kiosk&&(input&EH_BTN_L1)&&(input&EH_BTN_R1)) {
+      if (input&~(EH_BTN_L1|EH_BTN_R1|EH_BTN_DOWN)) {
+        WIDGET->unlock_state=0;
+      } else if ((input&EH_BTN_DOWN)&&!(WIDGET->pvinput&EH_BTN_DOWN)) {
+        WIDGET->unlock_state++;
+        if (WIDGET->unlock_state>=3) {
+          mn.kiosk=0;
+          mn.rebuild_gui=1;
+          WIDGET->unlock_state=0;
+        }
+      }
+    } else {
+      WIDGET->unlock_state=0;
     }
     WIDGET->pvinput=input;
   }

@@ -97,7 +97,7 @@ static void eh_toggle_fullscreen() {
  
 static void eh_trigger_action(int action) {
   switch (action) {
-    case EH_BTN_QUIT: eh.terminate=1; break;
+    case EH_BTN_QUIT: if (eh.allow_quit_button) eh.terminate=1; break;
     case EH_BTN_SCREENCAP: eh.screencap_requested=1; break;
     case EH_BTN_FULLSCREEN: eh_toggle_fullscreen(); break;
     case EH_BTN_PAUSE: {

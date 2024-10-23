@@ -38,6 +38,7 @@ extern struct eh {
   int romassist_port;
   struct { int x,y,w,h; } fbcrop; // True dimensions of video output. delegate->width,height are only input from client.
   int auto_collect_metadata; // A special experimental mode. XXX Started but not implemented.
+  int allow_quit_button;
   
   struct eh_auto_collect_metadata acm;
   

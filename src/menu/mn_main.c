@@ -8,6 +8,13 @@ struct mn mn={0};
  
 static int mn_update() {
 
+  if (mn.rebuild_gui) {
+    mn.rebuild_gui=0;
+    if (!gui_replace_page(mn.gui,&mn_widget_type_home)) return -1;
+    gui_dirty_pack(mn.gui);
+    gui_dirty_video(mn.gui);
+  }
+
   gui_update(mn.gui,eh_input_get(0));
           
   int winw=0,winh=0;
@@ -244,6 +251,17 @@ static void mn_websocket_incoming(const char *id,int idc,const char *src,int src
   }
 }
 
+/* Configure.
+ */
+
+static int mn_configure(const char *k,int kc,const char *v,int vc,int vn) {
+  if ((kc==5)&&!memcmp(k,"kiosk",5)) {
+    mn.kiosk=1;
+    return 1;
+  }
+  return 0;
+}
+
 /* Main.
  */
  
@@ -258,7 +276,7 @@ int main(int argc,char **argv) {
     .audio_chanc=1,
     .audio_format=EH_AUDIO_FORMAT_S16N,
     .playerc=1,
-    .configure=0, // no need
+    .configure=mn_configure,
     .load_file=0, // no need
     .load_serial=0, // no need
     .load_none=mn_load_none,

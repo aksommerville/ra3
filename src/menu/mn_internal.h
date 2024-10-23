@@ -16,6 +16,8 @@ extern struct mn {
   int show_invalid; // By default, we ask to strip obscene, faulty, and hardware from all searches. Nonzero to search exactly what's asked for.
   char *data_path;
   int data_pathc;
+  int kiosk;
+  int rebuild_gui; // Signal from home widget that kiosk has changed, and top layer should rebuild from scratch.
 
   struct gui *gui;
   struct cheapsynth *cheapsynth;

@@ -178,6 +178,7 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==6)&&!memcmp(k,"screen",6)) { eh.prefer_screen=eh_config_screen_eval(v,vc); return 0; }
   if ((kc==4)&&!memcmp(k,"crop",4)) return eh_config_set_crop(v,vc);
   if ((kc==21)&&!memcmp(k,"auto-collect-metadata",21)) { eh.auto_collect_metadata=1; return 0; }
+  if ((kc==17)&&!memcmp(k,"allow-quit-button",17)) { eh.allow_quit_button=vn; return 0; }
   
   /* "--romassist" splits into two fields.
    */
@@ -328,6 +329,7 @@ static void eh_configure_start() {
   eh.fbcrop.w=eh.delegate.video_width;
   eh.fbcrop.h=eh.delegate.video_height;
   eh.pixel_refresh=1.0f;
+  eh.allow_quit_button=1;
 }
 
 /* Finish configuration.

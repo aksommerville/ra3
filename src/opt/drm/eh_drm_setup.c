@@ -47,6 +47,12 @@ static int drm_pick_mode(
   int bsmall=((bmode->hdisplay<reqw)||(bmode->vdisplay<reqh));
   if (asmall&&!bsmall) return 1;
   if (!asmall&&bsmall) return -1;
+
+		//XXX Quick hack in advance of GDEX 2024: Prefer framebuffers <=1920 wide; my big TV goes 4096 if you let it.
+		asmall=(amode->hdisplay<=1920);
+		bsmall=(bmode->hdisplay<=1920);
+		if (asmall&&!bsmall) return -1;
+		if (!asmall&&bsmall) return 1;
   
   // If one has the PREFERRED flag, that means it's already active.
   // That's good, we want it.

@@ -235,7 +235,6 @@ static void _carousel_draw(struct gui_widget *widget,int x,int y) {
     struct mn_carousel_entry *entry=WIDGET->entryv+ii;
     if (entry->scpath&&!entry->scap) {
       if (!(entry->scap=gui_texture_new())) break;
-      gui_texture_set_filter(entry->scap,1);
       void *serial=0;
       int serialc=file_read(&serial,entry->scpath);
       if (serialc<0) break;
@@ -246,6 +245,13 @@ static void _carousel_draw(struct gui_widget *widget,int x,int y) {
       png_image_del(image);
       image=alt;
       if (!image) break;
+						// Use the filter above 65x65px; no filter at or below.
+						// sic 65: My cap for Upsy-Downsy intentionally has an extra black row on top.
+						if ((image->w>65)||(image->h>65)) {
+						  gui_texture_set_filter(entry->scap,1);
+						} else {
+						  gui_texture_set_filter(entry->scap,0);
+						}
       gui_texture_upload_rgba(entry->scap,image->w,image->h,image->pixels);
       png_image_del(image);
     }

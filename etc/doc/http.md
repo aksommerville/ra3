@@ -70,7 +70,7 @@ POST /api/list/remove?listid&gameid&detail => List ; name also accepted as listi
 GET /api/blob/all => [path...]
 GET /api/blob?gameid&type => [path...]
 GET /api/blob?path => raw content. (path) is the real local fs path; if you call from localhost, you could read it directly instead.
-PUT /api/blob?gameid&type&sfx <= raw => path (new blob)
+PUT /api/blob?gameid&type&sfx <= raw => path (new blob) ; sfx should have a dot
 DELETE /api/blob?path => nothing
 
 POST /api/query?text&list&platform&author&genre&flags&notflags&rating&pubtime&detail&limit&page&sort => Game[]

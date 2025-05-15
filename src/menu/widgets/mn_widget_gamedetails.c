@@ -542,15 +542,20 @@ static void _gamedetails_update(struct gui_widget *widget) {
       WIDGET->gameid=0;
     }
   } else if ((WIDGET->gameid!=mn.dbs.gameid)||(WIDGET->gamelistseq!=mn.dbs.gamelistseq)) {
-    WIDGET->gamelistseq=mn.dbs.gamelistseq;
-    WIDGET->gameid=mn.dbs.gameid;
-    gamedetails_clear(widget);
-    struct sr_decoder decoder={0};
-    if (dbs_get_game_from_list(&decoder,&mn.dbs,WIDGET->gameid)>=0) {
-      gamedetails_populate(widget,&decoder);
-      gamedetails_arrange_bits(widget);
+    if (!widget->w||!widget->h) {
+      // This can happen if we've just rebuilt. Wait for the next render to pack us, then we'll try again next time.
+      // eg when exiting kiosk mode.
     } else {
-      WIDGET->retry_fetch=15;
+      WIDGET->gamelistseq=mn.dbs.gamelistseq;
+      WIDGET->gameid=mn.dbs.gameid;
+      gamedetails_clear(widget);
+      struct sr_decoder decoder={0};
+      if (dbs_get_game_from_list(&decoder,&mn.dbs,WIDGET->gameid)>=0) {
+        gamedetails_populate(widget,&decoder);
+        gamedetails_arrange_bits(widget);
+      } else {
+        WIDGET->retry_fetch=15;
+      }
     }
   }
 }

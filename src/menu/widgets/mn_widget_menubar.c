@@ -287,6 +287,11 @@ static void menubar_cb_choose_settings(struct gui_widget *pickone,int p,void *us
     case 3: gui_push_modal(widget->gui,&mn_widget_type_interface); break;
     case 4: gui_push_modal(widget->gui,&mn_widget_type_addgame); break;
     case 5: {
+        mn.kiosk=1;
+        mn.rebuild_gui=1;
+        //TODO Can we show a toast or something with the unlock instructions?
+      } break;
+    case 6: {
         struct gui_widget *confirm=gui_push_modal(widget->gui,&gui_widget_type_confirm);
         if (!confirm) return;
         gui_widget_confirm_setup(confirm,"Really shut down?",menubar_cb_shutdown,widget,"Cancel","Shut Down");
@@ -385,6 +390,7 @@ static void menubar_cb_settings(struct gui_widget *button,void *userdata) {
   gui_widget_pickone_add_option(modal,"Network",7);
   gui_widget_pickone_add_option(modal,"Interface",9);
   gui_widget_pickone_add_option(modal,"Add Game",8);
+  gui_widget_pickone_add_option(modal,"Enter Kiosk",11);
   gui_widget_pickone_add_option(modal,"Shut Down",9);
   
   if (initial) gui_widget_pickone_focus(modal,initial);

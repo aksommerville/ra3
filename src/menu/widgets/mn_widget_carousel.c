@@ -245,13 +245,13 @@ static void _carousel_draw(struct gui_widget *widget,int x,int y) {
       png_image_del(image);
       image=alt;
       if (!image) break;
-						// Use the filter above 65x65px; no filter at or below.
-						// sic 65: My cap for Upsy-Downsy intentionally has an extra black row on top.
-						if ((image->w>65)||(image->h>65)) {
-						  gui_texture_set_filter(entry->scap,1);
-						} else {
-						  gui_texture_set_filter(entry->scap,0);
-						}
+      // Use the filter above 65x65px; no filter at or below.
+      // sic 65: My cap for Upsy-Downsy intentionally has an extra black row on top.
+      if ((image->w>65)||(image->h>65)) {
+        gui_texture_set_filter(entry->scap,1);
+      } else {
+        gui_texture_set_filter(entry->scap,0);
+      }
       gui_texture_upload_rgba(entry->scap,image->w,image->h,image->pixels);
       png_image_del(image);
     }
@@ -765,6 +765,8 @@ static void mn_carousel_activate(struct gui_widget *widget) {
  */
  
 static void mn_carousel_edit(struct gui_widget *widget) {
+
+  if (mn.kiosk) return;
 
   if (!WIDGET->entryc&&WIDGET->list_deletion_texture&&WIDGET->list_deletion_listid) {
     char path[256];

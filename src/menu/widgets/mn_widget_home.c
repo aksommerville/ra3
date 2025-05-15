@@ -152,7 +152,9 @@ static void mn_home_focus_child(struct gui_widget *widget) {
  
 static void _home_motion(struct gui_widget *widget,int dx,int dy) {
   if (dy<0) {
-    if (WIDGET->focusp>0) {
+    if (mn.kiosk) {
+      // In kiosk mode, there's only one row. Do nothing.
+    } else if (WIDGET->focusp>0) {
       mn_home_blur_child(widget);
       WIDGET->focusp--;
       mn_home_focus_child(widget);
@@ -161,7 +163,9 @@ static void _home_motion(struct gui_widget *widget,int dx,int dy) {
       mn_cb_sound_effect(GUI_SFXID_REJECT,0);
     }
   } else if (dy>0) {
-    if ((WIDGET->focusp<1)&&(widget->childc>=2)) { // Only the first two kids can focus; details should not.
+    if (mn.kiosk) {
+      // In kiosk mode, there's only one row. Do nothing.
+    } else if ((WIDGET->focusp<1)&&(widget->childc>=2)) { // Only the first two kids can focus; details should not.
       mn_home_blur_child(widget);
       WIDGET->focusp++;
       mn_home_focus_child(widget);

@@ -57,7 +57,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - N64, PS1, and newer are out of scope. ROMs too big, and I don't want to support analogue input.
 - [ ] Tweaks in advance of GDEX 2025:
 - - [x] Kiosk mode: Repair labels when switching back to normal mode.
-- - [ ] Enter kiosk mode via menu.
-- - [ ] Is B to edit enabled in kiosk mode? I don't remember disabling it. Definitely want it disabled! ...it is enabled
+- - [x] Enter kiosk mode via menu.
+- - [x] Is B to edit enabled in kiosk mode? I don't remember disabling it. Definitely want it disabled! ...it is enabled
 - - [ ] Reduce visible content when in kiosk mode. I think just title, genre, pubtime, comment? Plus indication of player count.
 - [ ] Web List editor is allowing me to add the same game more than once.
+- [ ] `mn_widget_menubar.c`: Toast when entering kiosk. Need such a thing as toasts.

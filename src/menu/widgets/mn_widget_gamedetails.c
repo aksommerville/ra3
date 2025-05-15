@@ -352,8 +352,13 @@ static void gamedetails_populate(struct gui_widget *widget,struct sr_decoder *de
     
     /* lists: Compose a multiline text block from the list names, separated by comma+space.
      * Display that block as a solo row.
+     * Don't show in kiosk mode.
      */
     if ((kc==5)&&!memcmp(k,"lists",5)) {
+      if (mn.kiosk) {
+        sr_decode_json_skip(decoder);
+        continue;
+      }
       struct sr_encoder text={0};
       if (gamedetails_generate_lists_text(&text,decoder)<0) {
         sr_encoder_cleanup(&text);
@@ -371,8 +376,13 @@ static void gamedetails_populate(struct gui_widget *widget,struct sr_decoder *de
     }
     
     /* rating: Works like the general bits except we colorize based on its value.
+     * Don't show in kiosk mode.
      */
     if ((kc==6)&&!memcmp(k,"rating",6)) {
+      if (mn.kiosk) {
+        sr_decode_json_skip(decoder);
+        continue;
+      }
       int v=0;
       if (sr_decode_json_int(&v,decoder)<0) {
         if (sr_decode_json_skip(decoder)<0) return;
@@ -401,8 +411,13 @@ static void gamedetails_populate(struct gui_widget *widget,struct sr_decoder *de
     }
     
     /* flags: Compose a custom texture with icons instead of text labels.
+     * Don't show in kiosk mode.
      */
     if ((kc==5)&&!memcmp(k,"flags",5)) {
+      if (mn.kiosk&&0) {
+        sr_decode_json_skip(decoder);
+        continue;
+      }
       char v[256];
       int vc=sr_decode_json_string(v,sizeof(v),decoder);
       if ((vc<0)||(vc>sizeof(v))) {
@@ -427,15 +442,16 @@ static void gamedetails_populate(struct gui_widget *widget,struct sr_decoder *de
       int rgb;
       int order;
       int solo;
+      int hide_in_kiosk;
     } simple_bits[]={
-    #define _(tag,font,rgb,order,solo) {#tag,sizeof(#tag)-1,font,rgb,order,solo},
-      _(name,    "boldv40", 0xffffff, 1,1)
-      _(gameid,  "lightv40",0x808080, 2,0)
-      _(platform,"lightv40",0x808080, 3,0)
+    #define _(tag,font,rgb,order,solo,hide_in_kiosk) {#tag,sizeof(#tag)-1,font,rgb,order,solo,hide_in_kiosk},
+      _(name,    "boldv40", 0xffffff, 1,1,0)
+      _(gameid,  "lightv40",0x808080, 2,0,1)
+      _(platform,"lightv40",0x808080, 3,0,1)
       // 4: rating
-      _(genre,   "lightv40",0xc0c0c0, 5,0)
-      _(author,  "lightv40",0xc0c0c0, 6,0)
-      _(pubtime, "lightv40",0xc0c0c0, 7,0)
+      _(genre,   "lightv40",0xc0c0c0, 5,0,0)
+      _(author,  "lightv40",0xc0c0c0, 6,0,1)
+      _(pubtime, "lightv40",0xc0c0c0, 7,0,0)
       // 8: flags
       // 9: lists
       // 100+: comments
@@ -449,6 +465,7 @@ static void gamedetails_populate(struct gui_widget *widget,struct sr_decoder *de
     for (;i-->0;simple_bit++) {
       if (simple_bit->namec!=kc) continue;
       if (memcmp(simple_bit->name,k,kc)) continue;
+      if (mn.kiosk&&simple_bit->hide_in_kiosk) continue;
       ok=1;
       break;
     }

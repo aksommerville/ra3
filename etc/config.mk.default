@@ -45,6 +45,9 @@ endif
 ifneq (,$(strip $(filter drm,$(OPT_ENABLE))))
   LDPOST+=-ldrm -lgbm -lEGL
   CC+=-I/usr/include/libdrm
+  ifeq (,$(strip $(filter glx,$(OPT_ENABLE))))
+    LDPOST+=-lGL
+  endif
 endif
 ifneq (,$(strip $(filter pulse,$(OPT_ENABLE))))
   LDPOST+=-lpulse -lpulse-simple

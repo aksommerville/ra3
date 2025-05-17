@@ -490,6 +490,7 @@ int ra_migrate_should_insert_game(
    * Or if the executable happens to exist already at the exact same path as the remote.
    * That will come up sometimes on my own devices (eg contop, which I'm provisioning as I write this).
    */
+  int keep_due_to_path=0;
   if (incoming->platform==ctx->str_native) {
     const char *dir;
     int dirc=db_string_get(&dir,ra.db,incoming->dir);
@@ -498,12 +499,14 @@ int ra_migrate_should_insert_game(
     if ((pathc>0)&&(pathc<sizeof(path))) {
       struct stat st={0};
       if (stat(path,&st)>=0) {
-        if (S_ISREG(st.st_mode)) return 1;
+        if (S_ISREG(st.st_mode)) keep_due_to_path=1;
       }
     }
-    struct db_upgrade upgrade={0};
-    if (ra_migrate_get_upgrade_by_gameid(&upgrade,0,ctx,incoming->gameid)<0) return 0;
-    if (upgrade.method!=ctx->str_git_make) return 0;
+    if (!keep_due_to_path) {
+      struct db_upgrade upgrade={0};
+      if (ra_migrate_get_upgrade_by_gameid(&upgrade,0,ctx,incoming->gameid)<0) return 0;
+      if (upgrade.method!=ctx->str_git_make) return 0;
+    }
   }
   
   /* OK let's insert it!
@@ -519,6 +522,8 @@ int ra_migrate_should_insert_game(
   if (db_game_get_by_id(ra.db,update->gameid)) {
     update->gameid=0;
   }
+  
+  if (keep_due_to_path) return 1;
    
   /* It's unlikely that the remote path is correct for us.
    * But kind of hard to tell what it should be.

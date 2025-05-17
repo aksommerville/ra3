@@ -5,6 +5,7 @@
  */
 
 #include "ra_migrate_internal.h"
+#include <sys/stat.h>
 
 /* ID change table.
  */
@@ -486,8 +487,20 @@ int ra_migrate_should_insert_game(
   
   /* If the platform is "native", we shouldn't try to copy it over HTTP.
    * Proceed with these only if there is a "git+make" upgrade record for the game.
+   * Or if the executable happens to exist already at the exact same path as the remote.
+   * That will come up sometimes on my own devices (eg contop, which I'm provisioning as I write this).
    */
   if (incoming->platform==ctx->str_native) {
+    const char *dir;
+    int dirc=db_string_get(&dir,ra.db,incoming->dir);
+    char path[1024];
+    int pathc=snprintf(path,sizeof(path),"%.*s/%.*s",dirc,dir,DB_GAME_BASE_LIMIT,incoming->base);
+    if ((pathc>0)&&(pathc<sizeof(path))) {
+      struct stat st={0};
+      if (stat(path,&st)>=0) {
+        if (S_ISREG(st.st_mode)) return 1;
+      }
+    }
     struct db_upgrade upgrade={0};
     if (ra_migrate_get_upgrade_by_gameid(&upgrade,0,ctx,incoming->gameid)<0) return 0;
     if (upgrade.method!=ctx->str_git_make) return 0;

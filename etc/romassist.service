@@ -3,7 +3,7 @@ Description=Romassist server.
 
 [Service]
 Type=simple
-ExecStart=su andy -c '/home/andy/proj/ra3/out/romassist --dbroot=/home/andy/proj/ra3/data --htdocs=/home/andy/proj/ra3/src/www --menu=/home/andy/proj/ra3/out/romassist-menu --kiosk --no-terminable --poweroff --public-port=8080 < /dev/null'
+ExecStart=su andy -c '/home/andy/proj/ra3/out/romassist --dbroot=/home/andy/proj/ra3/data --htdocs=/home/andy/proj/ra3/src/www --menu="/home/andy/proj/ra3/out/romassist-menu --kiosk --allow-quit-button=0" --no-terminable --poweroff --public-port=8080 < /dev/null'
 
 [Install]
 WantedBy=multi-user.target

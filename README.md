@@ -62,3 +62,4 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - [x] Reduce visible content when in kiosk mode. I think just title, genre, pubtime, comment? Plus indication of player count.
 - [ ] Web List editor is allowing me to add the same game more than once.
 - [ ] `mn_widget_menubar.c`: Toast when entering kiosk. Need such a thing as toasts.
+- [x] Reconnecting disconnected device in a 4-player setup assigned it to an already-in-use player.

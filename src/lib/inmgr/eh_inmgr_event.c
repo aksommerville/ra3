@@ -133,7 +133,7 @@ int eh_inmgr_disconnect(struct eh_inmgr *inmgr,int devid) {
   int playerid=inmgr->devicev[p].playerid;
   if (playerid) {
     inmgr->devicev[p].playerid=0;
-    struct eh_inmgr_player *player=inmgr->playerv+playerid;
+    struct eh_inmgr_player *player=inmgr->playerv+playerid-1;
     player->devicec--;
     if (player->state) {
       uint16_t mask=0x8000;

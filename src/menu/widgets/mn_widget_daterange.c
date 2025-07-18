@@ -135,6 +135,8 @@ static void _daterange_signal(struct gui_widget *widget,int sigid) {
     case GUI_SIGID_ACTIVATE: daterange_submit(widget); break;
     case GUI_SIGID_FOCUS: WIDGET->focus=1; break;
     case GUI_SIGID_BLUR: WIDGET->focus=0; break;
+    case GUI_SIGID_PAGELEFT: _daterange_motion(widget,-10,0); break;
+    case GUI_SIGID_PAGERIGHT: _daterange_motion(widget,10,0); break;
   }
 }
 

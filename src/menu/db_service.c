@@ -43,7 +43,7 @@ static void dbs_cb_get_shutdown(struct eh_http_response *rsp,void *userdata) {
   struct db_service *dbs=userdata;
   if (rsp->status!=200) return;
   struct sr_decoder decoder={.v=rsp->body,.c=rsp->bodyc};
-  if (sr_decode_json_object_start(&decoder)<0) return;
+  if (sr_decode_json_array_start(&decoder)<0) return;
   while (sr_decode_json_next(0,&decoder)>0) {
     char token[32];
     int tokenc=sr_decode_json_string(token,sizeof(token),&decoder);

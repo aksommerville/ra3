@@ -36,6 +36,24 @@ static int dbs_state_default(struct db_service *dbs) {
   return 0;
 }
 
+/* Response from GET /api/shutdown, requested at init.
+ */
+ 
+static void dbs_cb_get_shutdown(struct eh_http_response *rsp,void *userdata) {
+  struct db_service *dbs=userdata;
+  if (rsp->status!=200) return;
+  struct sr_decoder decoder={.v=rsp->body,.c=rsp->bodyc};
+  if (sr_decode_json_object_start(&decoder)<0) return;
+  while (sr_decode_json_next(0,&decoder)>0) {
+    char token[32];
+    int tokenc=sr_decode_json_string(token,sizeof(token),&decoder);
+    if ((tokenc<0)||(tokenc>sizeof(token))) break;
+    if ((tokenc==8)&&!memcmp(token,"poweroff",8)) {
+      dbs->can_poweroff=1;
+    }
+  }
+}
+
 /* Init.
  */
  
@@ -59,6 +77,8 @@ int dbs_init(struct db_service *dbs) {
   }
   
   if (dbs_state_default(dbs)<0) return -1;
+  
+  dbs_request_http(dbs,"GET","/api/shutdown",dbs_cb_get_shutdown,dbs);
 
   return 0;
 }
@@ -728,7 +748,7 @@ int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *listid,in
 /* Request shutdown.
  */
  
-void dbs_request_shutdown(struct db_service *dbs) {
+void dbs_request_shutdown(struct db_service *dbs,const char *mode) {
   struct fakews *fakews=eh_get_fakews();
   if (!fakews) return;
   if (!fakews_is_connected(fakews)) {
@@ -737,14 +757,30 @@ void dbs_request_shutdown(struct db_service *dbs) {
       return;
     }
   }
-  #define JSONIZE(...) #__VA_ARGS__,sizeof(#__VA_ARGS__)-1
-  fakews_send(fakews,1,JSONIZE({
-    "id":"http",
-    "method":"POST",
-    "path":"/api/shutdown",
-    "headers":{"X-I-Know-What-Im-Doing":true}
-  }));
-  #undef JSONIZE
+  struct sr_encoder req={0};
+  int jsonctx=sr_encode_json_object_start(&req,0,0);
+  sr_encode_json_string(&req,"id",2,"http",4);
+  sr_encode_json_string(&req,"method",6,"POST",4);
+  if (mode&&mode[0]) {
+    char url[64];
+    int urlc=snprintf(url,sizeof(url),"/api/shutdown?mode=%s",mode);
+    if ((urlc<1)||(urlc>=sizeof(url))) {
+      sr_encoder_cleanup(&req);
+      return;
+    }
+    sr_encode_json_string(&req,"path",4,url,urlc);
+  } else {
+    sr_encode_json_string(&req,"path",4,"/api/shutdown",-1);
+  }
+  int headerctx=sr_encode_json_object_start(&req,"headers",7);
+  sr_encode_json_string(&req,"X-I-Know-What-Im-Doing",-1,"true",4);
+  sr_encode_json_object_end(&req,headerctx);
+  if (sr_encode_json_object_end(&req,jsonctx)<0) {
+    sr_encoder_cleanup(&req);
+    return;
+  }
+  fakews_send(fakews,1,req.v,req.c);
+  sr_encoder_cleanup(&req);
 }
 
 /* General request with callback.

@@ -349,8 +349,11 @@ The menu itself does not terminate on this, though it technically could.
 
 ## /api/shutdown
 
-Quit the server or power down the machine (whichever the backend is configured to do).
+POST: Quit the server or power down the machine (whichever the backend is configured to do).
+Optional query param `mode=quit|poweroff` to force one behavior -- `poweroff` is only allowed if the server was launched with `--poweroff`.
 An extra header is required, to illustrate the call's gravity: X-I-Know-What-Im-Doing: true
+
+GET: Returns a JSON array with the available modes. Either `["quit"]` or `["quit","poweroff"]`.
 
 ## /api/enable-public
 

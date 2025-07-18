@@ -1284,12 +1284,31 @@ static int ra_http_terminate(struct http_xfer *req,struct http_xfer *rsp) {
  */
  
 static int ra_http_shutdown(struct http_xfer *req,struct http_xfer *rsp) {
+  // Make sure he's serious.
   const char *confirm=0;
   int confirmc=http_xfer_get_header(&confirm,req,"X-I-Know-What-Im-Doing",22);
   if ((confirmc!=4)||memcmp(confirm,"true",4)) {
     return http_xfer_set_status(rsp,400,"Header 'X-I-Know-What-Im-Doing:true' required.");
   }
-  if (ra.allow_poweroff) {
+  // What thing are we doing?
+  char mode[16];
+  int modec=http_xfer_get_query_string(mode,sizeof(mode),req,"mode",4);
+  if ((modec<0)||(modec>sizeof(mode))) modec=0;
+  int do_poweroff=0;
+  if ((modec==8)&&!memcmp(mode,"poweroff",8)) {
+    if (!ra.allow_poweroff) return http_xfer_set_status(rsp,401,"Access denied");
+    do_poweroff=1;
+  } else if ((modec==4)&&!memcmp(mode,"quit",4)) {
+    // "quit" is always legal.
+  } else if (modec) {
+    return http_xfer_set_status(rsp,400,"Unexpected shutdown mode '%.*s'",modec,mode);
+  } else if (ra.allow_poweroff) {
+    do_poweroff=1;
+  } else {
+    do_poweroff=0;
+  }
+  // Do it.
+  if (do_poweroff) {
     fprintf(stderr,"%s: Power down per HTTP request.\n",ra.exename);
     // "sudo -n" means don't prompt for a password; only do it if password not required.
     // Any machine running Romassist, if you want shutdown to work, you need Romassist's user to have passwordless sudo.
@@ -1299,6 +1318,19 @@ static int ra_http_shutdown(struct http_xfer *req,struct http_xfer *rsp) {
   } else {
     fprintf(stderr,"%s: Terminating per HTTP request.\n",ra.exename);
     ra.sigc++;
+  }
+  return 0;
+}
+
+/* GET /api/shutdown
+ */
+ 
+static int ra_http_get_shutdown(struct http_xfer *req,struct http_xfer *rsp) {
+  struct sr_encoder *dst=http_xfer_get_body_encoder(rsp);
+  if (ra.allow_poweroff) {
+    if (sr_encode_raw(dst,"[\"quit\",\"poweroff\"]\n",-1)<0) return -1;
+  } else {
+    if (sr_encode_raw(dst,"[\"quit\"]\n",-1)<0) return -1;
   }
   return 0;
 }
@@ -1555,6 +1587,7 @@ int ra_http_api(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   _(POST,"/api/random",ra_http_random)
   _(POST,"/api/terminate",ra_http_terminate)
   _(POST,"/api/shutdown",ra_http_shutdown)
+  _(GET,"/api/shutdown",ra_http_get_shutdown)
   _(POST,"/api/enable-public",ra_http_enable_public)
   
   _(POST,"/api/autoscreencap",ra_http_autoscreencap)

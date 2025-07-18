@@ -58,6 +58,9 @@ struct db_service {
   char *authors; int authorsc;
   char *platforms; int platformsc;
   int daterange[2];
+  
+  // Additional state.
+  int can_poweroff; // per GET /api/shutdown
 };
 
 void dbs_cleanup(struct db_service *dbs);
@@ -114,7 +117,8 @@ int dbs_create_list(struct db_service *dbs,const char *name,int namec);
 int dbs_add_to_list(struct db_service *dbs,int gameid,const char *listid,int listidc);
 int dbs_remove_from_list(struct db_service *dbs,int gameid,const char *list,int listidc);
 
-void dbs_request_shutdown(struct db_service *dbs);
+// (mode) may be null, "quit", or "poweroff". "poweroff" will fail if (dbs->can_poweroff) zero.
+void dbs_request_shutdown(struct db_service *dbs,const char *mode);
 
 /* Instead of adding bespoke plumbing for every API call, for things without request bodies, use this.
  * Requesting returns 'corrid', which you can use to cancel it later.

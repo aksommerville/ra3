@@ -268,10 +268,10 @@ static void menubar_cb_choose_text(struct gui_widget *entry,const char *v,int c,
 static void menubar_cb_shutdown(struct gui_widget *confirm,int p,void *userdata) {
   struct gui_widget *widget=userdata;
   gui_dismiss_modal(mn.gui,confirm);
-  if (p==1) {
-    dbs_request_shutdown(&mn.dbs);
-  } else {
-    MN_SOUND(CANCEL)
+  switch (p) {
+    case 0: MN_SOUND(CANCEL) break;
+    case 1: dbs_request_shutdown(&mn.dbs,"quit"); break;
+    case 2: dbs_request_shutdown(&mn.dbs,"poweroff"); break;
   }
 }
 
@@ -294,7 +294,11 @@ static void menubar_cb_choose_settings(struct gui_widget *pickone,int p,void *us
     case 6: {
         struct gui_widget *confirm=gui_push_modal(widget->gui,&gui_widget_type_confirm);
         if (!confirm) return;
-        gui_widget_confirm_setup(confirm,"Really shut down?",menubar_cb_shutdown,widget,"Cancel","Shut Down");
+        if (mn.dbs.can_poweroff) {
+          gui_widget_confirm_setup(confirm,"Really shut down?",menubar_cb_shutdown,widget,"Cancel","Quit","Shut Down");
+        } else {
+          gui_widget_confirm_setup(confirm,"Really quit?",menubar_cb_shutdown,widget,"Cancel","Quit");
+        }
       } break;
   }
 }

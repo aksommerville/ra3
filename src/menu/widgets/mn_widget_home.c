@@ -104,8 +104,8 @@ static void _home_update(struct gui_widget *widget) {
       MN_SOUND(ACTIVATE)
       dbs_randomize(&mn.dbs);
     }
-    if (mn.kiosk&&(input&EH_BTN_L1)&&(input&EH_BTN_R1)) {
-      if (input&~(EH_BTN_L1|EH_BTN_R1|EH_BTN_DOWN)) {
+    if (mn.kiosk&&(input&(EH_BTN_L1|EH_BTN_AUX1))&&(input&(EH_BTN_R1|EH_BTN_AUX2))) {
+      if (input&~(EH_BTN_L1|EH_BTN_R1|EH_BTN_AUX1|EH_BTN_AUX2|EH_BTN_DOWN)) {
         WIDGET->unlock_state=0;
       } else if ((input&EH_BTN_DOWN)&&!(WIDGET->pvinput&EH_BTN_DOWN)) {
         WIDGET->unlock_state++;

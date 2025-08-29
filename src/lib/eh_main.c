@@ -110,12 +110,8 @@ static int eh_update() {
     return -2;
   }
   if (eh.inmgr_dirty) {
-    if (eh.input_config_path) {
-      if (eh_inmgr_save_config(eh.input_config_path,eh.inmgr)>=0) {
-        fprintf(stderr,"%s: Saved input config.\n",eh.input_config_path);
-      } else {
-        fprintf(stderr,"%s: Failed to save input config.\n",eh.input_config_path);
-      }
+    if (inmgr_save()<0) {
+      fprintf(stderr,"%s: Failed to save input config.\n",eh.exename);
     }
     eh.inmgr_dirty=0;
   }

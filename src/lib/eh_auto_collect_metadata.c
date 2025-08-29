@@ -6,16 +6,16 @@
 int eh_auto_collect_metadata_update(struct eh_auto_collect_metadata *acm) {
   switch ((acm->stage++)&3) {
     case 0: {
-        eh_inmgr_artificial_event(eh.inmgr,1,EH_BTN_SOUTH,1);
+        inmgr_artificial_event(1,INMGR_BTN_SOUTH,1);
       } break;
     case 1: {
-        eh_inmgr_artificial_event(eh.inmgr,1,EH_BTN_SOUTH,0);
+        inmgr_artificial_event(1,INMGR_BTN_SOUTH,0);
       } break;
     case 2: {
-        eh_inmgr_artificial_event(eh.inmgr,1,EH_BTN_AUX1,1);
+        inmgr_artificial_event(1,INMGR_BTN_AUX1,1);
       } break;
     case 3: {
-        eh_inmgr_artificial_event(eh.inmgr,1,EH_BTN_AUX1,0);
+        inmgr_artificial_event(1,INMGR_BTN_AUX1,0);
       } break;
   }
   return 0;

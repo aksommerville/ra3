@@ -27,6 +27,9 @@
 #define EH_AUDIO_FORMAT_S32N_LO16 8
 #define EH_AUDIO_FORMAT_S8 9
 
+/* INMGR_BTN_* and INMGR_SIGNAL_* are exactly the same as EH_BTN_*.
+ * They were written separately and combined after the fact, why they exist with two different prefixes.
+ */
 #define EH_BTN_LEFT     0x0001
 #define EH_BTN_RIGHT    0x0002
 #define EH_BTN_UP       0x0004
@@ -49,16 +52,20 @@
 #define EH_BTN_DPAD (EH_BTN_HORZ|EH_BTN_VERT)
 
 /* More buttons, with bits >=0x00010000 set, for stateless actions.
+ * These also match inmgr.
  */
 #define EH_BTN_QUIT        0x00010001
-#define EH_BTN_SCREENCAP   0x00010002
-#define EH_BTN_FULLSCREEN  0x00010003
+#define EH_BTN_FULLSCREEN  0x00010002
+#define EH_BTN_MUTE        0x00010003
 #define EH_BTN_PAUSE       0x00010004
-#define EH_BTN_DEBUG       0x00010005
-#define EH_BTN_STEP        0x00010006
-#define EH_BTN_FASTFWD     0x00010007
-#define EH_BTN_SAVESTATE   0x00010008
-#define EH_BTN_LOADSTATE   0x00010009
+#define EH_BTN_SCREENCAP   0x00010005
+#define EH_BTN_SAVESTATE   0x00010006
+#define EH_BTN_LOADSTATE   0x00010007
+#define EH_BTN_MENU        0x00010008 /* from inmgr, we don't use */
+#define EH_BTN_RESET       0x00010009 /* from inmgr, we don't use. Maybe we should. */
+#define EH_BTN_DEBUG       0x0001000a
+#define EH_BTN_STEP        0x0001000b
+#define EH_BTN_FASTFWD     0x0001000c
 
 // Initial window placement hint (--screen=*)
 #define EH_SCREEN_ANY 0
@@ -248,11 +255,11 @@ void eh_audio_unlock();
  */
 uint16_t eh_input_get(uint8_t plrid);
 
-/* For more detailed interaction with the input manager, use this and see eh_inmgr.h.
- * The inmgr instance is created between your 'configure' and 'load' callbacks, and will not change after that.
- */
-struct eh_inmgr;
-struct eh_inmgr *eh_get_inmgr();
+const char *eh_input_device_name(int devid);
+
+struct eh_input_driver *eh_input_driver_for_device(int devid);
+
+void eh_inmgr_dirty();
 
 /* Odds, ends.
  *******************************************************************/

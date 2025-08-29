@@ -161,7 +161,7 @@ struct eh_input_type {
   void (*del)(struct eh_input_driver *driver);
   int (*init)(struct eh_input_driver *driver);
   int (*update)(struct eh_input_driver *driver);
-  const char *(*get_ids)(uint16_t *vid,uint16_t *pid,struct eh_input_driver *driver,int devid);
+  const char *(*get_ids)(int *vid,int *pid,int *version,struct eh_input_driver *driver,int devid);
   int (*list_buttons)(
     struct eh_input_driver *driver,
     int devid,

@@ -1,6 +1,7 @@
 #include "../mn_internal.h"
 #include "lib/emuhost.h"
-#include "lib/eh_inmgr.h"
+#include "lib/inmgr/inmgr.h"
+#include "lib/gcfg/gcfg.h"
 
 #define INPUT_ALARM_TIME 100
 #define INPUT_NAME_LIMIT 32 /* Truncate device names, sometimes they're ridiculous. Just for looks. */
@@ -41,7 +42,7 @@ static void _input_del(struct gui_widget *widget) {
     while (WIDGET->rowc-->0) input_row_cleanup(WIDGET->rowv+WIDGET->rowc);
     free(WIDGET->rowv);
   }
-  eh_inmgr_unlisten(eh_get_inmgr(),WIDGET->listenerid);
+  inmgr_unspy(WIDGET->listenerid);
 }
 
 /* Add row.
@@ -97,8 +98,8 @@ static struct input_row *input_row_by_devid(struct gui_widget *widget,int devid)
 
 /* Event from inmgr.
  */
- 
-static int input_cb_event(void *userdata,const struct eh_inmgr_event *event) {
+
+static void input_cb_event(int devid,int btnid,int value,int state,void *userdata) {
   struct gui_widget *widget=userdata;
   /**
   fprintf(stderr,
@@ -106,42 +107,33 @@ static int input_cb_event(void *userdata,const struct eh_inmgr_event *event) {
     __func__,widget,event->btnid,event->value,event->state,event->srcdevid,event->srcbtnid,event->srcvalue
   );
   /**/
-  
-  if (event->srcdevid<=0) return 0; // Artificial player event, not interesting.
 
-  if ((event->srcbtnid==0)&&(event->srcvalue==0)) { // Connect
-    struct eh_inmgr *inmgr=eh_get_inmgr();
-    if (!inmgr) return 0;
-    const char *name=eh_inmgr_device_name(inmgr,event->srcdevid);
+  if ((btnid==0)&&(value==0)) { // Connect
+    const char *name=eh_input_device_name(devid);
     if (!name||!name[0]) name="Unknown Device";
-    input_remove_row_by_devid(widget,event->srcdevid);
-    struct input_row *row=input_add_row(widget,name,-1,event->srcdevid);
-    if (!row) return 0;
+    input_remove_row_by_devid(widget,devid);
+    struct input_row *row=input_add_row(widget,name,-1,devid);
+    if (!row) return;
     gui_dirty_pack(widget->gui);
-    return 0;
+    return;
   }
 
-  if ((event->srcbtnid==-1)&&(event->srcvalue==-1)) { // Disconnect
-    input_remove_row_by_devid(widget,event->srcdevid);
+  if ((btnid==-1)&&(value==-1)) { // Disconnect
+    input_remove_row_by_devid(widget,devid);
     gui_dirty_pack(widget->gui);
-    return 0;
+    return;
   }
 
   // Regular state change.
-  struct input_row *row=input_row_by_devid(widget,event->srcdevid);
-  if (!row) return 0;
-  if (event->btnid) {
-    if (event->value) row->state|=event->btnid;
-    else row->state&=~event->btnid;
-  }
+  struct input_row *row=input_row_by_devid(widget,devid);
+  if (!row) return;
+  row->state=state;
   row->alarm=INPUT_ALARM_TIME;
   if ((row->state&(EH_BTN_SOUTH|EH_BTN_WEST))==(EH_BTN_SOUTH|EH_BTN_WEST)) {
     if (!row->activate) row->activate=1; // only touch if it's zero
   } else {
     if (row->activate>1) row->activate=0; // only reset if it's been processed
   }
-  
-  return 0;
 }
 
 /* Init.
@@ -154,11 +146,12 @@ static int _input_init(struct gui_widget *widget) {
   if (!(WIDGET->instructions=gui_texture_from_text(widget->gui,0,"(A+B) to select",-1,0xc0c0c0))) return -1;
   if (!input_add_row(widget,"Done",4,-1)) return -1;
   
-  struct eh_inmgr_delegate delegate={
-    .userdata=widget,
-    .cb_event=input_cb_event,
-  };
-  if ((WIDGET->listenerid=eh_inmgr_listen_source(eh_get_inmgr(),0,&delegate))<0) return -1;
+  if ((WIDGET->listenerid=inmgr_spy(input_cb_event,widget))<0) return -1;
+  int i=0; for (;;i++) { // Simulate connection for all existing devices.
+    int devid=inmgr_devid_by_index(i);
+    if (devid<=0) break;
+    input_cb_event(devid,0,0,0,widget);
+  }
 
   return 0;
 }

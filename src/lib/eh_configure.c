@@ -1,4 +1,5 @@
 #include "eh_internal.h"
+#include "gcfg/gcfg.h"
 #include "opt/serial/serial.h"
 #include "opt/fs/fs.h"
 
@@ -21,7 +22,6 @@ static void eh_print_help(const char *topic,int topicc) {
     "  --audio-chanc=1|2\n"
     "  --audio-device=STRING\n"
     "  --glsl-version=INT\n"
-    "  --input-config=PATH\n"
     "  --screen=any             (left,right,top,bottom) Try to land window on the given monitor.\n"
     "  --crop=x,y,w,h\n"
     "  --romassist=HOST:PORT\n"
@@ -174,7 +174,6 @@ static int eh_argv_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==11)&&!memcmp(k,"audio-chanc",11)) { eh.audio_chanc=vn; return 0; }
   if ((kc==12)&&!memcmp(k,"audio-device",12)) return eh_config_set_string(&eh.audio_device,v,vc);
   if ((kc==12)&&!memcmp(k,"glsl-version",12)) { eh.glsl_version=vn; return 0; }
-  if ((kc==12)&&!memcmp(k,"input-config",12)) return eh_config_set_string(&eh.input_config_path,v,vc);
   if ((kc==6)&&!memcmp(k,"screen",6)) { eh.prefer_screen=eh_config_screen_eval(v,vc); return 0; }
   if ((kc==4)&&!memcmp(k,"crop",4)) return eh_config_set_crop(v,vc);
   if ((kc==21)&&!memcmp(k,"auto-collect-metadata",21)) { eh.auto_collect_metadata=1; return 0; }
@@ -244,7 +243,6 @@ static int eh_config_encode(struct sr_encoder *dst) {
   if (sr_encode_fmt(dst,"audio-device=%s\n",eh.audio_device?eh.audio_device:"")<0) return -1;
   
   if (sr_encode_fmt(dst,"input=%s\n",eh.input_drivers?eh.input_drivers:"")<0) return -1;
-  if (sr_encode_fmt(dst,"input-config=%s\n",eh.input_config_path?eh.input_config_path:"")<0) return -1;
   
   if (sr_encode_fmt(dst,"romassist=%s:%d\n",eh.romassist_host?eh.romassist_host:"",eh.romassist_port)<0) return -1;
   
@@ -337,17 +335,6 @@ static void eh_configure_start() {
  */
  
 static int eh_configure_finish() {
-
-  // input-config, default to "~/.romassist/input.cfg"
-  if (!eh.input_config_path) {
-    char tmp[1024];
-    int tmpc=eh_get_romassist_directory(tmp,sizeof(tmp));
-    if ((tmpc>0)&&(tmpc<sizeof(tmp)-10)) {
-      memcpy(tmp+tmpc,"/input.cfg",11);
-      tmpc+=10;
-      if (eh_config_set_string(&eh.input_config_path,tmp,tmpc)<0) return -1;
-    }
-  }
   
   // romassist_host, default to "localhost"
   if (!eh.romassist_host&&eh.romassist_port) {

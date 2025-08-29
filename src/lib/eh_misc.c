@@ -1,4 +1,5 @@
 #include "eh_internal.h"
+#include "gcfg/gcfg.h"
 #include "opt/fs/fs.h"
 #include "opt/serial/serial.h"
 #include <stdarg.h>
@@ -41,6 +42,8 @@ int eh_get_scratch_directory(char **dstpp) {
  */
  
 int eh_get_romassist_directory(char *dst,int dsta) {
+  return gcfg_compose_path(dst,dsta,"romassist",9,0,0);
+  /*
   if (!dst||(dsta<0)) dsta=0;
   const char *src;
   int dstc=0;
@@ -86,6 +89,7 @@ int eh_get_romassist_directory(char *dst,int dsta) {
   dstc+=10;
   if (dstc<dsta) dst[dstc]=0;
   return dstc;
+  /**/
 }
 
 /* Encode HTTP request.

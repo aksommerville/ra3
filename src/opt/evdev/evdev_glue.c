@@ -31,11 +31,12 @@ static int _evdev_update(struct eh_input_driver *driver) {
   return evdev_update(DRIVER->evdev,FMN_EVDEV_UPDATE_TIMEOUT_MS);
 }
 
-static const char *_evdev_get_ids(uint16_t *vid,uint16_t *pid,struct eh_input_driver *driver,int devid) {
+static const char *_evdev_get_ids(int *vid,int *pid,int *version,struct eh_input_driver *driver,int devid) {
   struct evdev_device *device=evdev_device_by_devid(DRIVER->evdev,devid);
   if (!device) return 0;
   if (vid) *vid=evdev_device_get_vid(device);
   if (pid) *pid=evdev_device_get_pid(device);
+  if (version) *version=evdev_device_get_version(device);
   int namec=evdev_device_get_name(DRIVER->name_storage,sizeof(DRIVER->name_storage),device);
   if ((namec<1)||(namec>=sizeof(DRIVER->name_storage))) DRIVER->name_storage[0]=0;
   else DRIVER->name_storage[namec]=0;

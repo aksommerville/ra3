@@ -27,8 +27,8 @@ void eh_cb_focus(int focus,void *dummy) {
  
 int eh_cb_key(int keycode,int value,void *dummy) {
   //fprintf(stderr,"%s 0x%08x=%d\n",__func__,keycode,value);
-  eh_inmgr_button(eh.inmgr,eh.devid_keyboard,keycode,value);
-  return 0;
+  inmgr_event(eh.devid_keyboard,keycode,value);
+  return 1; // Call it processed no matter what; we're not going to use digested text.
 }
 
 /* Text event from window manager.
@@ -54,6 +54,11 @@ void eh_cb_pcm(int16_t *v,int c,void *dummy) {
 /* Input device connected.
  */
  
+static int eh_cb_devcap(int btnid,uint32_t usage,int lo,int hi,int value,void *userdata) {
+  inmgr_connect_more(userdata,btnid,usage,lo,hi,value);
+  return 0;
+}
+ 
 void eh_cb_connect(int devid,void *dummy) {
   struct eh_input_driver *driver=0;
   int i=eh.inputc;
@@ -63,14 +68,29 @@ void eh_cb_connect(int devid,void *dummy) {
       break;
     }
   }
-  eh_inmgr_connect(eh.inmgr,driver,devid);
+  if (!driver) return;
+  int vid=0,pid=0,version=0;
+  const char *name=0;
+  if (driver->type->get_ids) {
+    name=driver->type->get_ids(&vid,&pid,&version,driver,devid);
+  }
+  void *ctx=inmgr_connect_begin(devid,vid,pid,version,name,-1);
+  if (!ctx) return;
+  if (driver->type->list_buttons) {
+    driver->type->list_buttons(driver,devid,eh_cb_devcap,ctx);
+  }
+  if (inmgr_connect_end(ctx)>0) {
+    // Connected.
+  } else {
+    // Declined.
+  }
 }
 
 /* Input device disconnected.
  */
  
 void eh_cb_disconnect(int devid,void *dummy) {
-  eh_inmgr_disconnect(eh.inmgr,devid);
+  inmgr_disconnect(devid);
 }
 
 /* Input device state changed.
@@ -78,7 +98,7 @@ void eh_cb_disconnect(int devid,void *dummy) {
  
 void eh_cb_button(int devid,int btnid,int value,void *dummy) {
   //fprintf(stderr,"%s %d.0x%08x=%d\n",__func__,devid,btnid,value);
-  eh_inmgr_button(eh.inmgr,devid,btnid,value);
+  inmgr_event(devid,btnid,value);
 }
 
 /* Toggle fullscreen.
@@ -114,24 +134,6 @@ static void eh_trigger_action(int action) {
     case EH_BTN_SAVESTATE: fprintf(stderr,"TODO savestate\n"); break;
     case EH_BTN_LOADSTATE: fprintf(stderr,"TODO loadstate\n"); break;
   }
-}
- 
-int eh_cb_digested_event(void *userdata,const struct eh_inmgr_event *event) {
-  //fprintf(stderr,"%s %d.0x%08x=%d [0x%04x] (%d.%d=%d)\n",__func__,event->playerid,event->btnid,event->value,event->state,event->srcdevid,event->srcbtnid,event->srcvalue);
-  // Normal input processing is not event-driven for us. Client polls inmgr via eh_input_get().
-  // We do catch all the stateless actions right here.
-  if (event->value&&(event->btnid&0xffff0000)) {
-    eh_trigger_action(event->btnid);
-    return 0;
-  }
-  return 0;
-}
-
-/* Signal from inmgr that the configuration is dirty.
- */
- 
-void eh_cb_inmgr_config_dirty(void *userdata) {
-  eh.inmgr_dirty=1;
 }
 
 /* Persistent WebSocket connection.
@@ -174,4 +176,11 @@ void eh_cb_ws_message(int opcode,const void *v,int c,void *userdata) {
       }
     }
   }
+}
+
+/* Odds, ends.
+ */
+ 
+void eh_inmgr_dirty() {
+  eh.inmgr_dirty=1;
 }

@@ -18,7 +18,7 @@ void eh_drivers_quit() {
     free(eh.inputv);
   }
   eh_aucvt_cleanup(&eh.aucvt);
-  eh_inmgr_del(eh.inmgr);
+  inmgr_quit();
   fakews_del(eh.fakews);
 }
 
@@ -90,7 +90,9 @@ static int eh_drivers_init_video() {
   // Apportion an input device id for the keyboard if there is one.
   if (eh.video->type->provides_keyboard) {
     eh.devid_keyboard=eh_input_devid_next();
-    eh_cb_connect(eh.devid_keyboard,0);
+    void *ctx=inmgr_connect_begin(eh.devid_keyboard,0,0,0,"System Keyboard",-1);
+    inmgr_connect_keyboard(ctx);
+    inmgr_connect_end(ctx);
   }
   
   return 0;
@@ -265,24 +267,11 @@ int eh_drivers_init() {
 
   // Instantiate and configure inmgr.
   // This would be part of eh_driver_init_input(), but video uses it too.
-  struct eh_inmgr_delegate delegate={
-    .userdata=0,
-    .cb_event=eh_cb_digested_event,
-    .cb_config_dirty=eh_cb_inmgr_config_dirty,
-  };
-  int playerc=eh.delegate.playerc;
-  if ((playerc<1)||(playerc>30)) playerc=1;
-  if (!(eh.inmgr=eh_inmgr_new(&delegate,playerc))) {
-    fprintf(stderr,"%s: Failed to instantiate input manager.\n",eh.exename);
+  if (inmgr_init()<0) {
+    fprintf(stderr,"%s: Failed to initialize input manager.\n",eh.exename);
     return -2;
   }
-  if (eh.input_config_path) {
-    int err=eh_inmgr_load_config(eh.inmgr,eh.input_config_path);
-    if (err<0) {
-      if (err!=-2) fprintf(stderr,"%s: Failed to process input config.\n",eh.input_config_path);
-      return -2;
-    }
-  }
+  inmgr_set_player_count(eh.delegate.playerc);
 
   int err;
   if (
@@ -388,15 +377,34 @@ void eh_audio_unlock() {
  */
  
 uint16_t eh_input_get(uint8_t plrid) {
-  return eh_inmgr_get_player_state(eh.inmgr,plrid);
+  return inmgr_get_player(plrid);
+}
+
+const char *eh_input_device_name(int devid) {
+  if (devid&&(devid==eh.devid_keyboard)) return "System Keyboard";
+  int driveri=eh.inputc;
+  while (driveri-->0) {
+    struct eh_input_driver *driver=eh.inputv[driveri];
+    if (!driver->type->has_device||!driver->type->has_device(driver,devid)) continue;
+    if (!driver->type->get_ids) return 0;
+    int vid,pid,version;
+    return driver->type->get_ids(&vid,&pid,&version,driver,devid);
+  }
+  return 0;
+}
+
+struct eh_input_driver *eh_input_driver_for_device(int devid) {
+  int driveri=eh.inputc;
+  while (driveri-->0) {
+    struct eh_input_driver *driver=eh.inputv[driveri];
+    if (!driver->type->has_device||!driver->type->has_device(driver,devid)) continue;
+    return driver;
+  }
+  return 0;
 }
 
 /* Trivial global accessors.
  */
- 
-struct eh_inmgr *eh_get_inmgr() {
-  return eh.inmgr;
-}
  
 struct fakews *eh_get_fakews() {
   return eh.fakews;

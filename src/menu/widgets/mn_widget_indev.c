@@ -1,6 +1,8 @@
 #include "../mn_internal.h"
 #include "lib/emuhost.h"
-#include "lib/eh_inmgr.h"
+#include "lib/eh_driver.h"
+#include "lib/inmgr/inmgr.h"
+#include "lib/gcfg/gcfg.h"
 #include "opt/gui/gui_font.h"
 #include <math.h>
 
@@ -23,6 +25,7 @@ struct mn_widget_indev {
     uint32_t btnid;
     int value;
     int dstbtnid;
+    int hidusage,srclo,srchi; // Recorded from caps; we'll need them if we change the mapping.
   } *cellv;
   int cellc,cella;
   int colc,rowc; // Established at pack. The last column can be incomplete.
@@ -42,9 +45,8 @@ struct mn_widget_indev {
  */
  
 static void _indev_del(struct gui_widget *widget) {
-  struct eh_inmgr *inmgr=eh_get_inmgr();
-  eh_inmgr_unlisten(inmgr,WIDGET->listenerid);
-  eh_inmgr_enable_device(inmgr,WIDGET->devid,1);
+  inmgr_unspy(WIDGET->listenerid);
+  inmgr_device_enable(WIDGET->devid,1);
   gui_texture_del(WIDGET->nametex);
   gui_texture_del(WIDGET->gridtex);
   if (WIDGET->cellv) free(WIDGET->cellv);
@@ -123,8 +125,15 @@ static void indev_draw_cell(uint8_t *dst,int dststride,struct gui_widget *widget
   char text[64];
   int textc=snprintf(text,sizeof(text),"%3d %04x ",clampvalue,cell->btnid);
   if ((textc<0)||(textc>=sizeof(text))) return;
-  int err=eh_btnid_repr(text+textc,sizeof(text)-textc,cell->dstbtnid);
-  if ((err>0)&&(textc<=sizeof(text)-err)) textc+=err;
+  const char *name=inmgr_btnid_name(cell->dstbtnid);
+  int namec=0;
+  if (name) {
+    while (name[namec]) namec++;
+    if (textc<=sizeof(text)-namec) {
+      memcpy(text+textc,name,namec);
+      textc+=namec;
+    }
+  }
   gui_font_render_line(dst,WIDGET->colw,WIDGET->rowh,dststride,WIDGET->font,text,textc,0xffffff);
 }
 
@@ -240,6 +249,26 @@ static int indev_cellv_search(const struct gui_widget *widget,int btnid) {
   return -lo-1;
 }
 
+/* Button list for modal.
+ * Sorted for display, not sorted by (btnid).
+ */
+ 
+static const struct indev_option {
+  int btnid;
+  const char *name; // We could ask inmgr for this on the fly, but what the heck, maybe we'll want slightly different formatting.
+} indev_optionv[]={
+  #define _(tag) {EH_BTN_##tag,#tag},
+  _(DPAD) _(HORZ) _(VERT)
+  _(LEFT) _(RIGHT) _(UP) _(DOWN)
+  _(SOUTH) _(WEST) _(EAST) _(NORTH)
+  _(L1) _(R1) _(L2) _(R2)
+  _(AUX1) _(AUX2) _(AUX3)
+  _(QUIT) _(FULLSCREEN) _(MUTE) _(PAUSE) _(SCREENCAP)
+  _(SAVESTATE) _(LOADSTATE) _(MENU) _(RESET)
+  _(DEBUG) _(STEP) _(FASTFWD)
+  #undef _
+};
+
 /* Commit edit.
  */
  
@@ -248,12 +277,17 @@ static void indev_cb_map(struct gui_widget *pickone,int p,void *userdata) {
   int cellp=WIDGET->selx*WIDGET->rowc+WIDGET->sely;
   if ((cellp>=0)&&(cellp<WIDGET->cellc)) {
     struct indev_cell *cell=WIDGET->cellv+cellp;
-    int dstbtnid=eh_btnid_by_index(p);
-    if (dstbtnid!=cell->dstbtnid) { // NB zero is perfectly valid for dstbtnid, but it's also the fallback
-      MN_SOUND(ACTIVATE)
-      eh_inmgr_set_mapping(eh_get_inmgr(),WIDGET->devid,cell->btnid,dstbtnid);
-      cell->dstbtnid=dstbtnid;
-      indev_redraw_gridtex_cell(widget,WIDGET->selx,WIDGET->sely);
+    int optionc=sizeof(indev_optionv)/sizeof(indev_optionv[0]);
+    if ((p>=0)&&(p<optionc)) {
+      int dstbtnid=indev_optionv[p].btnid;
+      if (dstbtnid!=cell->dstbtnid) { // NB zero is perfectly valid for dstbtnid, but it's also the fallback
+        MN_SOUND(ACTIVATE)
+        if (inmgr_remap_button(WIDGET->devid,cell->btnid,dstbtnid,cell->hidusage,cell->srclo,cell->srchi,cell->value)>=0) {
+          eh_inmgr_dirty();
+          cell->dstbtnid=dstbtnid;
+          indev_redraw_gridtex_cell(widget,WIDGET->selx,WIDGET->sely);
+        }
+      }
     }
   }
   gui_dismiss_modal(widget->gui,pickone);
@@ -270,13 +304,14 @@ static void indev_edit_selected_cell(struct gui_widget *widget) {
   if (!pickone) return;
   MN_SOUND(ACTIVATE)
   gui_widget_pickone_set_callback(pickone,indev_cb_map,widget);
-  int btnp=0;
-  for (;;btnp++) {
-    const char *name=eh_btnid_repr_by_index(btnp);
-    if (!name) break;
-    gui_widget_pickone_add_option(pickone,name,-1);
+  int optionc=sizeof(indev_optionv)/sizeof(indev_optionv[0]);
+  int i=0;
+  const struct indev_option *option=indev_optionv;
+  int focusp=-1;
+  for (;i<optionc;i++,option++) {
+    gui_widget_pickone_add_option(pickone,option->name,-1);
+    if (option->btnid==cell->dstbtnid) focusp=i;
   }
-  int focusp=eh_index_by_btnid(cell->dstbtnid);
   if ((focusp>=0)&&(focusp<pickone->childc)) gui_widget_pickone_focus(pickone,pickone->childv[focusp]);
 }
 
@@ -326,28 +361,26 @@ static void _indev_signal(struct gui_widget *widget,int sigid) {
 
 /* Callback from inmgr.
  */
- 
-static int indev_cb_event(void *userdata,const struct eh_inmgr_event *event) {
+
+static void indev_cb_event(int devid,int btnid,int value,int state,void *userdata) {
   struct gui_widget *widget=userdata;
-  if (event->srcdevid!=WIDGET->devid) return 0;
+  if (devid!=WIDGET->devid) return;
   
-  if ((event->srcbtnid==-1)&&(event->srcvalue==-1)) {
+  if ((btnid==-1)&&(value==-1)) {
     fprintf(stderr,"TODO: %s: Device disconnected. Drop any held state.\n",__func__);
-    return 0;
+    return;
   }
-  if (!event->srcbtnid) return 0;
+  if (!btnid) return;
   
-  int p=indev_cellv_search(widget,event->srcbtnid);
-  if (p<0) return 0;
+  int p=indev_cellv_search(widget,btnid);
+  if (p<0) return;
   struct indev_cell *cell=WIDGET->cellv+p;
-  if (event->srcvalue==cell->value) return 0;
-  cell->value=event->srcvalue;
+  if (value==cell->value) return;
+  cell->value=value;
   int col=p/WIDGET->rowc;
   int row=p%WIDGET->rowc;
   indev_redraw_gridtex_cell(widget,col,row);
   indev_highlight(widget,col,row);
-  
-  return 0;
 }
 
 /* Type definition.
@@ -368,7 +401,7 @@ const struct gui_widget_type mn_widget_type_indev={
 /* Report capability.
  */
  
-static int indev_cb_cap(void *userdata,int btnid,int value,int lo,int hi,int hidusage) {
+static int indev_cb_cap(int btnid,uint32_t hidusage,int lo,int hi,int value,void *userdata) {
   struct gui_widget *widget=userdata;
   //fprintf(stderr,"  0x%08x =%-6d %6d..%-6d usage=0x%08x\n",btnid,value,lo,hi,hidusage);
   
@@ -386,12 +419,15 @@ static int indev_cb_cap(void *userdata,int btnid,int value,int lo,int hi,int hid
   
   cell->btnid=btnid;
   cell->value=value;
-  cell->dstbtnid=eh_inmgr_get_mapping(eh_get_inmgr(),WIDGET->devid,btnid);
+  cell->dstbtnid=inmgr_get_dstbtnid(WIDGET->devid,btnid);
+  cell->hidusage=hidusage;
+  cell->srclo=lo;
+  cell->srchi=hi;
   
   return 0;
 }
 
-/* Public setup.
+/* Query device for capabilities and build up our UI.
  */
  
 static int indev_cell_cmp(const void *a,const void *b) {
@@ -399,21 +435,38 @@ static int indev_cell_cmp(const void *a,const void *b) {
   return (int)A->btnid-(int)B->btnid;
 }
  
+static int indev_build_caps(struct gui_widget *widget) {
+  struct eh_input_driver *driver=eh_input_driver_for_device(WIDGET->devid);
+  if (driver) {
+    if (driver->type->list_buttons) {
+      if (driver->type->list_buttons(driver,WIDGET->devid,indev_cb_cap,widget)<0) return -1;
+    }
+  } else {
+    // No driver, assume it's the System Keyboard.
+    int btnid;
+    for (btnid=0x00070004;btnid<=0x00070063;btnid++) { // A..KPDOT, basically the whole thing.
+      if (indev_cb_cap(btnid,btnid,0,2,0,widget)<0) return -1;
+    }
+    for (btnid=0x000700e0;btnid<=0x000700e7;btnid++) { // Modifiers.
+      if (indev_cb_cap(btnid,btnid,0,2,0,widget)<0) return -1;
+    }
+  }
+  qsort(WIDGET->cellv,WIDGET->cellc,sizeof(struct indev_cell),indev_cell_cmp);
+  return 0;
+}
+
+/* Public setup.
+ */
+ 
 int mn_widget_indev_setup(struct gui_widget *widget,int devid) {
   if (!widget||(widget->type!=&mn_widget_type_indev)) return -1;
   if (WIDGET->devid) return -1;
-  struct eh_inmgr *inmgr=eh_get_inmgr();
-  if (!inmgr) return -1;
   WIDGET->devid=devid;
   
-  struct eh_inmgr_delegate delegate={
-    .userdata=widget,
-    .cb_event=indev_cb_event,
-  };
-  if (!(WIDGET->listenerid=eh_inmgr_listen_source(inmgr,WIDGET->devid,&delegate))) return -1;
-  eh_inmgr_enable_device(inmgr,WIDGET->devid,0);
+  if ((WIDGET->listenerid=inmgr_spy(indev_cb_event,widget))<1) return -1;
+  inmgr_device_enable(WIDGET->devid,0);
   
-  const char *name=eh_inmgr_device_name(inmgr,WIDGET->devid);
+  const char *name=eh_input_device_name(WIDGET->devid);
   if (!name||!name[0]) name="Unknown Device";
   int namec=0;
   while (name[namec]) namec++;
@@ -422,10 +475,9 @@ int mn_widget_indev_setup(struct gui_widget *widget,int devid) {
   /* Make a cell for each button, then sort by (btnid).
    * Sorting is important because we have to search later by btnid at event cadence.
    * I don't believe order is meaningful to the user.
+   * inmgr does not cache caps, so we're pulling them from scratch each time the modal opens.
    */
-  //fprintf(stderr,"Building indev for device '%.*s'...\n",namec,name);
-  if (eh_inmgr_device_enumerate(inmgr,WIDGET->devid,indev_cb_cap,widget)<0) return -1;
-  qsort(WIDGET->cellv,WIDGET->cellc,sizeof(struct indev_cell),indev_cell_cmp);
+  if (indev_build_caps(widget)<0) return -1;
   
   return 0;
 }

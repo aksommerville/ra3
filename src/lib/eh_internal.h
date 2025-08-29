@@ -4,9 +4,9 @@
 #include "emuhost.h"
 #include "eh_driver.h"
 #include "eh_clock.h"
-#include "eh_inmgr.h"
 #include "eh_aucvt.h"
 #include "eh_auto_collect_metadata.h"
+#include "inmgr/inmgr.h"
 #include "render/eh_render.h"
 #include "opt/fakews/fakews.h"
 #include <string.h>
@@ -32,7 +32,6 @@ extern struct eh {
   int audio_chanc;
   char *audio_device;
   int glsl_version;
-  char *input_config_path;
   int prefer_screen;
   char *romassist_host;
   int romassist_port;
@@ -49,7 +48,6 @@ extern struct eh {
   int inputc,inputa;
   int devid_keyboard; // nonzero if video driver provides a keyboard
   struct eh_render *render;
-  struct eh_inmgr *inmgr;
   int inmgr_dirty;
   struct eh_aucvt aucvt;
   struct fakews *fakews;
@@ -80,7 +78,7 @@ void eh_cb_pcm(int16_t *v,int c,void *dummy);
 void eh_cb_connect(int devid,void *dummy);
 void eh_cb_disconnect(int devid,void *dummy);
 void eh_cb_button(int devid,int btnid,int value,void *dummy);
-int eh_cb_digested_event(void *userdata,const struct eh_inmgr_event *event);
+//int eh_cb_digested_event(void *userdata,const struct eh_inmgr_event *event);
 void eh_cb_inmgr_config_dirty(void *userdata);
 void eh_cb_ws_connect(void *userdata);
 void eh_cb_ws_disconnect(void *userdata);

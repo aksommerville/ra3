@@ -270,7 +270,7 @@ void eh_inmgr_dirty();
  */
 int eh_get_scratch_directory(char **dstpp);
 
-/* Normally "~/.romassist", where all our caches and config can go.
+/* Normally "~/.config/aksomm/romassist", where all our caches and config can go.
  * This is also the root for emulator-specific scratch directories.
  */
 int eh_get_romassist_directory(char *dst,int dsta);

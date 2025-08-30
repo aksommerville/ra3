@@ -272,6 +272,9 @@ int eh_drivers_init() {
     return -2;
   }
   inmgr_set_player_count(eh.delegate.playerc);
+  #define _(tag) inmgr_set_signal(INMGR_SIGNAL_##tag,eh_cb_##tag);
+  INMGR_FOR_EACH_SIGNAL
+  #undef _
 
   int err;
   if (

@@ -4,92 +4,24 @@
 #include "opt/serial/serial.h"
 #include <stdarg.h>
 
-/* Scratch directory.
+/* gcfg directories.
  */
  
 int eh_get_scratch_directory(char **dstpp) {
   char tmp[1024];
-  int tmpc=eh_get_romassist_directory(tmp,sizeof(tmp));
+  int tmpc=gcfg_compose_path(tmp,sizeof(tmp),"romassist",9,eh.delegate.name,-1);
   if ((tmpc<1)||(tmpc>=sizeof(tmp))) return -1;
-  
-  const char *sfx=eh.delegate.name;
-  int sfxc=0;
-  if (sfx) while (sfx[sfxc]) sfxc++;
-  if (sfxc) {
-    char *dst=malloc(tmpc+1+sfxc+1);
-    if (!dst) return -1;
-    memcpy(dst,tmp,tmpc);
-    dst[tmpc]='/';
-    memcpy(dst+tmpc+1,sfx,sfxc);
-    dst[tmpc+1+sfxc]=0;
-    if (dir_mkdirp(dst)<0) {
-      free(dst);
-      return -1;
-    }
-    *dstpp=dst;
-    return tmpc+1+sfxc;
-  }
-  
   if (dir_mkdirp(tmp)<0) return -1;
   char *dst=malloc(tmpc+1);
   if (!dst) return -1;
-  memcpy(dst,tmp,tmpc+1);
+  memcpy(dst,tmp,tmpc);
+  dst[tmpc]=0;
   *dstpp=dst;
   return tmpc;
 }
-
-/* Romassist root directory.
- */
  
 int eh_get_romassist_directory(char *dst,int dsta) {
   return gcfg_compose_path(dst,dsta,"romassist",9,0,0);
-  /*
-  if (!dst||(dsta<0)) dsta=0;
-  const char *src;
-  int dstc=0;
-  
-  // First, env "HOME".
-  if (src=getenv("HOME")) {
-    int srcc=0; while (src[srcc]) srcc++;
-    if (srcc>0) {
-      if (srcc<=dsta) memcpy(dst,src,srcc);
-      dstc=srcc;
-    }
-  }
-  
-  // If that didn't work, but env "USER" is present, try guessing the home path.
-  if (!dstc&&(src=getenv("USER"))) {
-    int srcc=0; while (src[srcc]) srcc++;
-    if (srcc>0) {
-      const char *pfx=0;
-      #if USE_linux
-        pfx="/home/";
-      #elif USE_macos
-        pfx="/Users/";
-      #elif USE_mswin
-        pfx="C:/Users/";
-      #endif
-      if (pfx) {
-        int pfxc=0; while (pfx[pfxc]) pfxc++;
-        dstc=pfxc+srcc;
-        if (dstc<=dsta) {
-          memcpy(dst,pfx,pfxc);
-          memcpy(dst+pfxc,src,srcc);
-        }
-      }
-    }
-  }
-  
-  // Still no? OK forget it.
-  if (dstc<1) return -1;
-  
-  // Append separator and our own name.
-  if ((dstc<dsta)&&(dst[dstc-1]!='/')) dst[dstc++]='/';
-  if (dstc<=dsta-10) memcpy(dst+dstc,".romassist",10);
-  dstc+=10;
-  if (dstc<dsta) dst[dstc]=0;
-  return dstc;
-  /**/
 }
 
 /* Encode HTTP request.

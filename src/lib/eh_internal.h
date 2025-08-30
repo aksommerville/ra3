@@ -84,4 +84,8 @@ void eh_cb_ws_connect(void *userdata);
 void eh_cb_ws_disconnect(void *userdata);
 void eh_cb_ws_message(int opcode,const void *v,int c,void *userdata);
 
+#define _(tag) void eh_cb_##tag();
+INMGR_FOR_EACH_SIGNAL
+#undef _
+
 #endif

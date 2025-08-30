@@ -112,28 +112,62 @@ static void eh_toggle_fullscreen() {
   eh_config_save();
 }
 
-/* Digested input event from inmgr.
+/* Digested signal from inmgr.
+ * We declare all of the signals, but most are not yet implemented.
+ * SCREENCAP should be easy, don't we already have plumbing for that somewhere?
  */
- 
-static void eh_trigger_action(int action) {
-  switch (action) {
-    case EH_BTN_QUIT: if (eh.allow_quit_button) eh.terminate=1; break;
-    case EH_BTN_SCREENCAP: eh.screencap_requested=1; break;
-    case EH_BTN_FULLSCREEN: eh_toggle_fullscreen(); break;
-    case EH_BTN_PAUSE: {
-        if (eh.hard_pause) {
-          eh.hard_pause=0;
-          eh.hard_pause_stepc=0;
-        } else {
-          eh.hard_pause=1;
-        }
-      } break;
-    case EH_BTN_DEBUG: fprintf(stderr,"TODO debug\n"); break;
-    case EH_BTN_STEP: if (eh.hard_pause) eh.hard_pause_stepc++; break;
-    case EH_BTN_FASTFWD: eh.fastfwd=eh.fastfwd?0:1; fprintf(stderr,"fastfwd=%d\n",eh.fastfwd); break; //disabled for now to protect our CPUs
-    case EH_BTN_SAVESTATE: fprintf(stderr,"TODO savestate\n"); break;
-    case EH_BTN_LOADSTATE: fprintf(stderr,"TODO loadstate\n"); break;
+
+void eh_cb_QUIT() {
+  if (eh.allow_quit_button) eh.terminate=1;
+}
+
+void eh_cb_FULLSCREEN() {
+  eh_toggle_fullscreen();
+}
+
+void eh_cb_MUTE() {
+  fprintf(stderr,"%s\n",__func__);//TODO
+}
+
+void eh_cb_PAUSE() {
+  if (eh.hard_pause) {
+    eh.hard_pause=0;
+    eh.hard_pause_stepc=0;
+  } else {
+    eh.hard_pause=1;
   }
+}
+
+void eh_cb_SCREENCAP() {
+  fprintf(stderr,"%s\n",__func__);//TODO
+}
+
+void eh_cb_SAVESTATE() {
+  fprintf(stderr,"%s\n",__func__);//TODO
+}
+
+void eh_cb_LOADSTATE() {
+  fprintf(stderr,"%s\n",__func__);//TODO
+}
+
+void eh_cb_MENU() {
+  fprintf(stderr,"%s\n",__func__);//TODO
+}
+
+void eh_cb_RESET() {
+  fprintf(stderr,"%s\n",__func__);//TODO
+}
+
+void eh_cb_DEBUG() {
+  fprintf(stderr,"%s\n",__func__);//TODO
+}
+
+void eh_cb_STEP() {
+  if (eh.hard_pause) eh.hard_pause_stepc++;
+}
+
+void eh_cb_FASTFWD() {
+  eh.fastfwd=eh.fastfwd?0:1;
 }
 
 /* Persistent WebSocket connection.
@@ -161,10 +195,10 @@ void eh_cb_ws_message(int opcode,const void *v,int c,void *userdata) {
         int idc=sr_decode_json_string(id,sizeof(id),&decoder);
         if ((idc>0)&&(idc<=sizeof(id))) {
         
-          if ((idc==16)&&!memcmp(id,"requestScreencap",16)) { eh_trigger_action(EH_BTN_SCREENCAP); return; }
-          if ((idc==5)&&!memcmp(id,"pause",5)) { eh_trigger_action(EH_BTN_PAUSE); return; }
-          if ((idc==6)&&!memcmp(id,"resume",6)) { eh_trigger_action(EH_BTN_PAUSE); return; } // our PAUSE is a toggle. oh well, close enough
-          if ((idc==4)&&!memcmp(id,"step",4)) { eh_trigger_action(EH_BTN_STEP); return; }
+          if ((idc==16)&&!memcmp(id,"requestScreencap",16)) { eh_cb_SCREENCAP(); return; }
+          if ((idc==5)&&!memcmp(id,"pause",5)) { eh_cb_PAUSE(); return; }
+          if ((idc==6)&&!memcmp(id,"resume",6)) { eh_cb_PAUSE(); return; } // our PAUSE is a toggle. oh well, close enough
+          if ((idc==4)&&!memcmp(id,"step",4)) { eh_cb_STEP(); return; }
           if ((idc==12)&&!memcmp(id,"httpresponse",12)) { if (eh.delegate.http_response) eh.delegate.http_response(v,c); return; }
         
           if (eh.delegate.websocket_incoming) eh.delegate.websocket_incoming(id,idc,v,c);

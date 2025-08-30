@@ -247,6 +247,10 @@ static int inmgr_btnid_from_gcfg(int gbtnid,const char *name,int namec) {
     case GCFG_BTNID_DPAD: return INMGR_BTN_LEFT|INMGR_BTN_RIGHT|INMGR_BTN_UP|INMGR_BTN_DOWN;
     case GCFG_BTNID_HORZ: return INMGR_BTN_LEFT|INMGR_BTN_RIGHT;
     case GCFG_BTNID_VERT: return INMGR_BTN_UP|INMGR_BTN_DOWN;
+    case GCFG_BTNID_LEFT: return INMGR_BTN_LEFT;
+    case GCFG_BTNID_RIGHT: return INMGR_BTN_RIGHT;
+    case GCFG_BTNID_UP: return INMGR_BTN_UP;
+    case GCFG_BTNID_DOWN: return INMGR_BTN_DOWN;
     case GCFG_BTNID_SOUTH: return INMGR_BTN_SOUTH;
     case GCFG_BTNID_WEST: return INMGR_BTN_WEST;
     case GCFG_BTNID_EAST: return INMGR_BTN_EAST;
@@ -274,6 +278,10 @@ int inmgr_gcfg_btn_from_btnid(int imbtnid) {
     case INMGR_BTN_LEFT|INMGR_BTN_RIGHT|INMGR_BTN_UP|INMGR_BTN_DOWN: return GCFG_BTNID_DPAD;
     case INMGR_BTN_LEFT|INMGR_BTN_RIGHT: return GCFG_BTNID_HORZ;
     case INMGR_BTN_UP|INMGR_BTN_DOWN: return GCFG_BTNID_VERT;
+    case INMGR_BTN_LEFT: return GCFG_BTNID_LEFT;
+    case INMGR_BTN_RIGHT: return GCFG_BTNID_RIGHT;
+    case INMGR_BTN_UP: return GCFG_BTNID_UP;
+    case INMGR_BTN_DOWN: return GCFG_BTNID_DOWN;
     case INMGR_BTN_SOUTH: return GCFG_BTNID_SOUTH;
     case INMGR_BTN_WEST: return GCFG_BTNID_WEST;
     case INMGR_BTN_EAST: return GCFG_BTNID_EAST;
@@ -398,9 +406,37 @@ void inmgr_connect_more(void *ctx,int btnid,int hidusage,int lo,int hi,int value
   inmgr_unset_add(btnid,hidusage,lo,hi,value);
 }
 
+/* Skip piecemeal capability declarations and grab the System Keyboard wholesale.
+ */
+
 void inmgr_connect_keyboard(void *ctx) {
   if (!ctx||(ctx!=inmgr.connect_in_progress)) return;
+  
+  /* Set the (keyboard) flag so when we wrap up, if it's not fully mapped, we can create a sensible default map.
+   * See inmgr_device_assign_unset_keyboard.
+   */
   inmgr.connect.device->keyboard=1;
+  
+  /* If there was an explicit config, use that.
+   * Caps are not being reported, just assume they all exist.
+   */
+  if (inmgr.connect.gdev) {
+    const struct gcfg_input_button *gbtn=inmgr.connect.gdev->buttonv;
+    int i=inmgr.connect.gdev->buttonc;
+    for (;i-->0;gbtn++) {
+      int imbtnid=0;
+      if (gbtn->btnid>0) imbtnid=inmgr_btnid_from_gcfg(gbtn->btnid,gbtn->btnname,gbtn->btnnamec);
+      else if (gbtn->btnid<0) imbtnid=inmgr_btnid_from_name(gbtn->btnname,gbtn->btnnamec);
+      else continue; // Marked zero in cfg -- ignore it.
+      if (!imbtnid) imbtnid=inmgr_btnid_from_name(gbtn->name,gbtn->namec);
+      if (imbtnid) {
+        struct inmgr_button *button=inmgr_device_add_button(inmgr.connect.device,gbtn->srcbtnid);
+        if (button) {
+          inmgr_button_init(button,imbtnid,gbtn->comment,gbtn->commentc,gbtn->srcbtnid,0,1,0);
+        }
+      }
+    }
+  }
 }
 
 /* Special assign-unset logic for keyboards only.
@@ -412,6 +448,12 @@ static int inmgr_unset_exists(const struct inmgr_unset *unset,int unsetc,int btn
 }
  
 static int inmgr_device_assign_unset_keyboard(struct inmgr_device *device,const struct inmgr_unset *unset,int unsetc) {
+
+  /* If we have at least one button mapped already, a manual config exists.
+   * Don't make any further changes.
+   * See inmgr_connect_keyboard.
+   */
+  if (device->buttonc) return 0;
 
   /* Check what's already mapped. Just on/off per button, no need to count them.
    */

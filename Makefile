@@ -55,7 +55,7 @@ ifneq (,$(strip $(BUILD_LIB)))
     INC="$(abspath out/include)" \
     $< $@
   #TODO Name all public headers here.
-  LIB_HEADERS_SRC:=src/lib/emuhost.h
+  LIB_HEADERS_SRC:=src/lib/emuhost.h src/lib/inmgr/inmgr.h
   LIB_HEADERS_DST:=$(patsubst src/lib/%,out/include/%,$(LIB_HEADERS_SRC))
   all:$(LIB_HEADERS_DST)
   out/include/%:src/lib/%;$(PRECMD) cp $< $@

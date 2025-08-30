@@ -195,6 +195,7 @@ int inmgr_devid_by_index(int p);
 const char *inmgr_get_device_id(int *vid,int *pid,int *version,int devid);
 int inmgr_get_device_button(int *hidusage,int *lo,int *hi,int *value,int devid,int p); // => srcbtnid or zero for OOB
 int inmgr_get_dstbtnid(int devid,int srcbtnid);
+int inmgr_playerid_for_devid(int devid);
 
 /* Changes the live state and also the config.
  * Does not actually write out to the file -- you should inmgr_save() soon after.

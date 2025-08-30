@@ -89,6 +89,12 @@ int inmgr_get_dstbtnid(int devid,int srcbtnid) {
   return button->dstbtnid;
 }
 
+int inmgr_playerid_for_devid(int devid) {
+  struct inmgr_device *device=inmgr_device_by_devid(devid);
+  if (!device) return 0;
+  return device->playerid;
+}
+
 /* Set name.
  */
  

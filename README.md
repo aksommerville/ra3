@@ -74,5 +74,5 @@ Old emulators are of course still compatible generically, as long we don't serve
 - - ...they already were. Great minds think alike.
 - [x] mn_widget_input
 - [x] mn_widget_indev
-- [ ] akz26
-- [ ] Rebuild emulators.
+- [x] akz26
+- [x] Rebuild emulators.

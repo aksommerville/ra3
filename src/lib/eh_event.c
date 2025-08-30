@@ -55,7 +55,7 @@ void eh_cb_pcm(int16_t *v,int c,void *dummy) {
  */
  
 static int eh_cb_devcap(int btnid,uint32_t usage,int lo,int hi,int value,void *userdata) {
-  inmgr_connect_more(userdata,btnid,usage,lo,hi,value);
+  inmgr_connect_more(*(int*)userdata,btnid,usage,lo,hi,value);
   return 0;
 }
  
@@ -74,16 +74,11 @@ void eh_cb_connect(int devid,void *dummy) {
   if (driver->type->get_ids) {
     name=driver->type->get_ids(&vid,&pid,&version,driver,devid);
   }
-  void *ctx=inmgr_connect_begin(devid,vid,pid,version,name,-1);
-  if (!ctx) return;
+  inmgr_connect_begin(devid,vid,pid,version,name,-1);
   if (driver->type->list_buttons) {
-    driver->type->list_buttons(driver,devid,eh_cb_devcap,ctx);
+    driver->type->list_buttons(driver,devid,eh_cb_devcap,&devid);
   }
-  if (inmgr_connect_end(ctx)>0) {
-    // Connected.
-  } else {
-    // Declined.
-  }
+  inmgr_connect_end(devid);
 }
 
 /* Input device disconnected.
@@ -168,6 +163,10 @@ void eh_cb_STEP() {
 
 void eh_cb_FASTFWD() {
   eh.fastfwd=eh.fastfwd?0:1;
+}
+
+void eh_cb_AUTOMAPPED() {
+  eh.inmgr_dirty=1;
 }
 
 /* Persistent WebSocket connection.

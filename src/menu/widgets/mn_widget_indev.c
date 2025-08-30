@@ -2,7 +2,6 @@
 #include "lib/emuhost.h"
 #include "lib/eh_driver.h"
 #include "lib/inmgr/inmgr.h"
-#include "lib/gcfg/gcfg.h"
 #include "opt/gui/gui_font.h"
 #include <math.h>
 
@@ -45,7 +44,7 @@ struct mn_widget_indev {
  */
  
 static void _indev_del(struct gui_widget *widget) {
-  inmgr_unspy(WIDGET->listenerid);
+  inmgr_unlisten(WIDGET->listenerid);
   inmgr_device_enable(WIDGET->devid,1);
   gui_texture_del(WIDGET->nametex);
   gui_texture_del(WIDGET->gridtex);
@@ -125,15 +124,8 @@ static void indev_draw_cell(uint8_t *dst,int dststride,struct gui_widget *widget
   char text[64];
   int textc=snprintf(text,sizeof(text),"%3d %04x ",clampvalue,cell->btnid);
   if ((textc<0)||(textc>=sizeof(text))) return;
-  const char *name=inmgr_btnid_name(cell->dstbtnid);
-  int namec=0;
-  if (name) {
-    while (name[namec]) namec++;
-    if (textc<=sizeof(text)-namec) {
-      memcpy(text+textc,name,namec);
-      textc+=namec;
-    }
-  }
+  int err=inmgr_btnid_repr(text+textc,sizeof(text)-textc,cell->dstbtnid);
+  if ((err>0)&&(textc<=sizeof(text)-err)) textc+=err;
   gui_font_render_line(dst,WIDGET->colw,WIDGET->rowh,dststride,WIDGET->font,text,textc,0xffffff);
 }
 
@@ -282,7 +274,7 @@ static void indev_cb_map(struct gui_widget *pickone,int p,void *userdata) {
       int dstbtnid=indev_optionv[p].btnid;
       if (dstbtnid!=cell->dstbtnid) { // NB zero is perfectly valid for dstbtnid, but it's also the fallback
         MN_SOUND(ACTIVATE)
-        if (inmgr_remap_button(WIDGET->devid,cell->btnid,dstbtnid,cell->hidusage,cell->srclo,cell->srchi,cell->value)>=0) {
+        if (inmgr_remap_button(WIDGET->devid,cell->btnid,dstbtnid)>=0) {
           eh_inmgr_dirty();
           cell->dstbtnid=dstbtnid;
           indev_redraw_gridtex_cell(widget,WIDGET->selx,WIDGET->sely);
@@ -463,7 +455,7 @@ int mn_widget_indev_setup(struct gui_widget *widget,int devid) {
   if (WIDGET->devid) return -1;
   WIDGET->devid=devid;
   
-  if ((WIDGET->listenerid=inmgr_spy(indev_cb_event,widget))<1) return -1;
+  if ((WIDGET->listenerid=inmgr_listen(indev_cb_event,widget))<1) return -1;
   inmgr_device_enable(WIDGET->devid,0);
   
   const char *name=eh_input_device_name(WIDGET->devid);

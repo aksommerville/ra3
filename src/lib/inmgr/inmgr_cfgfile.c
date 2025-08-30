@@ -1,19 +1,16 @@
-#include "gcfg.h"
-#include "opt/fs/fs.h"
-#include <stdlib.h>
-#include <string.h>
+#include "inmgr_internal.h"
 
 /* Compose path.
  */
  
-int gcfg_compose_path(char *dst,int dsta,const char *app,int appc,const char *base,int basec) {
+int inmgr_compose_path(char *dst,int dsta,const char *app,int appc,const char *sub,int subc) {
   if (!dst||(dsta<0)) dsta=0;
   if (!app) appc=0; else if (appc<0) { appc=0; while (app[appc]) appc++; }
-  if (!base) basec=0; else if (basec<0) { basec=0; while (base[basec]) basec++; }
+  if (!sub) subc=0; else if (subc<0) { subc=0; while (sub[subc]) subc++; }
   while (appc&&(app[0]=='/')) { app++; appc--; }
   while (appc&&(app[appc-1]=='/')) appc--;
-  while (basec&&(base[0]=='/')) { base++; basec--; }
-  while (basec&&(base[basec-1]=='/')) basec--;
+  while (subc&&(sub[0]=='/')) { sub++; subc--; }
+  while (subc&&(sub[subc-1]=='/')) subc--;
   
   /* Path begins "~/.config/aksomm/".
    * The ".config" is used by other Linux apps, maybe other OSes too.
@@ -40,6 +37,7 @@ int gcfg_compose_path(char *dst,int dsta,const char *app,int appc,const char *ba
   } else {
     return -1;
   }
+  if (dstc>=dsta) return -1;
   if (dstc&&(dst[dstc-1]!='/')) dst[dstc++]='/';
   if (dstc>=dsta-15) return -1;
   memcpy(dst+dstc,".config/aksomm/",15);
@@ -52,10 +50,10 @@ int gcfg_compose_path(char *dst,int dsta,const char *app,int appc,const char *ba
     if (dstc&&(dst[dstc-1]!='/')) dst[dstc++]='/';
   }
   
-  if (basec) {
-    if (dstc>=dsta-basec) return -1;
-    memcpy(dst+dstc,base,basec);
-    dstc+=basec;
+  if (subc) {
+    if (dstc>=dsta-subc) return -1;
+    memcpy(dst+dstc,sub,subc);
+    dstc+=subc;
   }
   
   if (dstc>=dsta) return -1;
@@ -63,30 +61,23 @@ int gcfg_compose_path(char *dst,int dsta,const char *app,int appc,const char *ba
   return dstc;
 }
 
-/* Read file.
+/* Wee conveniences.
  */
 
-int gcfg_read_file(void *dstpp,const char *app,int appc,const char *base,int basec) {
-  char path[1024];
-  int pathc=gcfg_compose_path(path,sizeof(path),app,appc,base,basec);
-  if ((pathc<1)||(pathc>=sizeof(path))) return 0;
-  void *serial=0;
-  int serialc=file_read(&serial,path);
-  if (serialc<0) return 0;
-  if (!serialc) {
-    if (serial) free(serial);
-    return 0;
-  }
-  *(void**)dstpp=serial;
-  return serialc;
+int inmgr_get_input_path(char *dst,int dsta) {
+  return inmgr_compose_path(dst,dsta,0,0,"input",5);
 }
 
-/* Write file.
- */
-
-int gcfg_write_file(const char *app,int appc,const char *base,int basec,const void *src,int srcc) {
+int inmgr_config_read(void *dstpp,const char *app,int appc,const char *sub,int subc) {
   char path[1024];
-  int pathc=gcfg_compose_path(path,sizeof(path),app,appc,base,basec);
+  int pathc=inmgr_compose_path(path,sizeof(path),app,appc,sub,subc);
+  if ((pathc<1)||(pathc>=sizeof(path))) return -1;
+  return file_read(dstpp,path);
+}
+
+int inmgr_config_write(const char *app,int appc,const char *sub,int subc,const void *src,int srcc) {
+  char path[1024];
+  int pathc=inmgr_compose_path(path,sizeof(path),app,appc,sub,subc);
   if ((pathc<1)||(pathc>=sizeof(path))) return -1;
   if (dir_mkdirp_parent(path)<0) return -1;
   return file_write(path,src,srcc);

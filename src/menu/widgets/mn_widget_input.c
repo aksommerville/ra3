@@ -1,7 +1,6 @@
 #include "../mn_internal.h"
 #include "lib/emuhost.h"
 #include "lib/inmgr/inmgr.h"
-#include "lib/gcfg/gcfg.h"
 
 #define INPUT_ALARM_TIME 100
 #define INPUT_NAME_LIMIT 32 /* Truncate device names, sometimes they're ridiculous. Just for looks. */
@@ -42,7 +41,7 @@ static void _input_del(struct gui_widget *widget) {
     while (WIDGET->rowc-->0) input_row_cleanup(WIDGET->rowv+WIDGET->rowc);
     free(WIDGET->rowv);
   }
-  inmgr_unspy(WIDGET->listenerid);
+  inmgr_unlisten(WIDGET->listenerid);
 }
 
 /* Add row.
@@ -146,7 +145,7 @@ static int _input_init(struct gui_widget *widget) {
   if (!(WIDGET->instructions=gui_texture_from_text(widget->gui,0,"(A+B) to select",-1,0xc0c0c0))) return -1;
   if (!input_add_row(widget,"Done",4,-1)) return -1;
   
-  if ((WIDGET->listenerid=inmgr_spy(input_cb_event,widget))<0) return -1;
+  if ((WIDGET->listenerid=inmgr_listen(input_cb_event,widget))<0) return -1;
   int i=0; for (;;i++) { // Simulate connection for all existing devices.
     int devid=inmgr_devid_by_index(i);
     if (devid<=0) break;

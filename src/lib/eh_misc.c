@@ -1,5 +1,5 @@
 #include "eh_internal.h"
-#include "gcfg/gcfg.h"
+#include "inmgr/inmgr.h"
 #include "opt/fs/fs.h"
 #include "opt/serial/serial.h"
 #include <stdarg.h>
@@ -9,7 +9,7 @@
  
 int eh_get_scratch_directory(char **dstpp) {
   char tmp[1024];
-  int tmpc=gcfg_compose_path(tmp,sizeof(tmp),"romassist",9,eh.delegate.name,-1);
+  int tmpc=inmgr_compose_path(tmp,sizeof(tmp),"romassist",9,eh.delegate.name,-1);
   if ((tmpc<1)||(tmpc>=sizeof(tmp))) return -1;
   if (dir_mkdirp(tmp)<0) return -1;
   char *dst=malloc(tmpc+1);
@@ -21,7 +21,7 @@ int eh_get_scratch_directory(char **dstpp) {
 }
  
 int eh_get_romassist_directory(char *dst,int dsta) {
-  return gcfg_compose_path(dst,dsta,"romassist",9,0,0);
+  return inmgr_compose_path(dst,dsta,"romassist",9,0,0);
 }
 
 /* Encode HTTP request.

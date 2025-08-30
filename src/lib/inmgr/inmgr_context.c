@@ -5,19 +5,17 @@ struct inmgr inmgr={0};
 /* Quit.
  */
  
-void inmgr_device_cleanup(struct inmgr_device *device) {
-  if (device->buttonv) free(device->buttonv);
-}
- 
 void inmgr_quit() {
-  gcfg_input_del(inmgr.gcfg);
-  if (inmgr.signalv) free(inmgr.signalv);
   if (inmgr.devicev) {
     while (inmgr.devicec-->0) inmgr_device_cleanup(inmgr.devicev+inmgr.devicec);
     free(inmgr.devicev);
   }
-  if (inmgr.connect.unsetv) free(inmgr.connect.unsetv);
-  if (inmgr.spyv) free(inmgr.spyv);
+  if (inmgr.tmv) {
+    while (inmgr.tmc-->0) inmgr_tm_cleanup(inmgr.tmv+inmgr.tmc);
+    free(inmgr.tmv);
+  }
+  if (inmgr.signalv) free(inmgr.signalv);
+  if (inmgr.listenerv) free(inmgr.listenerv);
   memset(&inmgr,0,sizeof(struct inmgr));
 }
 
@@ -27,56 +25,114 @@ void inmgr_quit() {
 int inmgr_init() {
   if (inmgr.init) return -1;
   inmgr.init=1;
-  inmgr.gcfg=gcfg_input_get();
+  inmgr.btnmask=0xffff;
   inmgr.playerc=1;
-  inmgr.btnmask=0x7fff; // By default everything is enabled.
-  inmgr.spyid_next=1;
+  inmgr.listenerid_next=1;
+  if (inmgr_load()<0) {
+    inmgr_quit();
+    return -1;
+  }
   return 0;
 }
 
 /* Set player count.
  */
 
-void inmgr_set_player_count(int playerc) {
+int inmgr_set_player_count(int playerc) {
+  if (!inmgr.init) return -1;
   if (playerc<1) playerc=1; else if (playerc>INMGR_PLAYER_LIMIT) playerc=INMGR_PLAYER_LIMIT;
-  if (playerc==inmgr.playerc) return;
+  if (playerc==inmgr.playerc) return playerc;
   
-  /* Wipe global input state, clear any device player assignments that are now out of range, then rebuild state.
-   * Do not create new assignments. The first device to speak up will get the newly vacant slots.
-   */
+  // Zero the entire player state, we're going to rebuild it from scratch.
   memset(inmgr.playerv,0,sizeof(inmgr.playerv));
+  
+  // Retain the first assignment to each playerid if it's in the new range. Zero all others.
+  int count_by_playerid[1+INMGR_PLAYER_LIMIT]={0};
   struct inmgr_device *device=inmgr.devicev;
   int i=inmgr.devicec;
   for (;i-->0;device++) {
-    if (device->playerid>playerc) {
-      device->playerid=0;
-    } else if (inmgr.playerv[device->playerid]) {
-      // There's more than one device assigned to this player. Keep that first one, but clear any others.
-      // Imagine the app switches from 1-player to 4-player, and users have already interacted with all 4 devices.
+    if (device->keyboard) continue;
+    if (!device->enable||(device->playerid>playerc)||count_by_playerid[device->playerid]) {
       device->playerid=0;
     } else {
-      // First device per still-valid playerid, keep it.
-      // Disabled devices are not "connected" for playerv purposes.
-      if (device->enable) {
-        inmgr.playerv[device->playerid]|=device->state;
-        inmgr.playerv[0]|=device->state;
-      }
+      count_by_playerid[device->playerid]=1;
     }
   }
-
+  
+  // Any devices that now have a zero playerid, map them to the least popular playerid.
+  for (device=inmgr.devicev,i=inmgr.devicec;i-->0;device++) {
+    if (device->keyboard) {
+      device->playerid=1;
+    } else if (device->playerid) {
+      // Still valid. No change.
+    } else {
+      int playerid=1,q=2;
+      for (;q<=playerc;q++) if (count_by_playerid[q]<count_by_playerid[playerid]) playerid=q;
+      device->playerid=playerid;
+      count_by_playerid[playerid]++;
+    }
+    if (device->enable) { // Disabled devices do still map, but don't capture their state.
+      inmgr.playerv[device->playerid].state|=device->state;
+      inmgr.playerv[0].state|=device->state;
+    }
+    // Extended buttons stay zero, because we don't know which device has the latest value.
+  }
+  
   inmgr.playerc=playerc;
+  return playerc;
 }
 
 /* Set button mask.
  */
  
-void inmgr_set_buttons(int btnmask) {
-  inmgr.btnmask=btnmask&0xffff;
+int inmgr_set_button_mask(int mask) {
+  if (!inmgr.init) return -1;
+  inmgr.btnmask=mask&0xffff;
+  return inmgr.btnmask;
+}
+
+/* Search extbtn registry.
+ */
+ 
+int inmgr_extbtnv_search(int btnid) {
+  int lo=0,hi=inmgr.extbtnc;
+  while (lo<hi) {
+    int ck=(lo+hi)>>1;
+    int q=inmgr.extbtnv[ck].btnid;
+         if (btnid<q) hi=ck;
+    else if (btnid>q) lo=ck+1;
+    else return ck;
+  }
+  return -lo-1;
+}
+
+/* Declare extbtn.
+ */
+ 
+int inmgr_set_extbtn(int btnid,int lo,int hi) {
+  if (!inmgr.init) return -1;
+  if (btnid&0xff000000) return -1;
+  if (!(btnid&0x00ff0000)) return -1;
+  int p=inmgr_extbtnv_search(btnid);
+  if (p>=0) {
+    inmgr.extbtnv[p].lo=lo;
+    inmgr.extbtnv[p].hi=hi;
+  } else {
+    if (inmgr.extbtnc>=INMGR_EXTBTN_LIMIT) return -1;
+    p=-p-1;
+    struct inmgr_extbtn *extbtn=inmgr.extbtnv+p;
+    memmove(extbtn+1,extbtn,sizeof(struct inmgr_extbtn)*(inmgr.extbtnc-p));
+    inmgr.extbtnc++;
+    extbtn->btnid=btnid;
+    extbtn->lo=lo;
+    extbtn->hi=hi;
+  }
+  return 0;
 }
 
 /* Search signal handlers.
  */
-
+ 
 int inmgr_signalv_search(int btnid) {
   int lo=0,hi=inmgr.signalc;
   while (lo<hi) {
@@ -89,291 +145,124 @@ int inmgr_signalv_search(int btnid) {
   return -lo-1;
 }
 
-/* Register signal.
+void inmgr_signal(int btnid) {
+  int p=inmgr_signalv_search(btnid);
+  if (p<0) return;
+  inmgr.signalv[p].cb();
+}
+
+/* Declare signal.
  */
  
-void inmgr_set_signal(int btnid,void (*cb)()) {
-  if (!(btnid&~0xffff)||!cb) return;
+int inmgr_set_signal(int btnid,void (*cb)()) {
+  if (!inmgr.init) return -1;
+  if (!(btnid&0xff000000)) return -1;
+  if (!cb) return -1;
   int p=inmgr_signalv_search(btnid);
   if (p>=0) {
     inmgr.signalv[p].cb=cb;
-    return;
+  } else {
+    p=-p-1;
+    if (inmgr.signalc>=inmgr.signala) {
+      int na=inmgr.signala+16;
+      if (na>INT_MAX/sizeof(struct inmgr_signal)) return -1;
+      void *nv=realloc(inmgr.signalv,sizeof(struct inmgr_signal)*na);
+      if (!nv) return -1;
+      inmgr.signalv=nv;
+      inmgr.signala=na;
+    }
+    struct inmgr_signal *signal=inmgr.signalv+p;
+    memmove(signal+1,signal,sizeof(struct inmgr_signal)*(inmgr.signalc-p));
+    inmgr.signalc++;
+    signal->btnid=btnid;
+    signal->cb=cb;
   }
-  p=-p-1;
-  if (inmgr.signalc>=inmgr.signala) {
-    int na=inmgr.signala+8;
-    if (na>INT_MAX/sizeof(struct inmgr_signal)) return;
-    void *nv=realloc(inmgr.signalv,sizeof(struct inmgr_signal)*na);
-    if (!nv) return;
-    inmgr.signalv=nv;
-    inmgr.signala=na;
-  }
-  struct inmgr_signal *signal=inmgr.signalv+p;
-  memmove(signal+1,signal,sizeof(struct inmgr_signal)*(inmgr.signalc-p));
-  inmgr.signalc++;
-  signal->btnid=btnid;
-  signal->cb=cb;
+  return 0;
 }
 
 /* Get player state.
  */
 
 int inmgr_get_player(int playerid) {
-  if (playerid<0) return 0;
-  if (playerid>inmgr.playerc) return 0;
-  return inmgr.playerv[playerid];
+  if ((playerid<0)||(playerid>inmgr.playerc)) return 0;
+  return inmgr.playerv[playerid].state;
 }
 
-/* Search device list.
+int inmgr_get_button(int playerid,int btnid) {
+  if ((playerid<0)||(playerid>inmgr.playerc)) return 0;
+  int extbtnp=inmgr_extbtnv_search(btnid);
+  if (extbtnp<0) return 0;
+  return inmgr.playerv[playerid].extbtnv[extbtnp];
+}
+
+/* Enable/disable device.
  */
- 
-int inmgr_devicev_search(int devid) {
-  int lo=0,hi=inmgr.devicec;
-  while (lo<hi) {
-    int ck=(lo+hi)>>1;
-    int q=inmgr.devicev[ck].devid;
-         if (devid<q) hi=ck;
-    else if (devid>q) lo=ck+1;
-    else return ck;
-  }
-  return -lo-1;
-}
-
-/* Add device.
- */
- 
-struct inmgr_device *inmgr_device_add(int devid) {
-  int p=inmgr_devicev_search(devid);
-  if (p>=0) return 0;
-  p=-p-1;
-  if (inmgr.devicec>=inmgr.devicea) {
-    int na=inmgr.devicea+8;
-    if (na>INT_MAX/sizeof(struct inmgr_device)) return 0;
-    void *nv=realloc(inmgr.devicev,sizeof(struct inmgr_device)*na);
-    if (!nv) return 0;
-    inmgr.devicev=nv;
-    inmgr.devicea=na;
-  }
-  struct inmgr_device *device=inmgr.devicev+p;
-  memmove(device+1,device,sizeof(struct inmgr_device)*(inmgr.devicec-p));
-  inmgr.devicec++;
-  memset(device,0,sizeof(struct inmgr_device));
-  device->devid=devid;
-  device->enable=1;
-  return device;
-}
-
-/* Button list in device.
- */
- 
-static int inmgr_device_buttonv_search(const struct inmgr_device *device,int srcbtnid) {
-  int lo=0,hi=device->buttonc;
-  while (lo<hi) {
-    int ck=(lo+hi)>>1;
-    int q=device->buttonv[ck].srcbtnid;
-         if (srcbtnid<q) hi=ck;
-    else if (srcbtnid>q) lo=ck+1;
-    else return ck;
-  }
-  return -lo-1;
-}
-
-struct inmgr_button *inmgr_device_add_button(struct inmgr_device *device,int srcbtnid) {
-  int p=inmgr_device_buttonv_search(device,srcbtnid);
-  if (p>=0) return 0;
-  p=-p-1;
-  if (device->buttonc>=device->buttona) {
-    int na=device->buttona+16;
-    if (na>INT_MAX/sizeof(struct inmgr_button)) return 0;
-    void *nv=realloc(device->buttonv,sizeof(struct inmgr_button)*na);
-    if (!nv) return 0;
-    device->buttonv=nv;
-    device->buttona=na;
-  }
-  struct inmgr_button *button=device->buttonv+p;
-  memmove(button+1,button,sizeof(struct inmgr_button)*(device->buttonc-p));
-  device->buttonc++;
-  memset(button,0,sizeof(struct inmgr_button));
-  button->srcbtnid=srcbtnid;
-  return button;
-}
-
-struct inmgr_button *inmgr_device_get_button(const struct inmgr_device *device,int srcbtnid) {
-  int p=inmgr_device_buttonv_search(device,srcbtnid);
-  if (p<0) return 0;
-  return device->buttonv+p;
-}
-
-int inmgr_get_dstbtnid(int devid,int srcbtnid) {
-  struct inmgr_device *device=inmgr.devicev;
-  int i=inmgr.devicec;
-  for (;i-->0;device++) {
-    if (device->devid!=devid) continue;
-    struct inmgr_button *button=inmgr_device_get_button(device,srcbtnid);
-    if (!button) return 0;
-    return button->dstbtnid;
-  }
-  return 0;
-}
-
-/* Remove device.
- */
- 
-void inmgr_device_remove(struct inmgr_device *device) {
-  int p=device-inmgr.devicev;
-  if ((p<0)||(p>=inmgr.devicec)) return;
-  inmgr_device_cleanup(device);
-  inmgr.devicec--;
-  memmove(device,device+1,sizeof(struct inmgr_device)*(inmgr.devicec-p));
-}
-
-/* Spies.
- */
- 
-int inmgr_spy(void (*cb)(int devid,int btnid,int value,int state,void *userdata),void *userdata) {
-  if (!cb) return -1;
-  if (!inmgr.init) return -1;
-  if (inmgr.spyid_next>=INT_MAX) return -1;
-  if (inmgr.spyc>=inmgr.spya) {
-    int na=inmgr.spya+8;
-    if (na>INT_MAX/sizeof(struct inmgr_spy)) return -1;
-    void *nv=realloc(inmgr.spyv,sizeof(struct inmgr_spy)*na);
-    if (!nv) return -1;
-    inmgr.spyv=nv;
-    inmgr.spya=na;
-  }
-  struct inmgr_spy *spy=inmgr.spyv+inmgr.spyc++;
-  spy->spyid=inmgr.spyid_next++;
-  spy->cb=cb;
-  spy->userdata=userdata;
-  return spy->spyid;
-}
-
-void inmgr_unspy(int spyid) {
-  int i=inmgr.spyc;
-  struct inmgr_spy *spy=inmgr.spyv+inmgr.spyc-1;
-  for (;i-->0;spy--) {
-    if (spy->spyid!=spyid) continue;
-    inmgr.spyc--;
-    memmove(spy,spy+1,sizeof(struct inmgr_spy)*(inmgr.spyc-i));
-    return;
-  }
-}
-
-/* More Romassist bits.
- */
- 
-int inmgr_devid_by_index(int p) {
-  if ((p<0)||(p>=inmgr.devicec)) return 0;
-  return inmgr.devicev[p].devid;
-}
 
 void inmgr_device_enable(int devid,int enable) {
-  struct inmgr_device *device=inmgr.devicev;
-  int i=inmgr.devicec;
-  for (;i-->0;device++) {
-    if (device->devid!=devid) continue;
-    if (enable) {
-      if (device->enable) return;
-      device->enable=1;
-    } else {
-      if (!device->enable) return;
-      device->enable=0;
+  struct inmgr_device *device=inmgr_device_by_devid(devid);
+  if (!device) return;
+  if (enable) {
+    if (device->enable) return;
+    device->enable=1;
+    inmgr.playerv[device->playerid].state|=device->state;
+    inmgr.playerv[0].state|=device->state;
+    // extbtn do not immediately sync.
+  } else {
+    if (!device->enable) return;
+    device->enable=0;
+    inmgr.playerv[device->playerid].state=0;
+    inmgr.playerv[0].state=0;
+    memset(inmgr.playerv[device->playerid].extbtnv,0,sizeof(int)*inmgr.extbtnc);
+    memset(inmgr.playerv[0].extbtnv,0,sizeof(int)*inmgr.extbtnc);
+    const struct inmgr_device *other=inmgr.devicev;
+    int i=inmgr.devicec;
+    for (;i-->0;other++) {
+      if (!other->enable) continue;
+      inmgr.playerv[other->playerid].state|=other->state;
+      inmgr.playerv[0].state|=other->state;
     }
-    // Borrow inmgr_set_player_count() to force rebuild of player states.
-    inmgr.playerc++;
-    inmgr_set_player_count(inmgr.playerc-1);
-    return;
   }
 }
 
-const char *inmgr_btnid_name(int btnid) {
-  switch (btnid) {
-    #define _(tag) case INMGR_BTN_##tag: return #tag;
-    INMGR_FOR_EACH_BUTTON
-    #undef _
-    #define _(tag) case INMGR_SIGNAL_##tag: return #tag;
-    INMGR_FOR_EACH_SIGNAL
-    #undef _
-    case INMGR_BTN_LEFT|INMGR_BTN_RIGHT: return "HORZ";
-    case INMGR_BTN_UP|INMGR_BTN_DOWN: return "VERT";
-    case INMGR_BTN_LEFT|INMGR_BTN_RIGHT|INMGR_BTN_UP|INMGR_BTN_DOWN: return "DPAD";
-    case 0: return "NONE";
-  }
-  return 0;
-}
-
-/* Replace mapping.
+/* Raw event listeners.
  */
- 
-int inmgr_remap_button(int devid,int srcbtnid,int dstbtnid,int hidusage,int srclo,int srchi,int value) {
-  struct inmgr_device *device=inmgr.devicev;
-  int i=inmgr.devicec;
-  for (;i-->0;device++) {
-    if (device->devid!=devid) continue;
-    struct inmgr_button *button=inmgr_device_get_button(device,srcbtnid);
-    if (!button) {
-      button=inmgr_device_add_button(device,srcbtnid);
-      if (!button) return -1;
-    }
-    inmgr_button_init(button,dstbtnid,0,0,hidusage,srclo,srchi,value);
-    
-    // Now the important part: Find it in gcfg and replace that too.
-    struct gcfg_input_device *gdev=inmgr.gcfg->devicev;
-    int gdevi=inmgr.gcfg->devicec;
-    for (;gdevi-->0;gdev++) {
-      if (gdev->mapid!=device->gcfg_mapid) continue;
-      struct gcfg_input_button *gbtn=gcfg_input_device_get_button(gdev,srcbtnid,1);
-      if (gbtn) {
-        gbtn->btnid=inmgr_gcfg_btn_from_btnid(dstbtnid);
-      }
-      break;
-    }
-    
-    return 0;
+
+int inmgr_listen(void (*cb)(int devid,int btnid,int value,int state,void *userdata),void *userdata) {
+  if (!inmgr.init) return -1;
+  if (!cb) return -1;
+  if (inmgr.listenerid_next>=INT_MAX) return -1;
+  if (inmgr.listenerc>=inmgr.listenera) {
+    int na=inmgr.listenera+8;
+    if (na>INT_MAX/sizeof(struct inmgr_listener)) return -1;
+    void *nv=realloc(inmgr.listenerv,sizeof(struct inmgr_listener)*na);
+    if (!nv) return -1;
+    inmgr.listenerv=nv;
+    inmgr.listenera=na;
   }
-  return -1;
+  struct inmgr_listener *listener=inmgr.listenerv+inmgr.listenerc++;
+  listener->listenerid=inmgr.listenerid_next++;
+  listener->cb=cb;
+  listener->userdata=userdata;
+  return listener->listenerid;
 }
 
-/* Save config file.
- */
- 
-int inmgr_save() {
-  if (!inmgr.gcfg) return -1;
-  int dstc=0,dsta=4096,err;
-  char *dst=malloc(dsta);
-  if (!dst) return -1;
-  #define REQUIRE(addc) if (dstc>dsta-(addc)) { \
-    if (dstc>INT_MAX-(addc)) { free(dst); return -1; } \
-    dsta=dstc+(addc); \
-    if (dsta<INT_MAX-1024) dsta=(dsta+1024)&~1023; \
-    void *nv=realloc(dst,dsta); \
-    if (!nv) { free(dst); return -1; } \
-    dst=nv; \
-  }
-  
-  struct gcfg_input_device *device=inmgr.gcfg->devicev;
-  int devicei=inmgr.gcfg->devicec;
-  for (;devicei-->0;device++) {
-    for (;;) {
-      if ((err=gcfg_input_device_header_repr(dst+dstc,dsta-dstc,&device->header))<0) { free(dst); return -1; }
-      if (dstc<=dsta-err) { dstc+=err; break; }
-      REQUIRE(err)
-    }
-    
-    struct gcfg_input_button *button=device->buttonv;
-    int buttoni=device->buttonc;
-    for (;buttoni-->0;button++) {
-      for (;;) {
-        if ((err=gcfg_input_button_repr(dst+dstc,dsta-dstc,button))<0) { free(dst); return -1; }
-        if (dstc<=dsta-err) { dstc+=err; break; }
-        REQUIRE(err)
-      }
+void inmgr_unlisten(int listenerid) {
+  int i=inmgr.listenerc;
+  struct inmgr_listener *listener=inmgr.listenerv+i-1;
+  for (;i-->0;listener--) {
+    if (listener->listenerid==listenerid) {
+      inmgr.listenerc--;
+      memmove(listener,listener+1,sizeof(struct inmgr_listener)*(inmgr.listenerc-i));
+      return;
     }
   }
-  
-  #undef REQUIRE
-  err=gcfg_write_file(0,0,"input",5,dst,dstc);
-  free(dst);
-  return 0;
+}
+
+void inmgr_broadcast(int devid,int btnid,int value,int state) {
+  // Important to run backward: Listeners are allowed to remove themselves during the callback.
+  int i=inmgr.listenerc;
+  struct inmgr_listener *listener=inmgr.listenerv+i-1;
+  for (;i-->0;listener--) {
+    listener->cb(devid,btnid,value,state,listener->userdata);
+  }
 }

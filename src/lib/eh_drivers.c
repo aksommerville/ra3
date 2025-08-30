@@ -90,9 +90,7 @@ static int eh_drivers_init_video() {
   // Apportion an input device id for the keyboard if there is one.
   if (eh.video->type->provides_keyboard) {
     eh.devid_keyboard=eh_input_devid_next();
-    void *ctx=inmgr_connect_begin(eh.devid_keyboard,0,0,0,"System Keyboard",-1);
-    inmgr_connect_keyboard(ctx);
-    inmgr_connect_end(ctx);
+    inmgr_connect_keyboard(eh.devid_keyboard);
   }
   
   return 0;
@@ -272,8 +270,8 @@ int eh_drivers_init() {
     return -2;
   }
   inmgr_set_player_count(eh.delegate.playerc);
-  #define _(tag) inmgr_set_signal(INMGR_SIGNAL_##tag,eh_cb_##tag);
-  INMGR_FOR_EACH_SIGNAL
+  #define _(tag) inmgr_set_signal(INMGR_BTN_##tag,eh_cb_##tag);
+  EH_FOR_EACH_SIGNAL
   #undef _
 
   int err;

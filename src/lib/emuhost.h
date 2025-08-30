@@ -27,7 +27,7 @@
 #define EH_AUDIO_FORMAT_S32N_LO16 8
 #define EH_AUDIO_FORMAT_S8 9
 
-/* INMGR_BTN_* and INMGR_SIGNAL_* are exactly the same as EH_BTN_*.
+/* INMGR_BTN_* are exactly the same as EH_BTN_*.
  * They were written separately and combined after the fact, why they exist with two different prefixes.
  */
 #define EH_BTN_LEFT     0x0001
@@ -51,21 +51,22 @@
 #define EH_BTN_VERT (EH_BTN_UP|EH_BTN_DOWN)
 #define EH_BTN_DPAD (EH_BTN_HORZ|EH_BTN_VERT)
 
-/* More buttons, with bits >=0x00010000 set, for stateless actions.
+/* More buttons, with bits >=0x01000000 set, for stateless actions.
  * These also match inmgr.
  */
-#define EH_BTN_QUIT        0x00010001
-#define EH_BTN_FULLSCREEN  0x00010002
-#define EH_BTN_MUTE        0x00010003
-#define EH_BTN_PAUSE       0x00010004
-#define EH_BTN_SCREENCAP   0x00010005
-#define EH_BTN_SAVESTATE   0x00010006
-#define EH_BTN_LOADSTATE   0x00010007
-#define EH_BTN_MENU        0x00010008 /* from inmgr, we don't use */
-#define EH_BTN_RESET       0x00010009 /* from inmgr, we don't use. Maybe we should. */
-#define EH_BTN_DEBUG       0x0001000a
-#define EH_BTN_STEP        0x0001000b
-#define EH_BTN_FASTFWD     0x0001000c
+#define EH_BTN_QUIT        0x01000001
+#define EH_BTN_FULLSCREEN  0x01000002
+#define EH_BTN_MUTE        0x01000003
+#define EH_BTN_PAUSE       0x01000004
+#define EH_BTN_SCREENCAP   0x01000005
+#define EH_BTN_SAVESTATE   0x01000006
+#define EH_BTN_LOADSTATE   0x01000007
+#define EH_BTN_MENU        0x01000008 /* from inmgr, we don't use */
+#define EH_BTN_RESET       0x01000009 /* from inmgr, we don't use. Maybe we should. */
+#define EH_BTN_DEBUG       0x0100000a
+#define EH_BTN_STEP        0x0100000b
+#define EH_BTN_FASTFWD     0x0100000c
+#define EH_BTN_AUTOMAPPED  0x0100000d /* Used by inmgr, don't worry about it. */
 
 // Initial window placement hint (--screen=*)
 #define EH_SCREEN_ANY 0

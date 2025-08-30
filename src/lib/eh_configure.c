@@ -1,5 +1,4 @@
 #include "eh_internal.h"
-#include "gcfg/gcfg.h"
 #include "opt/serial/serial.h"
 #include "opt/fs/fs.h"
 

@@ -66,13 +66,3 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [ ] menu: Prompted input config, to wipe a device and assign each output to just one input.
 - - [ ] Could we get even slicker about that and prompt at startup? "New input device detected. Configure?"
 
-2025-08-29 Onboarding gcfg.
-- Would it be cleaner to drop eh_inmgr too, and replace with bits's inmgr?
-- - eh_inmgr is only used internally, and by akz26 (for paddles).
-- Oh my god yes, so easy. For the outer menu at least.
-- [x] Ensure we're kosher re declared symbols. We'll keep `EH_BTN_` but make them identical to `INMGR_BTN_`.
-- - ...they already were. Great minds think alike.
-- [x] mn_widget_input
-- [x] mn_widget_indev
-- [x] akz26
-- [x] Rebuild emulators.

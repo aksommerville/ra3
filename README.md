@@ -65,4 +65,4 @@ Old emulators are of course still compatible generically, as long we don't serve
 - [x] Reconnecting disconnected device in a 4-player setup assigned it to an already-in-use player.
 - [ ] menu: Prompted input config, to wipe a device and assign each output to just one input.
 - - [ ] Could we get even slicker about that and prompt at startup? "New input device detected. Configure?"
-
+- [x] UPR key at onscreen keyboard noop?

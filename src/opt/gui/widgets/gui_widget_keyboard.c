@@ -19,7 +19,8 @@ struct gui_widget_keyboard {
   struct gui_texture *capstex; // all keycap labels in one texture, our full size
   struct gui_font *font; // WEAK
   int focusp;
-  int shifted;
+  int shifted; // The sticky shift, a keyboard button.
+  int loshifted; // Transient shift, pressing L1
   uint16_t pvinput;
 };
 
@@ -95,6 +96,7 @@ static int keyboard_refresh_capstex(struct gui_widget *widget) {
   uint8_t *p=rgba;
   int i=WIDGET->bw*WIDGET->bh;
   for (;i-->0;p+=4) { p[0]=p[1]=p[2]=0xff; p[3]=0x00; }
+  int shifted=WIDGET->shifted^WIDGET->loshifted;
   
   const struct gui_keyboard_button *button=WIDGET->buttonv;
   for (i=WIDGET->buttonc;i-->0;button++) {
@@ -102,7 +104,7 @@ static int keyboard_refresh_capstex(struct gui_widget *widget) {
     int dsty=button->y;
     const char *src=button->natural;
     int srcc=button->naturalc;
-    if (WIDGET->shifted) {
+    if (shifted) {
       src=button->shifted;
       srcc=button->shiftedc;
     }
@@ -255,7 +257,7 @@ static void keyboard_backspace(struct gui_widget *widget) {
 static void keyboard_press(struct gui_widget *widget) {
   if ((WIDGET->focusp<0)||(WIDGET->focusp>=WIDGET->buttonc)) return;
   const struct gui_keyboard_button *focus=WIDGET->buttonv+WIDGET->focusp;
-  int codepoint=WIDGET->shifted?focus->scodepoint:focus->ncodepoint;
+  int codepoint=(WIDGET->shifted^WIDGET->loshifted)?focus->scodepoint:focus->ncodepoint;
   if (!codepoint) return;
   switch (codepoint) {
     case 0x01: {
@@ -365,13 +367,13 @@ static void _keyboard_update(struct gui_widget *widget) {
     uint16_t mypv=WIDGET->pvinput;
     WIDGET->pvinput=widget->gui->pvinput;
     if (widget->gui->pvinput&EH_BTN_L1) {
-      if (!WIDGET->shifted) {
-        WIDGET->shifted=1;
+      if (!WIDGET->loshifted) {
+        WIDGET->loshifted=1;
         keyboard_refresh_capstex(widget);
       }
     } else {
-      if (WIDGET->shifted) {
-        WIDGET->shifted=0;
+      if (WIDGET->loshifted) {
+        WIDGET->loshifted=0;
         keyboard_refresh_capstex(widget);
       }
     }

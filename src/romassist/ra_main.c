@@ -32,7 +32,8 @@ static int ra_init_db() {
   /* Opportunity for one-off DB actions that I don't feel like exposing the right way.
    */
   if (0) {
-    #if 0
+  
+    #if 0 /* Show the most common words in the db's text. This isn't useful or anything, but it's amusing. */
     struct db_wordcloud wc={.db=ra.db};
     if (db_wordcloud_gather(&wc)<0) {
       fprintf(stderr,"db_wordcloud_gather failed!\n");
@@ -48,7 +49,8 @@ static int ra_init_db() {
     }
     db_wordcloud_cleanup(&wc);
     #endif
-    #if 1
+    
+    #if 0 /* Dump a detailgram, the counts of games bucketted on one field. */
     struct db_detailgram dg={.db=ra.db};
     const char *field="genre";
     if (db_detailgram_gather(&dg,field)<0) {
@@ -76,6 +78,30 @@ static int ra_init_db() {
       );
     }
     #endif
+    
+    #if 1 /* Examine title and basename for all games; show me the largest. */
+      const struct db_game *game=db_game_get_by_index(ra.db,0);
+      int c=db_game_count(ra.db);
+      int i=c,titlemax=0,basemax=0;
+      const char *title=0,*base=0;
+      for (;i-->0;game++) {
+        int titlec=0,basec=0;
+        while ((titlec<DB_GAME_NAME_LIMIT)&&game->name[titlec]) titlec++;
+        while ((basec<DB_GAME_BASE_LIMIT)&&game->base[basec]) basec++;
+        if (titlec>titlemax) {
+          titlemax=titlec;
+          title=game->name;
+        }
+        if (basec>basemax) {
+          basemax=basec;
+          base=game->base;
+        }
+      }
+      fprintf(stderr,"Across %d games:\n",c);
+      fprintf(stderr,"  Longest title = %d '%.*s'\n",titlemax,titlemax,title);
+      fprintf(stderr,"  Longest basename = %d '%.*s'\n",basemax,basemax,base);
+    #endif
+    
     fprintf(stderr,"db action complete. reporting failure to abort process.\n");
     return -1;
   }

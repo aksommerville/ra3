@@ -14,6 +14,7 @@ Old emulators are of course still compatible generically, as long we don't serve
 
 ## TODO
 
+- [ ] 2026-05-18: I must have broke screencaps at some point. Didn't they used to just pop up in the web app?
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.
 - - - [ ] Have game open its own server so web client can connect directly, don't pass thru a middleman.

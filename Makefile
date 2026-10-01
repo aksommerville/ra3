@@ -82,6 +82,7 @@ ifneq (,$(strip $(BUILD_ROMASSIST)))
     run-bg:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --no-update
   else
     run:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --menu=$(PWD)/out/romassist-menu$(EXESFX) --poweroff=0 --no-update --public-port=8080
+    run-log:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --menu=$(PWD)/out/romassist-menu$(EXESFX) --poweroff=0 --no-update --public-port=8080 >ralog-$(shell date +%Y%m%d%H%M).txt 2>&1
     run-bg:$(EXE_ROMASSIST);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --no-update
     run-kiosk:$(EXE_ROMASSIST) out/romassist-menu$(EXESFX);$(EXE_ROMASSIST) --dbroot=$(PWD)/data --htdocs=$(PWD)/src/www --menu='$(PWD)/out/romassist-menu$(EXESFX) --kiosk --allow-quit-button=0' --no-update --public-port=8080 
   endif

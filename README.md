@@ -14,6 +14,8 @@ Old emulators are of course still compatible generically, as long we don't serve
 
 ## TODO
 
+- [ ] menu: Don't quit on AUX3. You want to quit the menu, picking Settings/Quit should be the only way.
+- [ ] Server: Log the timestamp and game's title when we launch it. Digesting my GDEX 2026 log is painful with this missing.
 - [ ] 2026-05-18: I must have broke screencaps at some point. Didn't they used to just pop up in the web app?
 - [ ] Backend
 - - [ ] Real time framebuffer stream and input override -- support the GDEX use case, where there's an RA server on each play station, and admin on a laptop.

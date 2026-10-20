@@ -17,6 +17,19 @@ struct db_game *db_game_get_by_id(const struct db *db,uint32_t gameid) {
   return db_flatstore_get(&db->games,db_flatstore_search1(&db->games,gameid));
 }
 
+/* Convenience: Name by gameid.
+ */
+ 
+int db_game_get_name(void *dstpp,const struct db *db,int gameid) {
+  if (!dstpp||!db||!gameid) return 0;
+  const struct db_game *game=db_game_get_by_id(db,gameid);
+  if (!game) return 0;
+  *(const void**)dstpp=game->name;
+  int namec=0;
+  while ((namec<DB_GAME_NAME_LIMIT)&&game->name[namec]) namec++;
+  return namec;
+}
+
 /* Get by name.
  */
  

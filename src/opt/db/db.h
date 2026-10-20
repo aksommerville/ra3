@@ -192,6 +192,12 @@ struct db_game *db_game_get_by_id(const struct db *db,uint32_t gameid);
  */
 struct db_game *db_game_get_by_name(const struct db *db,const char *src,int srcc);
 
+/* Convenience to fetch a game's name.
+ * Invalidated by any further write ops. (points into some struct db_game).
+ * Not necessarily terminated.
+ */
+int db_game_get_name(void *dstpp,const struct db *db,int gameid);
+
 /* Remove this record and cascade:
  *  - Remove from all lists.
  *  - Drop all comments and plays.

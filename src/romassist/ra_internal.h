@@ -108,4 +108,8 @@ void ra_game_upload_cleanup(struct ra_game_upload *upload);
 int ra_game_upload_prepare(struct ra_game_upload *upload);
 int ra_game_upload_commit(struct ra_game_upload *upload);
 
+/* Return local time for logging, in a shared buffer.
+ */
+const char *ra_local_time();
+
 #endif

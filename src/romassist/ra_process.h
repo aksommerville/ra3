@@ -17,6 +17,12 @@ struct ra_process {
    */
   int pid;
   
+  /* gameid associated with the active process, ie to (pid).
+   * This can differ from (gameid): That's the requested game, we're the running one.
+   * Zero if nothing running or menu is running.
+   */
+  uint32_t gameid_current;
+  
   /* If nonzero, the requested gameid.
    * This is set during the request stage (next_launch not null), and also while running.
    */

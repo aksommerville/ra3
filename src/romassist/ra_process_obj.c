@@ -13,6 +13,20 @@ void ra_process_cleanup(struct ra_process *process) {
   if (process->next_launch) free(process->next_launch);
 }
 
+/* Log terminated child process.
+ * (status<0) if terminated by a signal, and then provide (sigid).
+ */
+
+static void ra_process_log_termination(int pid,int gameid,int status,int sigid) {
+  const char *name=0;
+  int namec=db_game_get_name(&name,ra.db,gameid);
+  if (status>=0) {
+    fprintf(stderr,"%s:%s: Child process %d (gameid %d '%.*s') exitted with status %d.\n",ra.exename,ra_local_time(),pid,gameid,namec,name,status);
+  } else {
+    fprintf(stderr,"%s:%s: Child process %d (gameid %d '%.*s') abnormal exit. Signal %d (%s).\n",ra.exename,ra_local_time(),pid,gameid,namec,name,sigid,strsignal(sigid));
+  }
+}
+
 /* Helper for splitting up the text of a command.
  */
  
@@ -114,7 +128,7 @@ static int ra_process_split_command(struct ra_cmd *cmd,const char *src) {
 /* Launch command.
  */
  
-static int ra_process_launch_command(struct ra_process *process,const char *cmdstr) {
+static int ra_process_launch_command(struct ra_process *process,const char *cmdstr,uint32_t gameid) {
   
   struct ra_cmd cmd={0};
   if (ra_process_split_command(&cmd,cmdstr)<0) {
@@ -131,10 +145,16 @@ static int ra_process_launch_command(struct ra_process *process,const char *cmds
     return -1;
   }
   
-  /* Parent? Record the pid and we're done.
+  /* Parent? Record the pid, log it, and we're done.
    */
   if (pid) {
+    if (gameid) {
+      const char *name=0;
+      int namec=db_game_get_name(&name,ra.db,gameid);
+      fprintf(stderr,"%s:%s: Launched gameid %d '%.*s', pid %d.\n",ra.exename,ra_local_time(),gameid,namec,name,pid);
+    }
     process->pid=pid;
+    process->gameid_current=gameid;
     ra_cmd_cleanup(&cmd);
     return 0;
   }
@@ -162,20 +182,22 @@ int ra_process_update(struct ra_process *process) {
     if (err>0) {
       if (WIFEXITED(wstatus)) {
         int status=WEXITSTATUS(wstatus);
-        fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
+        ra_process_log_termination(process->pid,process->gameid_current,status,0);
       } else {
         int sigid=0;
         if (WIFSIGNALED(wstatus)) sigid=WTERMSIG(wstatus);
-        fprintf(stderr,"%s: Child process %d (gameid %d) abnormal exit. Signal %d (%s).\n",ra.exename,process->pid,process->gameid,sigid,strsignal(sigid));
+        ra_process_log_termination(process->pid,process->gameid_current,-1,sigid);
       }
       if (process->gameid) db_play_finish(ra.db,process->gameid);
       if (!process->gameid&&!process->next_launch) process->menu_terminated=1;
       process->pid=0;
+      process->gameid_current=0;
       if (!process->next_launch) process->gameid=0;
       ra_report_gameid(0);
     } else if (err<0) {
       fprintf(stderr,"%s:WARNING: waitpid() error. Assuming child process %d was lost somehow.\n",ra.exename,process->pid);
       process->pid=0;
+      process->gameid_current=0;
       if (!process->next_launch) process->gameid=0;
       ra_report_gameid(0);
     }
@@ -188,7 +210,7 @@ int ra_process_update(struct ra_process *process) {
    */
   if (!process->pid) {
     if (process->next_launch) {
-      if (ra_process_launch_command(process,process->next_launch)<0) {
+      if (ra_process_launch_command(process,process->next_launch,process->gameid)<0) {
         return -1;
       }
       free(process->next_launch);
@@ -197,7 +219,7 @@ int ra_process_update(struct ra_process *process) {
     } else if (process->menu_terminated) {
       // Wait for main to acknowledge, or quit if it decides to.
     } else if (ra.menu&&http_context_get_server_by_index(ra.http,0)) {
-      if (ra_process_launch_command(process,ra.menu)<0) {
+      if (ra_process_launch_command(process,ra.menu,0)<0) {
         return -2;
       }
     }
@@ -355,8 +377,9 @@ void ra_process_terminate_and_wait(struct ra_process *process,int toms) {
       if (err<0) break;
       if (err) {
         int status=WEXITSTATUS(wstatus);
-        fprintf(stderr,"%s: Child process %d (gameid %d) exitted with status %d.\n",ra.exename,process->pid,process->gameid,status);
+        ra_process_log_termination(process->pid,process->gameid_current,status,0);
         process->pid=0;
+        process->gameid_current=0;
         if (!process->next_launch) process->gameid=0;
         break;
       }

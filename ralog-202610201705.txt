@@ -1,0 +1,21 @@
+out/romassist: Opened database at /home/andy/proj/ra3/data.
+out/romassist: Serving HTTP on port 2600.
+out/romassist: Running.
+/home/andy/proj/ra3/out/romassist-menu: Starting up...
+/home/andy/proj/ra3/out/romassist-menu: Using video driver 'glx'.
+alsapcm: Using device '/dev/snd/pcmC0D0p'
+/home/andy/proj/ra3/out/romassist-menu: Using audio driver 'alsa' rate=44100 chanc=2.
+/home/andy/proj/ra3/out/romassist-menu: Using input driver 'evdev'.
+Connected to localhost:2600
+out/romassist: Accepted MENU WebSocket connection.
+cheapsynth_new rate=44100 chanc=2
+/home/andy/proj/ra3/out/romassist-menu: Running...
+   GET /api/shutdown <= 0 b => 200, 9 b ; 0 ms
+  POST /api/query <= 0 b => 200, 28927 b ; 0 ms
+   GET /api/meta/all <= 0 b => 200, 5907 b ; 0 ms
+out/romassist: Terminating per HTTP request.
+  POST /api/shutdown <= 0 b => 200, 0 b ; 0 ms
+src/lib/eh_main.c:12: Signal 2 (Interrupt)
+/home/andy/proj/ra3/out/romassist-menu: Normal exit. 975 frames in 16 s, 0 faults, video rate 60.064 Hz, CPU usage 0.029
+out/romassist: Child process 13465 (gameid 0) exitted with status 0.
+out/romassist: Normal exit.

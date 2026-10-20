@@ -262,6 +262,8 @@ struct eh_input_driver *eh_input_driver_for_device(int devid);
 
 void eh_inmgr_dirty();
 
+void eh_disallow_quit_button();
+
 /* Odds, ends.
  *******************************************************************/
 

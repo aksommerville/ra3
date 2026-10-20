@@ -415,3 +415,10 @@ int eh_configure(int argc,char **argv) {
   
   return eh_configure_finish();
 }
+
+/* Disable the generic quit button.
+ */
+ 
+void eh_disallow_quit_button() {
+  eh.allow_quit_button=0;
+}

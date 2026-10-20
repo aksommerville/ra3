@@ -257,6 +257,7 @@ static void mn_websocket_incoming(const char *id,int idc,const char *src,int src
 static int mn_configure(const char *k,int kc,const char *v,int vc,int vn) {
   if ((kc==5)&&!memcmp(k,"kiosk",5)) {
     mn.kiosk=1;
+    eh_disallow_quit_button();
     return 1;
   }
   return 0;
